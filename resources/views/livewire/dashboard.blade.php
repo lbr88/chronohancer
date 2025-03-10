@@ -230,13 +230,14 @@
     </div>
 
     <script>
-        document.addEventListener('livewire:init', function () {
-            let timerInterval;
+        // Create a unique instance for the dashboard
+        const DashboardTimerManager = {
+            interval: null,
+            initialized: false,
 
-            function updateTimer(element) {
+            updateTimer(element) {
                 try {
                     const startTimeStr = element.dataset.start;
-                    // Handle both ISO format and Laravel's default format
                     const startTime = startTimeStr.includes('T') 
                         ? new Date(startTimeStr) 
                         : new Date(startTimeStr.replace(' ', 'T'));
@@ -259,33 +260,50 @@
                 } catch (e) {
                     console.error('Error updating timer:', e);
                 }
-            }
+            },
 
-            function updateAllTimers() {
-                document.querySelectorAll('.timer-display').forEach(updateTimer);
-            }
+            updateAllTimers() {
+                document.querySelectorAll('.timer-display').forEach(element => this.updateTimer(element));
+            },
 
-            // Initialize and start timer updates
-            function initializeTimers() {
-                if (timerInterval) {
-                    clearInterval(timerInterval);
+            start() {
+                if (this.interval) {
+                    this.stop();
                 }
-                updateAllTimers(); // Update immediately
-                timerInterval = setInterval(updateAllTimers, 1000);
-            }
+                this.updateAllTimers();
+                this.interval = setInterval(() => this.updateAllTimers(), 1000);
+            },
 
-            // Initialize timers when the component loads
-            initializeTimers();
-
-            // Re-initialize when Livewire updates the component
-            document.addEventListener('livewire:update', initializeTimers);
-
-            // Clean up when navigating away
-            document.addEventListener('livewire:navigating', () => {
-                if (timerInterval) {
-                    clearInterval(timerInterval);
+            stop() {
+                if (this.interval) {
+                    clearInterval(this.interval);
+                    this.interval = null;
                 }
-            });
+            },
+
+            initialize() {
+                if (this.initialized) return;
+                this.initialized = true;
+                
+                // Start timers immediately
+                this.start();
+
+                // Handle Livewire updates
+                document.addEventListener('livewire:update', () => {
+                    this.start();
+                });
+
+                // Clean up when navigating away or component is removed
+                document.addEventListener('livewire:navigating', () => {
+                    this.stop();
+                    this.initialized = false; // Reset initialization state
+                });
+            }
+        };
+
+        // Initialize when the component loads
+        document.addEventListener('livewire:init', () => {
+            DashboardTimerManager.initialize();
         });
     </script>
 </div>
