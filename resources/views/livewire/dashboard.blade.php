@@ -98,7 +98,7 @@
                     <div class="border border-indigo-100 rounded-lg p-4 bg-indigo-50">
                         <div class="flex justify-between mb-2">
                             <h3 class="font-semibold">{{ $timer->name }}</h3>
-                            <span class="text-sm text-indigo-600 timer-display" data-start="{{ $timer->created_at->toIso8601String() }}">00:00:00</span>
+                            <span class="text-sm text-indigo-600 timer-display" data-start="{{ $timer->latestTimeLog->start_time ?? now() }}">00:00:00</span>
                         </div>
                         <p class="text-sm text-gray-600">
                             <span class="font-medium">Project:</span> {{ $timer->project->name }}
@@ -231,24 +231,49 @@
 
     <script>
         document.addEventListener('livewire:init', function () {
-            function updateAllTimers() {
-                const timerDisplays = document.querySelectorAll('.timer-display[data-start]');
-                timerDisplays.forEach(display => {
-                    const startTime = new Date(display.getAttribute('data-start'));
-                    const now = new Date();
-                    const diff = Math.floor((now - startTime) / 1000);
-                    const hours = Math.floor(diff / 3600);
-                    const minutes = Math.floor((diff % 3600) / 60);
-                    const seconds = diff % 60;
-                    const displayText = 
-                        (hours < 10 ? '0' + hours : hours) + ':' +
-                        (minutes < 10 ? '0' + minutes : minutes) + ':' +
-                        (seconds < 10 ? '0' + seconds : seconds);
-                    display.textContent = displayText;
-                });
+            let timerInterval;
+
+            function updateTimer(element) {
+                const startTime = new Date(element.dataset.start);
+                const now = new Date();
+                const diff = Math.floor((now - startTime) / 1000);
+                const hours = Math.floor(diff / 3600);
+                const minutes = Math.floor((diff % 3600) / 60);
+                const seconds = diff % 60;
+                element.textContent = [
+                    hours.toString().padStart(2, '0'),
+                    minutes.toString().padStart(2, '0'),
+                    seconds.toString().padStart(2, '0')
+                ].join(':');
             }
-            updateAllTimers();
-            setInterval(updateAllTimers, 1000);
+
+            function updateAllTimers() {
+                document.querySelectorAll('.timer-display').forEach(updateTimer);
+            }
+
+            function initializeTimers() {
+                // Clear existing interval if any
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                }
+
+                // Initialize timers immediately and start interval
+                updateAllTimers();
+                timerInterval = setInterval(updateAllTimers, 1000);
+            }
+
+            // Initialize on first load
+            initializeTimers();
+
+            // Re-initialize when Livewire updates the component
+            document.addEventListener('livewire:update', initializeTimers);
+
+            // Clean up interval when navigating away
+            document.addEventListener('livewire:navigating', () => {
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                }
+            });
         });
     </script>
 </div>

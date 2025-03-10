@@ -156,7 +156,7 @@
                                 </div>
                             @endif
 
-                            <div class="mt-2 text-sm font-medium text-gray-900 dark:text-white timer-display" data-start-time="{{ $timer->latestTimeLog->start_time ?? now() }}">
+                            <div class="mt-2 text-sm font-medium text-gray-900 dark:text-white timer-display" data-start="{{ $timer->latestTimeLog->start_time ?? now() }}">
                                 00:00:00
                             </div>
                         </div>
@@ -167,8 +167,10 @@
 
         @push('scripts')
         <script>
+            let timerInterval;
+            
             function updateTimer(element) {
-                const startTime = new Date(element.dataset.startTime);
+                const startTime = new Date(element.dataset.start);
                 const now = new Date();
                 const diff = Math.floor((now - startTime) / 1000);
                 const hours = Math.floor(diff / 3600);
@@ -180,10 +182,31 @@
                     seconds.toString().padStart(2, '0')
                 ].join(':');
             }
-            setInterval(() => {
-                document.querySelectorAll('.timer-display').forEach(updateTimer);
-                @this.dispatch('timerTick');
-            }, 1000);
+
+            document.addEventListener('livewire:init', () => {
+                function updateAllTimers() {
+                    document.querySelectorAll('.timer-display').forEach(updateTimer);
+                }
+
+                // Clear existing interval if any
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                }
+
+                // Initialize timers immediately and start interval
+                updateAllTimers();
+                timerInterval = setInterval(() => {
+                    updateAllTimers();
+                    @this.dispatch('timerTick');
+                }, 1000);
+            });
+
+            // Clean up interval when navigating away
+            document.addEventListener('livewire:navigating', () => {
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                }
+            });
         </script>
         @endpush
     </div>
