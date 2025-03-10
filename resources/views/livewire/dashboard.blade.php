@@ -229,81 +229,11 @@
         </div>
     </div>
 
+    <script src="{{ asset('js/timer-manager.js') }}"></script>
     <script>
-        // Create a unique instance for the dashboard
-        const DashboardTimerManager = {
-            interval: null,
-            initialized: false,
-
-            updateTimer(element) {
-                try {
-                    const startTimeStr = element.dataset.start;
-                    const startTime = startTimeStr.includes('T') 
-                        ? new Date(startTimeStr) 
-                        : new Date(startTimeStr.replace(' ', 'T'));
-                    
-                    if (isNaN(startTime.getTime())) {
-                        console.error('Invalid date:', startTimeStr);
-                        return;
-                    }
-
-                    const now = new Date();
-                    const diff = Math.floor((now - startTime) / 1000);
-                    const hours = Math.floor(diff / 3600);
-                    const minutes = Math.floor((diff % 3600) / 60);
-                    const seconds = diff % 60;
-                    element.textContent = [
-                        hours.toString().padStart(2, '0'),
-                        minutes.toString().padStart(2, '0'),
-                        seconds.toString().padStart(2, '0')
-                    ].join(':');
-                } catch (e) {
-                    console.error('Error updating timer:', e);
-                }
-            },
-
-            updateAllTimers() {
-                document.querySelectorAll('.timer-display').forEach(element => this.updateTimer(element));
-            },
-
-            start() {
-                if (this.interval) {
-                    this.stop();
-                }
-                this.updateAllTimers();
-                this.interval = setInterval(() => this.updateAllTimers(), 1000);
-            },
-
-            stop() {
-                if (this.interval) {
-                    clearInterval(this.interval);
-                    this.interval = null;
-                }
-            },
-
-            initialize() {
-                if (this.initialized) return;
-                this.initialized = true;
-                
-                // Start timers immediately
-                this.start();
-
-                // Handle Livewire updates
-                document.addEventListener('livewire:update', () => {
-                    this.start();
-                });
-
-                // Clean up when navigating away or component is removed
-                document.addEventListener('livewire:navigating', () => {
-                    this.stop();
-                    this.initialized = false; // Reset initialization state
-                });
-            }
-        };
-
-        // Initialize when the component loads
         document.addEventListener('livewire:init', () => {
-            DashboardTimerManager.initialize();
+            window.dashboardTimer = new TimerManager('dashboard');
+            window.dashboardTimer.initialize();
         });
     </script>
 </div>
