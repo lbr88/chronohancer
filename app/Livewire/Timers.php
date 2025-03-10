@@ -20,8 +20,6 @@ class Timers extends Component
     public Collection $existingTimers;
     public $suggestions = [];
     
-    protected $listeners = ['timerTick' => 'updateTimerDisplay'];
-    
     protected $rules = [
         'project_name' => 'nullable|string|max:255',
         'name' => 'required|string|max:255',
