@@ -1,4 +1,4 @@
-class TimerManager {
+export class TimerManager {
     constructor(name) {
         this.name = name;
         this.interval = null;
