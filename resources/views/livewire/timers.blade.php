@@ -166,11 +166,10 @@
         @endif
 
         @push('scripts')
-        <script src="{{ asset('js/timer-manager.js') }}"></script>
         <script>
             document.addEventListener('livewire:init', () => {
-                window.timersPageTimer = new TimerManager('timers');
-                window.timersPageTimer.initialize();
+                const timer = new window.TimerManager('timers');
+                timer.initialize();
             });
         </script>
         @endpush

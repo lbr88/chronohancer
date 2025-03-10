@@ -229,11 +229,10 @@
         </div>
     </div>
 
-    <script src="{{ asset('js/timer-manager.js') }}"></script>
     <script>
         document.addEventListener('livewire:init', () => {
-            window.dashboardTimer = new TimerManager('dashboard');
-            window.dashboardTimer.initialize();
+            const timer = new window.TimerManager('dashboard');
+            timer.initialize();
         });
     </script>
 </div>
