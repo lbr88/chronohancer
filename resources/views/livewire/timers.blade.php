@@ -170,38 +170,55 @@
             let timerInterval;
             
             function updateTimer(element) {
-                const startTime = new Date(element.dataset.start);
-                const now = new Date();
-                const diff = Math.floor((now - startTime) / 1000);
-                const hours = Math.floor(diff / 3600);
-                const minutes = Math.floor((diff % 3600) / 60);
-                const seconds = diff % 60;
-                element.textContent = [
-                    hours.toString().padStart(2, '0'),
-                    minutes.toString().padStart(2, '0'),
-                    seconds.toString().padStart(2, '0')
-                ].join(':');
+                try {
+                    const startTimeStr = element.dataset.start;
+                    // Handle both ISO format and Laravel's default format
+                    const startTime = startTimeStr.includes('T') 
+                        ? new Date(startTimeStr) 
+                        : new Date(startTimeStr.replace(' ', 'T'));
+                    
+                    if (isNaN(startTime.getTime())) {
+                        console.error('Invalid date:', startTimeStr);
+                        return;
+                    }
+
+                    const now = new Date();
+                    const diff = Math.floor((now - startTime) / 1000);
+                    const hours = Math.floor(diff / 3600);
+                    const minutes = Math.floor((diff % 3600) / 60);
+                    const seconds = diff % 60;
+                    element.textContent = [
+                        hours.toString().padStart(2, '0'),
+                        minutes.toString().padStart(2, '0'),
+                        seconds.toString().padStart(2, '0')
+                    ].join(':');
+                } catch (e) {
+                    console.error('Error updating timer:', e);
+                }
             }
 
-            document.addEventListener('livewire:init', () => {
-                function updateAllTimers() {
-                    document.querySelectorAll('.timer-display').forEach(updateTimer);
-                }
+            function updateAllTimers() {
+                document.querySelectorAll('.timer-display').forEach(updateTimer);
+            }
 
-                // Clear existing interval if any
+            // Initialize and start timer updates
+            function initializeTimers() {
                 if (timerInterval) {
                     clearInterval(timerInterval);
                 }
+                updateAllTimers(); // Update immediately
+                timerInterval = setInterval(updateAllTimers, 1000);
+            }
 
-                // Initialize timers immediately and start interval
-                updateAllTimers();
-                timerInterval = setInterval(() => {
-                    updateAllTimers();
-                    @this.dispatch('timerTick');
-                }, 1000);
+            document.addEventListener('livewire:init', () => {
+                // Initialize timers when the component loads
+                initializeTimers();
+
+                // Re-initialize when Livewire updates the component
+                document.addEventListener('livewire:update', initializeTimers);
             });
 
-            // Clean up interval when navigating away
+            // Clean up when navigating away
             document.addEventListener('livewire:navigating', () => {
                 if (timerInterval) {
                     clearInterval(timerInterval);
