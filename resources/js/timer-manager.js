@@ -149,21 +149,10 @@ export class TimerManager {
                 lastUpdated: now
             });
             
-            // Detect the current time format from the page
-            let timeFormat = 'hms'; // Default format
-            const formatButtons = document.querySelectorAll('button[wire\\:click^="setTimeFormat"]');
-            formatButtons.forEach(button => {
-                if (button.classList.contains('bg-indigo-600')) {
-                    // Extract format from the wire:click attribute
-                    const clickAttr = button.getAttribute('wire:click');
-                    const formatMatch = clickAttr.match(/setTimeFormat\('([^']+)'\)/);
-                    if (formatMatch && formatMatch[1]) {
-                        timeFormat = formatMatch[1];
-                    }
-                }
-            });
+            // Get the time format from the data attribute or use default
+            let timeFormat = element.dataset.timeFormat || 'hms';
             
-            // Update the display with the detected format
+            // Update the display with the format
             const formattedTime = this.formatTime(diffSeconds, timeFormat);
             element.textContent = formattedTime;
             
@@ -209,21 +198,10 @@ export class TimerManager {
                             totalDurationElement.dataset.totalSeconds = newTotalSeconds;
                             totalDurationElement.dataset.lastUpdated = now;
                             
-                            // Use the same time format as the main timer
-                            let timeFormat = 'hms'; // Default format
-                            const formatButtons = document.querySelectorAll('button[wire\\:click^="setTimeFormat"]');
-                            formatButtons.forEach(button => {
-                                if (button.classList.contains('bg-indigo-600')) {
-                                    // Extract format from the wire:click attribute
-                                    const clickAttr = button.getAttribute('wire:click');
-                                    const formatMatch = clickAttr.match(/setTimeFormat\('([^']+)'\)/);
-                                    if (formatMatch && formatMatch[1]) {
-                                        timeFormat = formatMatch[1];
-                                    }
-                                }
-                            });
+                            // Get the time format from the main timer element's data attribute
+                            let timeFormat = timerElement.dataset.timeFormat || 'hms';
                             
-                            // Update the display with the detected format
+                            // Update the display with the format
                             totalDurationElement.textContent = `Today: ${this.formatTime(newTotalSeconds, timeFormat)}`;
                             
                             // Add a subtle pulse to the total duration as well

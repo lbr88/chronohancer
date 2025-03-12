@@ -189,16 +189,19 @@
                         <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Running Timers</h2>
                         <div class="flex items-center gap-4">
                             <!-- Time Format Selector -->
-                            <div class="inline-flex rounded-md shadow-sm" role="group">
-                                <button wire:click="setTimeFormat('human')" type="button" class="px-3 py-1 text-xs font-medium {{ $timeFormat === 'human' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 dark:bg-gray-700 dark:text-gray-300' }} border border-gray-200 dark:border-gray-600 rounded-l-lg hover:bg-gray-100 dark:hover:bg-gray-600">
-                                    1h3m10s
-                                </button>
-                                <button wire:click="setTimeFormat('hm')" type="button" class="px-3 py-1 text-xs font-medium {{ $timeFormat === 'hm' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 dark:bg-gray-700 dark:text-gray-300' }} border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600">
-                                    HH:MM
-                                </button>
-                                <button wire:click="setTimeFormat('hms')" type="button" class="px-3 py-1 text-xs font-medium {{ $timeFormat === 'hms' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 dark:bg-gray-700 dark:text-gray-300' }} border border-gray-200 dark:border-gray-600 rounded-r-lg hover:bg-gray-100 dark:hover:bg-gray-600">
-                                    HH:MM:SS
-                                </button>
+                            <div class="inline-flex flex-col">
+                                <div class="inline-flex rounded-md shadow-sm" role="group">
+                                    <button wire:click="setTimeFormat('human')" type="button" class="px-3 py-1 text-xs font-medium {{ $timeFormat === 'human' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 dark:bg-gray-700 dark:text-gray-300' }} border border-gray-200 dark:border-gray-600 rounded-l-lg hover:bg-gray-100 dark:hover:bg-gray-600">
+                                        1h3m10s
+                                    </button>
+                                    <button wire:click="setTimeFormat('hm')" type="button" class="px-3 py-1 text-xs font-medium {{ $timeFormat === 'hm' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 dark:bg-gray-700 dark:text-gray-300' }} border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600">
+                                        HH:MM
+                                    </button>
+                                    <button wire:click="setTimeFormat('hms')" type="button" class="px-3 py-1 text-xs font-medium {{ $timeFormat === 'hms' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 dark:bg-gray-700 dark:text-gray-300' }} border border-gray-200 dark:border-gray-600 rounded-r-lg hover:bg-gray-100 dark:hover:bg-gray-600">
+                                        HH:MM:SS
+                                    </button>
+                                </div>
+                                <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">Format saved to your profile</span>
                             </div>
                             <span class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ $runningTimers->count() }} active</span>
                         </div>
@@ -246,7 +249,7 @@
                                         
                                         <!-- Middle: Timer display -->
                                         <div class="flex flex-col items-center justify-center mx-4 min-w-[120px]">
-                                            <div class="text-xl font-mono font-bold text-indigo-600 dark:text-indigo-400 timer-display" id="timer-{{ $timer->id }}" data-start="{{ $this->getFormattedStartTimeForJs($timer) }}">
+                                            <div class="text-xl font-mono font-bold text-indigo-600 dark:text-indigo-400 timer-display" id="timer-{{ $timer->id }}" data-start="{{ $this->getFormattedStartTimeForJs($timer) }}" data-time-format="{{ $timeFormat }}">
                                                 {{ $this->getTimerDuration($timer) }}
                                             </div>
                                             <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">

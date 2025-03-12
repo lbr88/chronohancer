@@ -39,7 +39,7 @@ class Timers extends Component
     public $editingDurationHours = 0;
     public $editingDurationMinutes = 0;
     public $editingDurationHuman = '';
-    public $timeFormat = 'human'; // hms, hm, human
+    public $timeFormat;
     
     protected $rules = [
         'project_name' => 'nullable|string|max:255',
@@ -64,6 +64,9 @@ class Timers extends Component
             'projects' => [],
             'tags' => []
         ];
+        
+        // Load user's time format preference
+        $this->timeFormat = auth()->user()->time_format ?? 'human';
     }
 
     public function updatedSearch()
@@ -747,7 +750,20 @@ class Timers extends Component
      */
     public function setTimeFormat($format)
     {
+        // Validate the format
+        if (!in_array($format, ['human', 'hm', 'hms'])) {
+            $format = 'human';
+        }
+        
+        // Update the local property
         $this->timeFormat = $format;
+        
+        // Save to user preferences
+        $user = auth()->user();
+        $user->time_format = $format;
+        $user->save();
+        
+        $this->showNotification('Time format preference saved', 'success');
     }
     
     
