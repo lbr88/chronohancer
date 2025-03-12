@@ -35,6 +35,8 @@ class TimeLogs extends Component
     public $showFilters = false;
     public $confirmingDelete = null;
     public $showQuickTimeModal = false;
+    public $showTimeLogSelectionModal = false;
+    public $timeLogSelectionOptions = [];
     public $quickTimeDate;
     public $quickTimeProjectId;
     public $quickTimeTimerId;
@@ -210,16 +212,49 @@ class TimeLogs extends Component
             $query->whereNull('timer_id');
         }
         
-        // Get the first log for this combination
-        $timeLog = $query->first();
+        // Get all logs for this combination
+        $timeLogs = $query->get();
         
-        if ($timeLog) {
-            $this->startEdit($timeLog->id);
+        if ($timeLogs->count() > 1) {
+            // Multiple time logs found, show selection modal
+            $this->timeLogSelectionOptions = $timeLogs->map(function($log) {
+                return [
+                    'id' => $log->id,
+                    'description' => $log->description ?: 'No description',
+                    'duration' => $this->formatDuration($log->duration_minutes),
+                    'start_time' => $log->start_time->format('H:i'),
+                    'end_time' => $log->end_time->format('H:i')
+                ];
+            })->toArray();
+            
+            $this->showTimeLogSelectionModal = true;
+        } elseif ($timeLogs->count() == 1) {
+            // Only one time log found, edit it directly
+            $this->startEdit($timeLogs->first()->id);
         } else {
             // If no log exists, set up for creating a new one
             $this->createForDate($date);
             $this->project_id = $projectId;
         }
+    }
+    
+    /**
+     * Select a specific time log to edit from multiple options
+     */
+    public function selectTimeLogToEdit($timeLogId)
+    {
+        $this->showTimeLogSelectionModal = false;
+        $this->timeLogSelectionOptions = [];
+        $this->startEdit($timeLogId);
+    }
+    
+    /**
+     * Close the time log selection modal without selecting
+     */
+    public function closeTimeLogSelectionModal()
+    {
+        $this->showTimeLogSelectionModal = false;
+        $this->timeLogSelectionOptions = [];
     }
 
     public function cancelEdit()
@@ -300,35 +335,49 @@ class TimeLogs extends Component
             $projectTotal = 0;
             $timers = [];
             
-            // Group by timer
-            $timerGroups = $projectLogs->groupBy('timer_id');
+            // Group by timer and description
+            $timerGroups = $projectLogs->groupBy(function($log) {
+                // Group by timer_id and a sanitized version of the description
+                // This ensures logs with the same timer but different descriptions are grouped separately
+                $timerId = $log->timer_id ?? 'manual';
+                $description = trim($log->description ?? '');
+                return $timerId . '|' . $description;
+            });
             
-            foreach ($timerGroups as $timerId => $timerLogs) {
+            foreach ($timerGroups as $timerKey => $timerLogs) {
+                // Extract timer_id and description from the group key
+                list($timerId, $description) = explode('|', $timerKey, 2);
+                $timerId = $timerId === 'manual' ? null : $timerId;
+                
                 $timerName = $timerId ? ($timerLogs->first()->timer->name ?? 'Unnamed Timer') : 'Manual Entry';
                 $timerTotal = 0;
                 $dailyDurations = array_fill_keys(array_keys($weekDays), 0);
-                $dailyDescriptions = array_fill_keys(array_keys($weekDays), '');
+                $dailyDescriptions = array_fill_keys(array_keys($weekDays), $description);
                 $dailyLogIds = array_fill_keys(array_keys($weekDays), null);
                 
-                // Calculate daily durations and collect descriptions
+                // Calculate daily durations
                 foreach ($timerLogs as $log) {
                     $logDate = Carbon::parse($log->start_time)->format('Y-m-d');
                     $dailyDurations[$logDate] = ($dailyDurations[$logDate] ?? 0) + $log->duration_minutes;
                     
-                    // Store the description for this day
-                    if (!empty($log->description)) {
-                        $dailyDescriptions[$logDate] = $log->description;
-                    }
-                    
                     // Store the log ID for this day (for editing)
+                    // If multiple logs exist for this day, the selection modal will handle it
                     $dailyLogIds[$logDate] = $log->id;
                     
                     $timerTotal += $log->duration_minutes;
                 }
                 
+                // Add description to timer name if it exists
+                $displayName = $timerName;
+                if (!empty($description)) {
+                    $displayName .= ': ' . $description;
+                }
+                
                 $timers[] = [
                     'id' => $timerId,
-                    'name' => $timerName,
+                    'name' => $displayName,
+                    'originalName' => $timerName,
+                    'description' => $description,
                     'daily' => $dailyDurations,
                     'dailyDescriptions' => $dailyDescriptions,
                     'dailyLogIds' => $dailyLogIds,
