@@ -169,6 +169,21 @@ class Dashboard extends Component
         // Return black for bright colors, white for dark colors
         return ($luminance > 0.5) ? '#000000' : '#FFFFFF';
     }
+    
+    /**
+     * Ensure the start time is properly formatted for JavaScript
+     *
+     * @param \App\Models\Timer $timer
+     * @return string
+     */
+    public function getFormattedStartTimeForJs($timer)
+    {
+        if (!$timer->latestTimeLog) {
+            return now()->toIso8601String();
+        }
+        
+        return $timer->latestTimeLog->start_time->toIso8601String();
+    }
 
     public function render()
     {

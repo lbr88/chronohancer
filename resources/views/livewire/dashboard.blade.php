@@ -98,7 +98,7 @@
                     <div class="border border-indigo-100 rounded-lg p-4 bg-indigo-50">
                         <div class="flex justify-between mb-2">
                             <h3 class="font-semibold">{{ $timer->name }}</h3>
-                            <span class="text-sm text-indigo-600 timer-display" data-start="{{ $timer->latestTimeLog->start_time ?? now() }}">00:00:00</span>
+                            <span class="text-sm text-indigo-600 timer-display" data-start="{{ $this->getFormattedStartTimeForJs($timer) }}">00:00:00</span>
                         </div>
                         <p class="text-sm text-gray-600">
                             <span class="font-medium">Project:</span> {{ $timer->project->name }}
@@ -131,20 +131,33 @@
             <h2 class="text-xl font-semibold mb-6">Daily Activity</h2>
             
             @if(array_sum($this->dailyActivity) > 0)
+                @php
+                    $maxHeight = max(array_values($this->dailyActivity));
+                    $workdayMinutes = 444; // 7.4 hours in minutes
+                    $workdayLinePosition = $maxHeight > 0 ? min(100, ($workdayMinutes / $maxHeight) * 100) : 0;
+                @endphp
                 <div class="w-full h-60">
-                    <div class="flex justify-between h-full">
+                    <div class="flex justify-between h-full relative">
+                        <!-- 7.4 hour mark line -->
+                        @if($maxHeight >= $workdayMinutes)
+                            <div class="absolute w-full border-t border-dashed border-red-400 z-10"
+                                 style="bottom: {{ $workdayLinePosition }}%;">
+                                <span class="absolute -top-6 right-0 text-xs text-red-500 font-medium bg-white px-1 rounded shadow-sm">
+                                    7.4h workday
+                                </span>
+                            </div>
+                        @endif
                         @foreach($this->dailyActivity as $date => $minutes)
                             @php
-                                $maxHeight = max(array_values($this->dailyActivity));
-                                $height = $maxHeight > 0 ? ($minutes / $maxHeight) * 100 : 0;
+                                $heightPercentage = $maxHeight > 0 ? ($minutes / $maxHeight) * 100 : 0;
                                 $displayDate = \Carbon\Carbon::parse($date);
                                 $isToday = $displayDate->isToday();
                             @endphp
-                            <div class="flex flex-col items-center flex-1 justify-end">
-                                <div class="tooltip relative w-full px-1">
-                                    <div 
-                                        class="h-[{{ $height }}%] w-full rounded-t {{ $isToday ? 'bg-indigo-500' : 'bg-indigo-300' }} hover:bg-indigo-400 group"
-                                        style="min-height: {{ $minutes > 0 ? '4px' : '0' }};"
+                            <div class="flex flex-col items-center flex-1">
+                                <div class="tooltip relative w-full px-1 flex-grow flex flex-col justify-end h-[200px]">
+                                    <div
+                                        class="w-full rounded-t {{ $isToday ? 'bg-indigo-500' : 'bg-indigo-300' }} hover:bg-indigo-400 group transition-all duration-300"
+                                        style="height: {{ $heightPercentage }}%; min-height: {{ $minutes > 0 ? '4px' : '0' }};"
                                     >
                                         <div class="absolute bottom-full mb-2 hidden group-hover:block w-full">
                                             <div class="bg-gray-800 text-white text-xs rounded py-1 px-2 text-center mx-auto w-max">
@@ -230,9 +243,21 @@
     </div>
 
     <script>
-        document.addEventListener('livewire:init', () => {
-            const timer = new window.TimerManager('dashboard');
-            timer.initialize();
+        document.addEventListener('DOMContentLoaded', () => {
+            // Create a dashboard-specific timer manager
+            const dashboardTimerManager = new window.TimerManager('dashboard');
+            dashboardTimerManager.initialize();
+            
+            // Log all timer elements for debugging
+            const timerElements = document.querySelectorAll('.timer-display');
+            console.log(`Found ${timerElements.length} timer elements on dashboard`);
+            
+            timerElements.forEach(element => {
+                console.log(`Dashboard timer element:`, {
+                    'data-start': element.dataset.start,
+                    'parsed-date': new Date(element.dataset.start).toString()
+                });
+            });
         });
     </script>
 </div>

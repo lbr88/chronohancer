@@ -18,16 +18,23 @@ class Timers extends Component
     public $description;
     public $tag_input = '';
     public $search = '';
+    public $savedTimersSearch = '';
     public Collection $existingTimers;
     public $suggestions = [];
     public $notification = null;
     public $showNotification = false;
     public $notificationType = 'success';
     public $showLongRunningTimerModal = false;
+    public $showEditTimerModal = false;
     public $longRunningTimerId = null;
     public $longRunningTimerStartTime = null;
     public $customEndTime = null;
     public $actualHoursWorked = null;
+    public $editingTimerId = null;
+    public $editingTimerName = null;
+    public $editingTimerDescription = null;
+    public $editingTimerProjectName = null;
+    public $editingTimerTagInput = null;
     
     protected $rules = [
         'project_name' => 'nullable|string|max:255',
@@ -240,6 +247,127 @@ class Timers extends Component
         }
     }
     
+    /**
+     * Cancel a timer without saving any time log
+     */
+    public function cancelTimer($timerId)
+    {
+        $timer = Timer::with('timeLogs')->findOrFail($timerId);
+        
+        // Get the latest time log for this timer
+        $latestLog = $timer->timeLogs()->latest()->first();
+        
+        if ($latestLog && !$latestLog->end_time) {
+            // Delete the time log entry
+            $latestLog->delete();
+        }
+        
+        // Mark timer as not running
+        $timer->is_running = false;
+        $timer->save();
+        
+        $this->showNotification('Timer cancelled', 'info');
+        $this->dispatch('timerStopped', ['timerId' => $timerId]);
+    }
+    
+    /**
+     * Stop a timer and open the edit modal
+     */
+    public function stopAndEditTimer($timerId)
+    {
+        $timer = Timer::with(['timeLogs', 'tags', 'project'])->findOrFail($timerId);
+        
+        // Get the latest time log for this timer
+        $latestLog = $timer->timeLogs()->latest()->first();
+        
+        if ($latestLog && !$latestLog->end_time) {
+            // Stop the timer first
+            $now = now();
+            $latestLog->end_time = $now;
+            $latestLog->duration_minutes = $latestLog->start_time->diffInMinutes($now);
+            $latestLog->save();
+        }
+        
+        // Mark timer as not running
+        $timer->is_running = false;
+        $timer->save();
+        
+        // Set up editing properties
+        $this->editingTimerId = $timer->id;
+        $this->editingTimerName = $timer->name;
+        $this->editingTimerDescription = $timer->description;
+        $this->editingTimerProjectName = $timer->project ? $timer->project->name : '';
+        $this->editingTimerTagInput = $timer->tags->pluck('name')->implode(', ');
+        
+        // Show the edit modal
+        $this->showEditTimerModal = true;
+        
+        $this->dispatch('timerStopped', ['timerId' => $timerId]);
+    }
+    
+    /**
+     * Save the edited timer details
+     */
+    public function saveEditedTimer()
+    {
+        $timer = Timer::findOrFail($this->editingTimerId);
+        
+        // Find or create project if name is provided
+        $project_id = null;
+        if ($this->editingTimerProjectName) {
+            $project = Project::firstOrCreate(
+                ['name' => $this->editingTimerProjectName, 'user_id' => auth()->id()],
+                ['description' => 'Project created from timer']
+            );
+            $project_id = $project->id;
+        }
+        
+        // Update timer details
+        $timer->update([
+            'name' => $this->editingTimerName,
+            'description' => $this->editingTimerDescription,
+            'project_id' => $project_id,
+        ]);
+        
+        // Process tags
+        if ($this->editingTimerTagInput) {
+            $tagNames = collect(explode(',', $this->editingTimerTagInput))
+                ->map(fn($name) => trim($name))
+                ->filter();
+                
+            $tags = $tagNames->map(function($name) {
+                return Tag::findOrCreateForUser($name, auth()->id());
+            });
+            
+            $timer->tags()->sync($tags->pluck('id'));
+            
+            // If we have a project, also attach the tags to it
+            if ($project_id) {
+                $project->tags()->syncWithoutDetaching($tags->pluck('id'));
+            }
+        } else {
+            $timer->tags()->detach();
+        }
+        
+        // Close the modal
+        $this->closeEditTimerModal();
+        
+        $this->showNotification('Timer updated successfully', 'success');
+    }
+    
+    /**
+     * Close the edit timer modal
+     */
+    public function closeEditTimerModal()
+    {
+        $this->showEditTimerModal = false;
+        $this->editingTimerId = null;
+        $this->editingTimerName = null;
+        $this->editingTimerDescription = null;
+        $this->editingTimerProjectName = null;
+        $this->editingTimerTagInput = null;
+    }
+    
     public function completeTimerStop($timerId, $endTime)
     {
         $timer = Timer::with('timeLogs')->findOrFail($timerId);
@@ -374,6 +502,21 @@ class Timers extends Component
         return sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
     }
     
+    /**
+     * Ensure the start time is properly formatted for JavaScript
+     *
+     * @param \App\Models\Timer $timer
+     * @return string
+     */
+    public function getFormattedStartTimeForJs($timer)
+    {
+        if (!$timer->latestTimeLog) {
+            return now()->toIso8601String();
+        }
+        
+        return $timer->latestTimeLog->start_time->toIso8601String();
+    }
+    
     public function getFormattedStartTime($timer)
     {
         if (!$timer->latestTimeLog) {
@@ -381,6 +524,70 @@ class Timers extends Component
         }
         
         return $timer->latestTimeLog->start_time->format('g:i A');
+    }
+    
+    /**
+     * Edit a timer that is not currently running
+     */
+    public function editTimer($timerId)
+    {
+        $timer = Timer::with(['tags', 'project'])->findOrFail($timerId);
+        
+        // Set up editing properties
+        $this->editingTimerId = $timer->id;
+        $this->editingTimerName = $timer->name;
+        $this->editingTimerDescription = $timer->description;
+        $this->editingTimerProjectName = $timer->project ? $timer->project->name : '';
+        $this->editingTimerTagInput = $timer->tags->pluck('name')->implode(', ');
+        
+        // Show the edit modal
+        $this->showEditTimerModal = true;
+    }
+    
+    /**
+     * Restart a timer that is not currently running
+     */
+    public function restartTimer($timerId)
+    {
+        $timer = Timer::findOrFail($timerId);
+        
+        // Mark timer as running
+        $timer->is_running = true;
+        $timer->save();
+        
+        // Create a new time log
+        TimeLog::create([
+            'timer_id' => $timer->id,
+            'user_id' => auth()->id(),
+            'project_id' => $timer->project_id,
+            'start_time' => now(),
+            'description' => $timer->description ?: null,
+        ]);
+        
+        $this->showNotification('Timer restarted successfully', 'success');
+        $this->dispatch('timerStarted');
+    }
+    
+    /**
+     * Delete a timer
+     */
+    public function deleteTimer($timerId)
+    {
+        $timer = Timer::findOrFail($timerId);
+        
+        // Delete the timer
+        $timer->delete();
+        
+        $this->showNotification('Timer deleted successfully', 'success');
+    }
+    
+    /**
+     * Filter saved timers based on search input
+     */
+    public function updatedSavedTimersSearch()
+    {
+        // This method is automatically called when $savedTimersSearch is updated
+        // We don't need to do anything here as the filtering happens in the render method
     }
     
     public function render()
@@ -392,14 +599,51 @@ class Timers extends Component
                 ->limit(10)
                 ->get();
         });
+        
+        // Get all timers for the user
+        $allTimers = Timer::with(['project', 'tags', 'latestTimeLog'])
+            ->where('user_id', auth()->id())
+            ->orderBy('updated_at', 'desc')
+            ->get();
+        
+        // Separate running and non-running timers
+        $runningTimers = $allTimers->where('is_running', true);
+        $savedTimers = $allTimers->where('is_running', false);
+        
+        // Filter saved timers if search is provided
+        if (!empty($this->savedTimersSearch)) {
+            $search = strtolower($this->savedTimersSearch);
+            $savedTimers = $savedTimers->filter(function($timer) use ($search) {
+                // Search in timer name
+                if (str_contains(strtolower($timer->name), $search)) {
+                    return true;
+                }
+                
+                // Search in timer description
+                if ($timer->description && str_contains(strtolower($timer->description), $search)) {
+                    return true;
+                }
+                
+                // Search in project name
+                if ($timer->project && str_contains(strtolower($timer->project->name), $search)) {
+                    return true;
+                }
+                
+                // Search in tags
+                foreach ($timer->tags as $tag) {
+                    if (str_contains(strtolower($tag->name), $search)) {
+                        return true;
+                    }
+                }
+                
+                return false;
+            });
+        }
             
         return view('livewire.timers', [
             'recentTags' => $recentTags,
-            'runningTimers' => Timer::with(['project', 'tags', 'latestTimeLog'])
-                ->where('user_id', auth()->id())
-                ->where('is_running', true)
-                ->orderBy('updated_at', 'desc')
-                ->get(),
+            'runningTimers' => $runningTimers,
+            'savedTimers' => $savedTimers,
         ]);
     }
 }
