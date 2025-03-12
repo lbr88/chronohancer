@@ -8,13 +8,14 @@ Chronohancer is a comprehensive time tracking solution designed to help individu
 
 ## 🚀 Features
 
-- **Timer Management**: Create, start, and stop timers for tracking time spent on various tasks
-- **Project Organization**: Group timers and time logs by projects
+- **Timer Management**: Create, start, pause, and stop timers for tracking time spent on various tasks
+- **Project Organization**: Group timers and time logs by projects with customizable colors
 - **Tagging System**: Categorize timers and time logs with customizable tags
 - **Time Logs**: Detailed records of time spent on tasks with descriptions
 - **Dashboard**: Visual overview of time distribution across projects
 - **Weekly View**: Analyze time spent during specific periods
 - **User Authentication**: Secure multi-user system with personal workspaces
+- **Time Format Preferences**: Customize how time is displayed (human-readable, HH:MM, or HH:MM:SS)
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
 
 ## 🏗️ System Architecture
@@ -24,9 +25,9 @@ Chronohancer follows the Laravel MVC architecture with Livewire components for r
 ### Core Components
 
 1. **Models**: Define the data structure and relationships
-   - User: Authentication and user management
-   - Project: Organize work into logical groups
-   - Timer: Track time for specific tasks
+   - User: Authentication and user management with time format preferences
+   - Project: Organize work into logical groups with custom colors and soft delete support
+   - Timer: Track time for specific tasks with pause functionality
    - TimeLog: Record completed time entries
    - Tag: Categorize timers and time logs
 
@@ -190,6 +191,18 @@ php artisan test --coverage
 
 ## 📝 Usage Examples
 
+### Creating a Project with Custom Color
+
+```php
+// Create a new project with a custom color
+$project = Project::create([
+    'user_id' => auth()->id(),
+    'name' => 'Website Redesign',
+    'description' => 'Redesigning the company website',
+    'color' => '#4ade80', // Green color
+]);
+```
+
 ### Creating a Timer
 
 ```php
@@ -200,6 +213,7 @@ $timer = Timer::create([
     'name' => 'Development Task',
     'description' => 'Working on new feature',
     'is_running' => true,
+    'is_paused' => false,
 ]);
 
 // Create a time log entry
@@ -210,6 +224,36 @@ TimeLog::create([
     'start_time' => now(),
     'description' => 'Initial development work',
 ]);
+```
+
+### Pausing a Timer
+
+```php
+// Pause a running timer
+$timer->update([
+    'is_running' => true,
+    'is_paused' => true,
+]);
+```
+
+### Setting User Time Format Preference
+
+```php
+// Update user's time format preference
+$user->update([
+    'time_format' => 'human', // Options: 'human', 'hm', 'hms'
+]);
+```
+
+### Soft Deleting a Project
+
+```php
+// Soft delete a project (can be restored later)
+$project->delete(); // Uses soft delete
+
+// Restore a soft-deleted project
+$project = Project::withTrashed()->find($projectId);
+$project->restore();
 ```
 
 ### Tagging System
@@ -244,6 +288,13 @@ $projectTotals = $timeLogs->groupBy('project_id')
     });
 ```
 
+## 🆕 Recent Updates
+
+- **Project Soft Deletes**: Projects can now be soft-deleted and restored later, preserving all associated data
+- **Timer Pause Functionality**: Timers can now be paused and resumed, providing more flexibility in time tracking
+- **Time Format Preferences**: Users can choose between different time display formats (human-readable, HH:MM, or HH:MM:SS)
+- **Project Colors**: Projects can now have custom colors for better visual organization and identification
+
 ## 🚧 Limitations and Future Enhancements
 
 ### Current Limitations
@@ -262,6 +313,9 @@ $projectTotals = $timeLogs->groupBy('project_id')
 - Calendar integration
 - Invoice generation
 - Time estimation and comparison
+- Project archiving and batch operations
+- Advanced timer controls (scheduled timers, reminders)
+- Custom dashboard widgets and layouts
 
 ## 👥 Contributing
 
