@@ -183,125 +183,237 @@
 
             <!-- Running Timers Panel -->
             <div class="lg:col-span-2">
-                @if($runningTimers->isNotEmpty())
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                        <div class="p-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Running Timers</h2>
+                <!-- Running Timers -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="p-5 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Running Timers</h2>
+                        <div class="flex items-center gap-4">
+                            <!-- Time Format Selector -->
+                            <div class="inline-flex rounded-md shadow-sm" role="group">
+                                <button wire:click="setTimeFormat('human')" type="button" class="px-3 py-1 text-xs font-medium {{ $timeFormat === 'human' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 dark:bg-gray-700 dark:text-gray-300' }} border border-gray-200 dark:border-gray-600 rounded-l-lg hover:bg-gray-100 dark:hover:bg-gray-600">
+                                    1h3m10s
+                                </button>
+                                <button wire:click="setTimeFormat('hm')" type="button" class="px-3 py-1 text-xs font-medium {{ $timeFormat === 'hm' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 dark:bg-gray-700 dark:text-gray-300' }} border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600">
+                                    HH:MM
+                                </button>
+                                <button wire:click="setTimeFormat('hms')" type="button" class="px-3 py-1 text-xs font-medium {{ $timeFormat === 'hms' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 dark:bg-gray-700 dark:text-gray-300' }} border border-gray-200 dark:border-gray-600 rounded-r-lg hover:bg-gray-100 dark:hover:bg-gray-600">
+                                    HH:MM:SS
+                                </button>
+                            </div>
                             <span class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ $runningTimers->count() }} active</span>
                         </div>
-                        
+                    </div>
+                    
+                    <!-- Running Timers -->
+                    @if($runningTimers->isNotEmpty())
                         <div class="divide-y divide-gray-200 dark:divide-gray-700">
                             @foreach($runningTimers as $timer)
-                                <div class="p-5 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors duration-200">
-                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                        <div class="flex-1 min-w-0">
-                                            <div class="flex items-center">
-                                                <div class="relative mr-3 flex-shrink-0">
-                                                    <div class="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
-                                                        <div class="h-2 w-2 rounded-full bg-indigo-600 dark:bg-indigo-400 animate-pulse"></div>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div class="flex-1 min-w-0">
-                                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white truncate">{{ $timer->name }}</h3>
-                                                    
-                                                    <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
-                                                        @if($timer->project)
-                                                            <div class="flex items-center">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                                                                </svg>
-                                                                <span>{{ $timer->project->name }}</span>
-                                                            </div>
-                                                        @endif
-                                                        
-                                                        <div
-                                                            id="timer-{{ $timer->id }}"
-                                                            class="timer-display font-mono text-indigo-600 dark:text-indigo-400"
-                                                            data-start="{{ $this->getFormattedStartTimeForJs($timer) }}"
-                                                        >
-                                                            {{ $this->getTimerDuration($timer) }}
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                <div class="py-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors duration-200">
+                                    <div class="flex items-center justify-between">
+                                        <!-- Left side: Timer info -->
+                                        <div class="flex items-center flex-grow">
+                                            <div class="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center mr-3">
+                                                <div class="h-2 w-2 rounded-full bg-indigo-600 dark:bg-indigo-400 animate-pulse"></div>
                                             </div>
                                             
-                                            @if($timer->description)
-                                                <div class="mt-3 text-sm text-gray-600 dark:text-gray-300">
-                                                    {{ $timer->description }}
+                                            <div class="flex-grow">
+                                                <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ $timer->name }}</h3>
+                                                
+                                                <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                                                    @if($timer->project)
+                                                        <span>{{ $timer->project->name }}</span>
+                                                    @endif
                                                 </div>
-                                            @endif
-                                            
-                                            @if($timer->tags->count() > 0)
-                                                <div class="mt-3 flex flex-wrap gap-1.5">
-                                                    @foreach($timer->tags as $tag)
-                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs" 
-                                                            style="background-color: {{ $tag->color }}; color: {{ $this->getContrastColor($tag->color) }}">
-                                                            {{ $tag->name }}
-                                                        </span>
-                                                    @endforeach
-                                                </div>
-                                            @endif
+                                                
+                                                @if($timer->tags->count() > 0)
+                                                    <div class="mt-1 flex flex-wrap gap-1">
+                                                        @foreach($timer->tags as $tag)
+                                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs"
+                                                                style="background-color: {{ $tag->color }}; color: {{ $this->getContrastColor($tag->color) }}">
+                                                                {{ $tag->name }}
+                                                            </span>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+                                                
+                                                @if($timer->description)
+                                                    <div class="mt-1 text-xs text-gray-600 dark:text-gray-300">
+                                                        {{ $timer->description }}
+                                                    </div>
+                                                @endif
+                                            </div>
                                         </div>
                                         
-                                        <div class="flex-shrink-0 flex items-center space-x-2">
+                                        <!-- Middle: Timer display -->
+                                        <div class="flex flex-col items-center justify-center mx-4 min-w-[120px]">
+                                            <div class="text-xl font-mono font-bold text-indigo-600 dark:text-indigo-400 timer-display" id="timer-{{ $timer->id }}" data-start="{{ $this->getFormattedStartTimeForJs($timer) }}">
+                                                {{ $this->getTimerDuration($timer) }}
+                                            </div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                Today: {{ $this->getTimerTotalDurationForToday($timer) }}
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Right side: Action buttons -->
+                                        <div class="flex items-center space-x-1 ml-auto">
                                             <button
                                                 wire:click="cancelTimer({{ $timer->id }})"
-                                                class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
+                                                class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                                                 title="Cancel timer without saving"
                                             >
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                                 </svg>
-                                                Cancel
+                                                <span class="sr-only">Cancel</span>
+                                            </button>
+                                            
+                                            <button
+                                                wire:click="pauseTimer({{ $timer->id }})"
+                                                class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                                                title="Pause timer"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                <span class="sr-only">Pause</span>
                                             </button>
                                             
                                             <button
                                                 wire:click="stopAndEditTimer({{ $timer->id }})"
-                                                class="inline-flex items-center px-3 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
+                                                class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                                                 title="Stop timer and edit details"
                                             >
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                                 </svg>
-                                                Stop & Edit
+                                                <span class="sr-only">Stop & Edit</span>
                                             </button>
                                             
                                             <button
                                                 wire:click="stopTimer({{ $timer->id }})"
-                                                class="inline-flex items-center px-3 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
+                                                class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 stop-button p-0"
                                                 title="Stop timer and save time"
                                             >
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <rect x="5" y="5" width="14" height="14" rx="2" />
                                                 </svg>
-                                                Stop
+                                                <span class="sr-only">Stop</span>
                                             </button>
                                         </div>
                                     </div>
                                 </div>
                             @endforeach
                         </div>
-                    </div>
-                @else
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 flex flex-col items-center justify-center text-center h-full">
-                        <div class="h-16 w-16 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
+                    @else
+                        <div class="p-8 flex flex-col items-center justify-center text-center">
+                            <div class="h-16 w-16 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-2">No Active Timers</h3>
+                            <p class="text-gray-500 dark:text-gray-400 max-w-md">
+                                Start a new timer to track your time. You can create multiple timers for different tasks.
+                            </p>
                         </div>
-                        <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-2">No Active Timers</h3>
-                        <p class="text-gray-500 dark:text-gray-400 max-w-md">
-                            Start a new timer to track your time. You can create multiple timers for different tasks.
-                        </p>
-                    </div>
-                @endif
+                    @endif
+                    
+                    <!-- Paused Timers Section -->
+                    @if($pausedTimers->isNotEmpty())
+                        <div class="border-t border-gray-200 dark:border-gray-700">
+                            <div class="p-5 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Paused Timers</h2>
+                                <span class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ $pausedTimers->count() }} paused</span>
+                            </div>
+                            <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                                @foreach($pausedTimers as $timer)
+                                    <div class="py-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors duration-200">
+                                        <div class="flex items-center justify-between">
+                                            <!-- Left side: Timer info -->
+                                            <div class="flex items-center flex-grow">
+                                                <div class="h-8 w-8 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center mr-3">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-yellow-600 dark:text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                </div>
+                                                
+                                                <div class="flex-grow">
+                                                    <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ $timer->name }} <span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">Paused</span></h3>
+                                                    
+                                                    <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                                                        @if($timer->project)
+                                                            <span>{{ $timer->project->name }}</span>
+                                                        @endif
+                                                    </div>
+                                                    
+                                                    @if($timer->tags->count() > 0)
+                                                        <div class="mt-1 flex flex-wrap gap-1">
+                                                            @foreach($timer->tags as $tag)
+                                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs"
+                                                                    style="background-color: {{ $tag->color }}; color: {{ $this->getContrastColor($tag->color) }}">
+                                                                    {{ $tag->name }}
+                                                                </span>
+                                                            @endforeach
+                                                        </div>
+                                                    @endif
+                                                    
+                                                    @if($timer->description)
+                                                        <div class="mt-1 text-xs text-gray-600 dark:text-gray-300">
+                                                            {{ $timer->description }}
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Middle: Timer display -->
+                                            <div class="flex flex-col items-center justify-center mx-4 min-w-[120px]">
+                                                <div class="text-xl font-mono font-bold text-yellow-600 dark:text-yellow-400">
+                                                    {{ $this->getTimerTotalDurationForToday($timer) }}
+                                                </div>
+                                                @if($timer->latestTimeLog && $timer->latestTimeLog->duration_minutes)
+                                                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                        Last: {{ $this->formatDuration($timer->latestTimeLog->duration_minutes * 60) }}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            
+                                            <!-- Right side: Action buttons -->
+                                            <div class="flex items-center space-x-1 ml-auto">
+                                                <button
+                                                    wire:click="restartTimer({{ $timer->id }})"
+                                                    class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                                    title="Resume timer"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    <span class="sr-only">Resume</span>
+                                                </button>
+                                                
+                                                <button
+                                                    wire:click="editTimer({{ $timer->id }})"
+                                                    class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                                    title="Edit timer"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    </svg>
+                                                    <span class="sr-only">Edit</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                </div>
             </div>
         </div>
         
         <!-- Saved Timers Section -->
-        <div class="mt-12">
+        <div class="mt-8">
             <div class="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Saved Timers</h2>
                 <div class="flex items-center gap-4">
@@ -379,12 +491,7 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                             @if($timer->latestTimeLog && $timer->latestTimeLog->duration_minutes)
-                                                @php
-                                                    $hours = floor($timer->latestTimeLog->duration_minutes / 60);
-                                                    $minutes = $timer->latestTimeLog->duration_minutes % 60;
-                                                    $formattedDuration = ($hours > 0 ? $hours . 'h ' : '') . $minutes . 'm';
-                                                @endphp
-                                                {{ $formattedDuration }}
+                                                {{ $this->formatDuration($timer->latestTimeLog->duration_minutes * 60) }}
                                             @else
                                                 -
                                             @endif
@@ -596,6 +703,83 @@
                     >
                 </div>
                 
+                <!-- Time Duration (only shown when editing a time log) -->
+                @if($editingTimeLogId)
+                <div class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-2">Edit Time Duration</h4>
+                    <div>
+                        <label for="editingDurationHuman" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Duration</label>
+                        <input
+                            type="text"
+                            id="editingDurationHuman"
+                            wire:model="editingDurationHuman"
+                            placeholder="e.g., 1h 30m"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        >
+                    </div>
+                    
+                    <!-- Quick Duration Buttons -->
+                    <div class="mt-3">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Quick add:</p>
+                        <div class="flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                wire:click="$set('editingDurationHuman', '15m')"
+                                class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 transition-all duration-150"
+                            >
+                                15m
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="$set('editingDurationHuman', '30m')"
+                                class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 transition-all duration-150"
+                            >
+                                30m
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="$set('editingDurationHuman', '1h')"
+                                class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 transition-all duration-150"
+                            >
+                                1h
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="$set('editingDurationHuman', '1h 30m')"
+                                class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 transition-all duration-150"
+                            >
+                                1h 30m
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="$set('editingDurationHuman', '2h')"
+                                class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 transition-all duration-150"
+                            >
+                                2h
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="$set('editingDurationHuman', '4h')"
+                                class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 transition-all duration-150"
+                            >
+                                4h
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="$set('editingDurationHuman', '8h')"
+                                class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 transition-all duration-150"
+                            >
+                                8h
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                        Enter the total time spent on this task using format like "1h 30m" or "45m".
+                    </p>
+                </div>
+                @endif
+                
                 <div class="mt-5 flex justify-end space-x-3">
                     <button
                         type="button"
@@ -620,6 +804,12 @@
     <script>
         // Use the improved timer manager
         document.addEventListener('DOMContentLoaded', () => {
+            // Force reload any existing timer manager
+            if (window.globalTimerManager) {
+                window.globalTimerManager.stop();
+                window.globalTimerManager.initialized = false;
+            }
+            
             // Create a page-specific timer manager
             const pageTimerManager = new window.TimerManager('timers-page');
             pageTimerManager.initialize();
@@ -634,15 +824,44 @@
                     'parsed-date': new Date(element.dataset.start).toString()
                 });
             });
+            
+            // Force refresh of stop buttons
+            document.querySelectorAll('.stop-button').forEach(button => {
+                // Add a subtle animation to draw attention to the fixed button
+                button.classList.add('animate-pulse');
+                setTimeout(() => {
+                    button.classList.remove('animate-pulse');
+                }, 1000);
+            });
         });
         
         // Add animations for timer actions
-        document.addEventListener('timerStarted', () => {
+        document.addEventListener('timerStarted', (event) => {
+            // Get event details
+            const detail = event.detail || {};
+            const wasPaused = detail.wasPaused || false;
+            
             // Flash notification animation
             const notification = document.createElement('div');
             notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg transform transition-all duration-500 ease-in-out z-50';
-            notification.textContent = 'Timer started successfully';
+            notification.textContent = wasPaused ? 'Timer resumed successfully' : 'Timer started successfully';
             document.body.appendChild(notification);
+            
+            // If we have total duration info, update the display
+            if (detail.totalDuration && detail.timerId) {
+                // Find the timer element's parent container
+                const timerElement = document.getElementById(`timer-${detail.timerId}`);
+                if (timerElement) {
+                    const parentContainer = timerElement.closest('.flex');
+                    if (parentContainer) {
+                        const totalDurationElement = parentContainer.querySelector('.text-gray-500');
+                        if (totalDurationElement && totalDurationElement.textContent.includes('Today:')) {
+                            // Update the total duration text
+                            totalDurationElement.textContent = `(Today: ${detail.totalDuration})`;
+                        }
+                    }
+                }
+            }
             
             setTimeout(() => {
                 notification.classList.add('opacity-0', 'translate-y-[-10px]');
@@ -656,6 +875,59 @@
             notification.className = 'fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg transform transition-all duration-500 ease-in-out z-50';
             notification.textContent = 'Timer stopped successfully';
             document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('opacity-0', 'translate-y-[-10px]');
+                setTimeout(() => notification.remove(), 500);
+            }, 2000);
+        });
+        
+        document.addEventListener('timerPaused', (event) => {
+            // Get event details
+            const detail = event.detail || {};
+            
+            // Flash notification animation
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-yellow-500 text-white px-4 py-2 rounded-lg shadow-lg transform transition-all duration-500 ease-in-out z-50';
+            notification.textContent = 'Timer paused successfully';
+            document.body.appendChild(notification);
+            
+            // If we have duration info, update the display in the paused timers section
+            if ((detail.totalDuration || detail.lastDuration) && detail.timerId) {
+                // Wait for the DOM to update with the paused timer
+                setTimeout(() => {
+                    // Find the paused timer in the paused timers section
+                    const pausedTimerElements = document.querySelectorAll('.font-mono.text-yellow-600');
+                    pausedTimerElements.forEach(element => {
+                        // Get all spans in the element
+                        const spans = element.querySelectorAll('span');
+                        
+                        // Update Today duration
+                        if (detail.totalDuration && spans.length > 0) {
+                            const todaySpan = spans[0];
+                            if (todaySpan && todaySpan.textContent.includes('Today:')) {
+                                // Update the total duration text
+                                todaySpan.textContent = `Today: ${detail.totalDuration}`;
+                                
+                                // Store the total duration seconds in a data attribute for real-time updates
+                                const [hours, minutes, seconds] = detail.totalDuration.split(':').map(Number);
+                                const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+                                element.dataset.totalSeconds = totalSeconds;
+                                element.dataset.lastUpdated = Date.now();
+                            }
+                        }
+                        
+                        // Update Last duration
+                        if (detail.lastDuration && spans.length > 2) {
+                            const lastSpan = spans[2];
+                            if (lastSpan && lastSpan.textContent.includes('Last:')) {
+                                // Update the last duration text
+                                lastSpan.textContent = `Last: ${detail.lastDuration}`;
+                            }
+                        }
+                    });
+                }, 500); // Give the DOM time to update
+            }
             
             setTimeout(() => {
                 notification.classList.add('opacity-0', 'translate-y-[-10px]');

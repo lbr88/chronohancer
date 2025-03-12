@@ -13,10 +13,11 @@ class Timer extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'description', 'project_id', 'is_running', 'user_id'];
+    protected $fillable = ['name', 'description', 'project_id', 'is_running', 'is_paused', 'user_id'];
 
     protected $casts = [
         'is_running' => 'boolean',
+        'is_paused' => 'boolean',
     ];
 
     protected $with = ['latestTimeLog']; // Eager load by default to prevent N+1 queries

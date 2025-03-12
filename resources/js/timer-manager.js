@@ -15,15 +15,54 @@ export class TimerManager {
     }
 
     /**
-     * Format seconds into HH:MM:SS
+     * Format seconds into the appropriate format
      * @param {number} seconds - Total seconds to format
+     * @param {string} format - Format to use (hms, hm, human)
      * @returns {string} - Formatted time string
      */
-    formatTime(seconds) {
+    formatTime(seconds, format = 'hms') {
         const hours = Math.floor(seconds / 3600);
         const minutes = Math.floor((seconds % 3600) / 60);
         const secs = Math.floor(seconds % 60);
         
+        // Default to hms format
+        if (!format || format === 'hms') {
+            return [
+                hours.toString().padStart(2, '0'),
+                minutes.toString().padStart(2, '0'),
+                secs.toString().padStart(2, '0')
+            ].join(':');
+        }
+        // HH:MM format
+        else if (format === 'hm') {
+            return [
+                hours.toString().padStart(2, '0'),
+                minutes.toString().padStart(2, '0')
+            ].join(':');
+        }
+        // Human readable format (e.g., 3h 40m 5s)
+        else if (format === 'human') {
+            if (hours > 0) {
+                if (minutes > 0) {
+                    if (secs > 0) {
+                        return `${hours}h ${minutes}m ${secs}s`;
+                    }
+                    return `${hours}h ${minutes}m`;
+                }
+                return `${hours}h`;
+            }
+            
+            if (minutes > 0) {
+                if (secs > 0) {
+                    return `${minutes}m ${secs}s`;
+                }
+                return `${minutes}m`;
+            }
+            
+            return `${secs}s`;
+        }
+        
+        // Fallback to HH:MM:SS
         return [
             hours.toString().padStart(2, '0'),
             minutes.toString().padStart(2, '0'),
@@ -83,9 +122,11 @@ export class TimerManager {
      */
     updateTimer(element) {
         try {
+            // Get the start time from the data attribute
             const startTimeStr = element.dataset.start;
             this.log('Updating timer with start time:', startTimeStr);
             
+            // Parse the start time
             const startTime = this.parseDate(startTimeStr);
             if (!startTime) {
                 element.textContent = '00:00:00';
@@ -108,17 +149,92 @@ export class TimerManager {
                 lastUpdated: now
             });
             
-            // Update the display
-            const formattedTime = this.formatTime(diffSeconds);
+            // Detect the current time format from the page
+            let timeFormat = 'hms'; // Default format
+            const formatButtons = document.querySelectorAll('button[wire\\:click^="setTimeFormat"]');
+            formatButtons.forEach(button => {
+                if (button.classList.contains('bg-indigo-600')) {
+                    // Extract format from the wire:click attribute
+                    const clickAttr = button.getAttribute('wire:click');
+                    const formatMatch = clickAttr.match(/setTimeFormat\('([^']+)'\)/);
+                    if (formatMatch && formatMatch[1]) {
+                        timeFormat = formatMatch[1];
+                    }
+                }
+            });
+            
+            // Update the display with the detected format
+            const formattedTime = this.formatTime(diffSeconds, timeFormat);
             element.textContent = formattedTime;
             
-            this.log(`Timer updated: ${element.id || 'unnamed'} - Start: ${startTimeStr}, Diff: ${diffSeconds}s, Display: ${formattedTime}`);
+            this.log(`Timer updated: ${element.id || 'unnamed'} - Start: ${startTimeStr}, Diff: ${diffSeconds}s, Format: ${timeFormat}, Display: ${formattedTime}`);
             
             // Add a pulsing effect when seconds change
             element.classList.add('timer-pulse');
             setTimeout(() => {
                 element.classList.remove('timer-pulse');
             }, 500);
+            
+            // Update the total duration display if it exists
+            const timerContainer = element.closest('.flex-col');
+            if (timerContainer) {
+                const totalDurationElement = timerContainer.querySelector('.text-gray-500');
+                if (totalDurationElement && totalDurationElement.textContent.includes('Today:')) {
+                    // If we don't have stored total seconds, extract it from the text
+                    if (!totalDurationElement.dataset.totalSeconds) {
+                        const totalText = totalDurationElement.textContent;
+                        const timeMatch = totalText.match(/Today: (\d{2}):(\d{2}):(\d{2})/);
+                        
+                        if (timeMatch) {
+                            const [_, hours, minutes, seconds] = timeMatch;
+                            const totalSeconds = parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
+                            totalDurationElement.dataset.totalSeconds = totalSeconds;
+                            totalDurationElement.dataset.lastUpdated = Date.now();
+                        }
+                    }
+                    
+                    // If we have stored total seconds, update it
+                    if (totalDurationElement.dataset.totalSeconds) {
+                        const totalSeconds = parseInt(totalDurationElement.dataset.totalSeconds);
+                        const lastUpdated = parseInt(totalDurationElement.dataset.lastUpdated || 0);
+                        const now = Date.now();
+                        
+                        // Only update if timer is running (element has current time)
+                        if (diffSeconds > 0) {
+                            // Calculate seconds elapsed since last update
+                            const elapsedSince = Math.floor((now - lastUpdated) / 1000);
+                            
+                            // Update the total seconds and last updated time
+                            const newTotalSeconds = totalSeconds + elapsedSince;
+                            totalDurationElement.dataset.totalSeconds = newTotalSeconds;
+                            totalDurationElement.dataset.lastUpdated = now;
+                            
+                            // Use the same time format as the main timer
+                            let timeFormat = 'hms'; // Default format
+                            const formatButtons = document.querySelectorAll('button[wire\\:click^="setTimeFormat"]');
+                            formatButtons.forEach(button => {
+                                if (button.classList.contains('bg-indigo-600')) {
+                                    // Extract format from the wire:click attribute
+                                    const clickAttr = button.getAttribute('wire:click');
+                                    const formatMatch = clickAttr.match(/setTimeFormat\('([^']+)'\)/);
+                                    if (formatMatch && formatMatch[1]) {
+                                        timeFormat = formatMatch[1];
+                                    }
+                                }
+                            });
+                            
+                            // Update the display with the detected format
+                            totalDurationElement.textContent = `Today: ${this.formatTime(newTotalSeconds, timeFormat)}`;
+                            
+                            // Add a subtle pulse to the total duration as well
+                            totalDurationElement.classList.add('timer-pulse-subtle');
+                            setTimeout(() => {
+                                totalDurationElement.classList.remove('timer-pulse-subtle');
+                            }, 500);
+                        }
+                    }
+                }
+            }
             
         } catch (e) {
             this.log('Error updating timer:', e);
@@ -178,9 +294,19 @@ export class TimerManager {
                     animation: timer-pulse 0.5s ease-in-out;
                 }
                 
+                .timer-pulse-subtle {
+                    animation: timer-pulse-subtle 0.5s ease-in-out;
+                }
+                
                 @keyframes timer-pulse {
                     0% { opacity: 1; }
                     50% { opacity: 0.6; }
+                    100% { opacity: 1; }
+                }
+                
+                @keyframes timer-pulse-subtle {
+                    0% { opacity: 1; }
+                    50% { opacity: 0.8; }
                     100% { opacity: 1; }
                 }
                 
@@ -188,6 +314,9 @@ export class TimerManager {
                     transition: color 0.3s ease;
                     font-family: monospace;
                     font-weight: 600;
+                    font-size: 1.25rem;
+                    letter-spacing: 0.05em;
+                    text-shadow: 0 0 1px rgba(79, 70, 229, 0.2);
                 }
                 
                 /* Timer card hover effects */
@@ -200,6 +329,17 @@ export class TimerManager {
                     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
                 }
                 
+                /* Timer display column effects */
+                .flex-col.items-center.justify-center {
+                    transition: all 0.3s ease;
+                    border-radius: 0.5rem;
+                    padding: 0.5rem;
+                }
+                
+                .flex-col.items-center.justify-center:hover {
+                    background-color: rgba(79, 70, 229, 0.1);
+                }
+                
                 /* Button animations */
                 .timer-btn {
                     transition: all 0.2s ease;
@@ -207,6 +347,20 @@ export class TimerManager {
                 
                 .timer-btn:active {
                     transform: scale(0.95);
+                }
+                
+                /* Stop button styles */
+                .stop-button {
+                    padding: 0 !important;
+                }
+                
+                .stop-button svg {
+                    transition: all 0.2s ease;
+                    stroke-width: 2.5;
+                }
+                
+                .stop-button:hover svg {
+                    transform: scale(1.1);
                 }
             `;
             document.head.appendChild(style);
@@ -238,6 +392,31 @@ export class TimerManager {
         // Add animation to buttons
         document.querySelectorAll('button[type="submit"], button[wire\\:click*="stopTimer"]').forEach(button => {
             button.classList.add('timer-btn');
+        });
+        
+        // Add animation to buttons except stop buttons
+        document.querySelectorAll('button[type="submit"]').forEach(button => {
+            button.classList.add('timer-btn');
+        });
+        
+        // Special handling for stop buttons
+        document.querySelectorAll('.stop-button').forEach(button => {
+            // Remove any padding
+            button.style.padding = '0';
+            
+            // Ensure the SVG is not modified by other code
+            const svg = button.querySelector('svg');
+            if (svg) {
+                svg.style.pointerEvents = 'none';
+                
+                // Prevent any other code from modifying this SVG
+                svg.setAttribute('data-no-modify', 'true');
+                
+                // Make sure the SVG is visible
+                svg.style.display = 'block';
+                svg.style.width = '24px';
+                svg.style.height = '24px';
+            }
         });
     }
 
@@ -318,6 +497,89 @@ export class TimerManager {
             this.log('Alpine initialized event detected');
             setTimeout(() => this.start(), 100);
         });
+        
+        // Handle timer started event (including restarts)
+        document.addEventListener('timerStarted', (event) => {
+            this.log('Timer started/restarted event detected', event.detail);
+            
+            // Force refresh of all timer elements to get the latest start times
+            setTimeout(() => {
+                // Clear any cached timer data
+                this.timers.clear();
+                
+                // If we have specific timer ID and start time in the event detail
+                if (event.detail && event.detail.timerId) {
+                    const timerId = event.detail.timerId;
+                    const startTime = event.detail.startTime;
+                    
+                    // Find the specific timer element that was restarted
+                    const timerElement = document.getElementById(`timer-${timerId}`);
+                    
+                    if (timerElement && startTime) {
+                        this.log(`Updating restarted timer ${timerId} with new start time: ${startTime}`);
+                        
+                        // Update the data-start attribute with the new start time
+                        timerElement.dataset.start = startTime;
+                        
+                        // If we have total duration info in the event, store it for real-time updates
+                        if (event.detail.totalDuration) {
+                            // Find the total duration element
+                            const parentContainer = timerElement.closest('.flex');
+                            if (parentContainer) {
+                                const totalDurationElement = parentContainer.querySelector('.text-gray-500');
+                                if (totalDurationElement && totalDurationElement.textContent.includes('Today:')) {
+                                    // Parse the total duration into seconds
+                                    const [hours, minutes, seconds] = event.detail.totalDuration.split(':').map(Number);
+                                    const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+                                    
+                                    // Store the total seconds and last updated time
+                                    totalDurationElement.dataset.totalSeconds = totalSeconds;
+                                    totalDurationElement.dataset.lastUpdated = Date.now();
+                                    
+                                    // Detect the current time format
+                                    let timeFormat = 'hms'; // Default format
+                                    const formatButtons = document.querySelectorAll('button[wire\\:click^="setTimeFormat"]');
+                                    formatButtons.forEach(button => {
+                                        if (button.classList.contains('bg-indigo-600')) {
+                                            // Extract format from the wire:click attribute
+                                            const clickAttr = button.getAttribute('wire:click');
+                                            const formatMatch = clickAttr.match(/setTimeFormat\('([^']+)'\)/);
+                                            if (formatMatch && formatMatch[1]) {
+                                                timeFormat = formatMatch[1];
+                                            }
+                                        }
+                                    });
+                                    
+                                    // Format the total duration according to the current format
+                                    const formattedDuration = this.formatTime(totalSeconds, timeFormat);
+                                    totalDurationElement.textContent = `(Today: ${formattedDuration})`;
+                                }
+                            }
+                        }
+                        
+                        // Update this specific timer
+                        this.updateTimer(timerElement);
+                    }
+                }
+                
+                // Re-query all timer elements to get fresh data
+                const timerElements = document.querySelectorAll('.timer-display');
+                this.log(`Refreshing ${timerElements.length} timer elements after timer start/restart`);
+                
+                timerElements.forEach(element => {
+                    // Log the start time for debugging
+                    this.log(`Timer ${element.id || 'unnamed'} start time: ${element.dataset.start}`);
+                    this.updateTimer(element);
+                });
+            }, 100);
+        });
+        
+        // Handle timer stopped event
+        document.addEventListener('timerStopped', (event) => {
+            this.log('Timer stopped event detected', event.detail);
+            // Update the display of all timers
+            setTimeout(() => this.updateAllTimers(), 100);
+        });
     }
     
     /**
@@ -326,10 +588,11 @@ export class TimerManager {
     setupMutationObserver() {
         const observer = new MutationObserver((mutations) => {
             let hasTimerElements = false;
+            let hasAttributeChanges = false;
             
             for (const mutation of mutations) {
+                // Check for added timer elements
                 if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                    // Check if any timer elements were added
                     hasTimerElements = Array.from(mutation.addedNodes).some(node => {
                         if (node.nodeType === Node.ELEMENT_NODE) {
                             return node.classList?.contains('timer-display') ||
@@ -340,15 +603,41 @@ export class TimerManager {
                     
                     if (hasTimerElements) break;
                 }
+                
+                // Check for attribute changes on timer elements (especially data-start)
+                if (mutation.type === 'attributes' &&
+                    mutation.attributeName === 'data-start' &&
+                    mutation.target.classList?.contains('timer-display')) {
+                    
+                    hasAttributeChanges = true;
+                    const element = mutation.target;
+                    this.log(`Timer element attribute changed: ${element.id || 'unnamed'}`, {
+                        attribute: mutation.attributeName,
+                        newValue: element.dataset.start
+                    });
+                    
+                    // Update this specific timer immediately
+                    this.updateTimer(element);
+                }
             }
             
             if (hasTimerElements) {
-                this.log('New timer elements detected, updating timers');
+                this.log('New timer elements detected, updating all timers');
+                // Clear any cached timer data
+                this.timers.clear();
                 this.start();
+            } else if (hasAttributeChanges) {
+                this.log('Timer attributes changed, updating affected timers');
+                // Individual timers already updated above
             }
         });
         
-        observer.observe(document.body, { childList: true, subtree: true });
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['data-start']
+        });
     }
 }
 

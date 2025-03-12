@@ -133,17 +133,17 @@
             @if(array_sum($this->dailyActivity) > 0)
                 @php
                     $maxHeight = max(array_values($this->dailyActivity));
-                    $workdayMinutes = 444; // 7.4 hours in minutes
+                    $workdayMinutes = 444; // 7h 24m in minutes
                     $workdayLinePosition = $maxHeight > 0 ? min(100, ($workdayMinutes / $maxHeight) * 100) : 0;
                 @endphp
                 <div class="w-full h-60">
                     <div class="flex justify-between h-full relative">
-                        <!-- 7.4 hour mark line -->
+                        <!-- 7h 24m hour mark line -->
                         @if($maxHeight >= $workdayMinutes)
                             <div class="absolute w-full border-t border-dashed border-red-400 z-10"
                                  style="bottom: {{ $workdayLinePosition }}%;">
                                 <span class="absolute -top-6 right-0 text-xs text-red-500 font-medium bg-white px-1 rounded shadow-sm">
-                                    7.4h workday
+                                    7h 24m workday
                                 </span>
                             </div>
                         @endif

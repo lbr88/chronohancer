@@ -13,6 +13,7 @@ use Illuminate\Support\Collection;
 class TimeLogs extends Component
 {
     public $project_id;
+    public $timer_id;
     public $description;
     public $start_time;
     public $end_time;
@@ -43,6 +44,9 @@ class TimeLogs extends Component
     public $quickTimeDescription;
     public $quickTimeDuration = 0;
     public $quickTimeProjectTimers = [];
+    public $selectedTimeLogs = [];
+    public $selectAll = false;
+    public $confirmingBulkDelete = false;
     
     protected $queryString = [
         'sortField' => ['except' => 'start_time'],
@@ -142,7 +146,7 @@ class TimeLogs extends Component
     public function createForDate($date)
     {
         $this->selected_date = $date;
-        $this->reset(['project_id', 'description', 'duration_minutes', 'selectedTags']);
+        $this->reset(['project_id', 'timer_id', 'description', 'duration_minutes', 'selectedTags']);
         $this->dispatch('scroll-to-form');
     }
     
@@ -159,6 +163,7 @@ class TimeLogs extends Component
         
         $timeLog = TimeLog::create([
             'project_id' => $this->project_id,
+            'timer_id' => $this->timer_id,
             'user_id' => auth()->id(),
             'description' => $this->description,
             'start_time' => $start_time,
@@ -170,7 +175,7 @@ class TimeLogs extends Component
             $timeLog->tags()->attach($this->selectedTags);
         }
         
-        $this->reset(['project_id', 'description', 'duration_minutes', 'selectedTags']);
+        $this->reset(['project_id', 'timer_id', 'description', 'duration_minutes', 'selectedTags']);
         $this->selected_date = now()->format('Y-m-d'); // Reset to today
         session()->flash('message', 'Time log created successfully.');
     }
@@ -180,6 +185,7 @@ class TimeLogs extends Component
         $timeLog = TimeLog::findOrFail($timeLogId);
         $this->editingTimeLog = $timeLogId;
         $this->project_id = $timeLog->project_id;
+        $this->timer_id = $timeLog->timer_id;
         $this->description = $timeLog->description;
         $this->selected_date = $timeLog->start_time->format('Y-m-d');
         
@@ -199,17 +205,29 @@ class TimeLogs extends Component
         $this->selectedTags = $timeLog->tags->pluck('id')->toArray();
     }
     
-    public function findAndEditTimeLog($date, $projectId, $timerId = null)
+    public function findAndEditTimeLog($date, $projectId, $timerId = null, $description = null)
     {
         // Find time logs for the specific date, project and timer
         $query = TimeLog::where('user_id', auth()->id())
-            ->where('project_id', $projectId)
             ->whereDate('start_time', $date);
-            
-        if ($timerId) {
-            $query->where('timer_id', $timerId);
+        
+        // Handle project_id (could be null for "No Project")
+        if ($projectId === 'null' || $projectId === null) {
+            $query->whereNull('project_id');
         } else {
+            $query->where('project_id', $projectId);
+        }
+            
+        // Handle timer_id
+        if ($timerId === 'null' || $timerId === null) {
             $query->whereNull('timer_id');
+        } else {
+            $query->where('timer_id', $timerId);
+        }
+        
+        // If a description is provided, filter by it
+        if ($description) {
+            $query->where('description', $description);
         }
         
         // Get all logs for this combination
@@ -222,8 +240,8 @@ class TimeLogs extends Component
                     'id' => $log->id,
                     'description' => $log->description ?: 'No description',
                     'duration' => $this->formatDuration($log->duration_minutes),
-                    'start_time' => $log->start_time->format('H:i'),
-                    'end_time' => $log->end_time->format('H:i')
+                    'start_time' => $log->start_time ? $log->start_time->format('H:i') : '',
+                    'end_time' => $log->end_time ? $log->end_time->format('H:i') : ''
                 ];
             })->toArray();
             
@@ -235,6 +253,16 @@ class TimeLogs extends Component
             // If no log exists, set up for creating a new one
             $this->createForDate($date);
             $this->project_id = $projectId;
+            
+            // If a description was provided, set it for the new time log
+            if ($description) {
+                $this->description = $description;
+            }
+            
+            // If a timer ID was provided, store it for the new time log
+            if ($timerId) {
+                $this->timer_id = $timerId;
+            }
         }
     }
     
@@ -260,7 +288,7 @@ class TimeLogs extends Component
     public function cancelEdit()
     {
         $this->reset([
-            'editingTimeLog', 'project_id', 'description', 
+            'editingTimeLog', 'project_id', 'timer_id', 'description',
             'duration_minutes', 'selectedTags'
         ]);
     }
@@ -280,6 +308,7 @@ class TimeLogs extends Component
         
         $timeLog->update([
             'project_id' => $this->project_id,
+            'timer_id' => $this->timer_id,
             'description' => $this->description,
             'start_time' => $start_time,
             'end_time' => $end_time,
@@ -297,6 +326,7 @@ class TimeLogs extends Component
         $timeLog = TimeLog::findOrFail($timeLogId);
         $timeLog->delete();
         $this->confirmingDelete = null;
+        $this->editingTimeLog = null; // Reset editing state to close the modal
         session()->flash('message', 'Time log deleted successfully.');
     }
     
@@ -331,7 +361,8 @@ class TimeLogs extends Component
         $projects = $timeLogs->groupBy('project_id');
         
         foreach ($projects as $projectId => $projectLogs) {
-            $projectName = $projectLogs->first()->project->name;
+            // Handle null project_id (No Project)
+            $projectName = $projectId === null ? 'No Project' : $projectLogs->first()->project->name;
             $projectTotal = 0;
             $timers = [];
             
@@ -500,6 +531,15 @@ class TimeLogs extends Component
         // No need to do anything here as the template will show the formatted duration
     }
     
+    /**
+     * This method is automatically called by Livewire when the searchQuery property is updated
+     */
+    public function updatedSearchQuery()
+    {
+        // Force a re-render when the search query changes
+        $this->render();
+    }
+    
     public function setTimeFormat($format)
     {
         $this->timeFormat = $format;
@@ -515,25 +555,221 @@ class TimeLogs extends Component
         $this->confirmingDelete = null;
     }
     
-    public function openQuickTimeModal($date = null, $projectId = null, $timerId = null)
+    public function toggleSelectAll()
+    {
+        $this->selectAll = !$this->selectAll;
+        
+        if ($this->selectAll) {
+            // Get all visible time log IDs based on current filters
+            $query = TimeLog::where('user_id', auth()->id());
+            
+            // Apply the same filters as in the render method
+            if ($this->filterProject) {
+                $query->where('project_id', $this->filterProject);
+            }
+            
+            if ($this->filterTag) {
+                $query->whereHas('tags', function($q) {
+                    $q->where('tags.id', $this->filterTag);
+                });
+            }
+            
+            if ($this->filterDateFrom) {
+                $query->where('start_time', '>=', $this->filterDateFrom . ' 00:00:00');
+            }
+            
+            if ($this->filterDateTo) {
+                $query->where('start_time', '<=', $this->filterDateTo . ' 23:59:59');
+            }
+            
+            // Handle search query
+            if ($this->searchQuery) {
+                $searchTerm = trim($this->searchQuery);
+                $searchTermLower = strtolower($searchTerm);
+                
+                // Check if search term contains any part of "no project"
+                $matchesNoProject = str_contains('no project', $searchTermLower) ||
+                                   str_contains($searchTermLower, 'no') ||
+                                   str_contains($searchTermLower, 'project');
+                
+                // Get IDs of time logs with no project or deleted projects
+                $noProjectLogIds = collect();
+                
+                if ($matchesNoProject) {
+                    // Get all time logs with null project_id
+                    $nullProjectLogs = TimeLog::where('user_id', auth()->id())
+                        ->whereNull('project_id')
+                        ->pluck('id');
+                    
+                    // Get all time logs with soft-deleted projects
+                    $deletedProjectLogs = TimeLog::where('user_id', auth()->id())
+                        ->whereNotNull('project_id')
+                        ->whereExists(function($subquery) {
+                            $subquery->from('projects')
+                                    ->whereColumn('projects.id', 'time_logs.project_id')
+                                    ->whereNotNull('projects.deleted_at');
+                        })
+                        ->pluck('id');
+                    
+                    // Combine both sets of IDs
+                    $noProjectLogIds = $nullProjectLogs->merge($deletedProjectLogs);
+                }
+                
+                // Apply all search conditions
+                $query->where(function($q) use ($searchTerm, $noProjectLogIds, $matchesNoProject) {
+                    // Regular search in description and project name
+                    $q->where('description', 'like', '%' . $searchTerm . '%')
+                      ->orWhereHas('project', function($q) use ($searchTerm) {
+                          $q->where('name', 'like', '%' . $searchTerm . '%');
+                      });
+                    
+                    // Include "No Project" results if the search term matches
+                    if ($matchesNoProject && $noProjectLogIds->count() > 0) {
+                        $q->orWhereIn('id', $noProjectLogIds);
+                    }
+                });
+            }
+            
+            $this->selectedTimeLogs = $query->pluck('id')->toArray();
+        } else {
+            $this->selectedTimeLogs = [];
+        }
+        
+        // Force a re-render to update the UI
+        $this->dispatch('refresh');
+    }
+    
+    public function updatedSelectedTimeLogs()
+    {
+        // Get the count of all visible time logs based on current filters
+        $query = TimeLog::where('user_id', auth()->id());
+        
+        // Apply the same filters as in the render method
+        if ($this->filterProject) {
+            $query->where('project_id', $this->filterProject);
+        }
+        
+        if ($this->filterTag) {
+            $query->whereHas('tags', function($q) {
+                $q->where('tags.id', $this->filterTag);
+            });
+        }
+        
+        if ($this->filterDateFrom) {
+            $query->where('start_time', '>=', $this->filterDateFrom . ' 00:00:00');
+        }
+        
+        if ($this->filterDateTo) {
+            $query->where('start_time', '<=', $this->filterDateTo . ' 23:59:59');
+        }
+        
+        // Handle search query
+        if ($this->searchQuery) {
+            // Apply search filters (simplified for brevity)
+            $query->where(function($q) {
+                $q->where('description', 'like', '%' . $this->searchQuery . '%')
+                  ->orWhereHas('project', function($q) {
+                      $q->where('name', 'like', '%' . $this->searchQuery . '%');
+                  });
+            });
+        }
+        
+        $totalCount = $query->count();
+        $selectedCount = count($this->selectedTimeLogs);
+        
+        // Update selectAll based on whether all visible logs are selected
+        $this->selectAll = ($selectedCount > 0 && $selectedCount >= $totalCount);
+    }
+    
+    public function confirmBulkDelete()
+    {
+        if (count($this->selectedTimeLogs) > 0) {
+            $this->confirmingBulkDelete = true;
+        }
+    }
+    
+    public function cancelBulkDelete()
+    {
+        $this->confirmingBulkDelete = false;
+    }
+    
+    public function bulkDeleteTimeLogs()
+    {
+        if (count($this->selectedTimeLogs) > 0) {
+            TimeLog::whereIn('id', $this->selectedTimeLogs)
+                ->where('user_id', auth()->id()) // Security check
+                ->delete();
+            
+            $count = count($this->selectedTimeLogs);
+            $this->selectedTimeLogs = [];
+            $this->selectAll = false;
+            $this->confirmingBulkDelete = false;
+            
+            session()->flash('message', $count . ' time ' . ($count === 1 ? 'log' : 'logs') . ' deleted successfully.');
+        }
+    }
+    public function openQuickTimeModal($date = null, $projectId = null, $timerId = null, $description = null)
     {
         $this->quickTimeDate = $date ?? now()->format('Y-m-d');
-        $this->quickTimeProjectId = $projectId;
-        $this->quickTimeTimerId = $timerId;
-        $this->quickTimeDescription = null;
+        
+        // Convert string 'null' to actual null
+        $this->quickTimeProjectId = $projectId === 'null' ? null : $projectId;
+        $this->quickTimeTimerId = $timerId === 'null' ? null : $timerId;
+        
+        $this->quickTimeDescription = $description;
         $this->quickTimeDuration = 0;
         
         // Load timers
-        $this->loadProjectTimers($projectId);
+        $this->loadProjectTimers($this->quickTimeProjectId);
         
         $this->showQuickTimeModal = true;
+    }
+    
+    /**
+     * Calculate the remaining time to reach 7h 24m for a specific date
+     *
+     * @param string $date Date in Y-m-d format
+     * @return int Remaining minutes to reach 7h 24m (444 minutes)
+     */
+    public function getRemainingTimeForDate($date)
+    {
+        $targetMinutes = 444; // 7h 24m = 444 minutes
+        
+        // Get all time logs for the specified date
+        $totalMinutes = TimeLog::where('user_id', auth()->id())
+            ->whereDate('start_time', $date)
+            ->sum('duration_minutes');
+        
+        $remainingMinutes = max(0, $targetMinutes - $totalMinutes);
+        
+        return $remainingMinutes;
+    }
+    
+    /**
+     * Format the remaining time in a human-readable format
+     *
+     * @param int $minutes
+     * @return string
+     */
+    public function formatRemainingTime($minutes)
+    {
+        $hours = floor($minutes / 60);
+        $mins = $minutes % 60;
+        
+        if ($hours > 0 && $mins > 0) {
+            return "{$hours}h {$mins}m";
+        } elseif ($hours > 0) {
+            return "{$hours}h";
+        } else {
+            return "{$mins}m";
+        }
     }
     
     public function loadProjectTimers($projectId = null)
     {
         $query = Timer::where('user_id', auth()->id());
         
-        if ($projectId) {
+        if ($projectId !== null) {
             // If project is selected, show timers for that project and timers without a project
             $query->where(function($q) use ($projectId) {
                 $q->where('project_id', $projectId)
@@ -576,8 +812,8 @@ class TimeLogs extends Component
         $end_time = $start_time->copy()->addMinutes($this->quickTimeDuration);
         
         $timeLog = TimeLog::create([
-            'project_id' => $this->quickTimeProjectId,
-            'timer_id' => $this->quickTimeTimerId,
+            'project_id' => $this->quickTimeProjectId, // This will correctly handle null values
+            'timer_id' => $this->quickTimeTimerId, // This will correctly handle null values
             'user_id' => auth()->id(),
             'description' => $this->quickTimeDescription,
             'start_time' => $start_time,
@@ -612,12 +848,51 @@ class TimeLogs extends Component
             $query->where('start_time', '<=', $this->filterDateTo . ' 23:59:59');
         }
         
+        // Handle search query
         if ($this->searchQuery) {
-            $query->where(function($q) {
-                $q->where('description', 'like', '%' . $this->searchQuery . '%')
-                  ->orWhereHas('project', function($q) {
-                      $q->where('name', 'like', '%' . $this->searchQuery . '%');
+            $searchTerm = trim($this->searchQuery);
+            $searchTermLower = strtolower($searchTerm);
+            
+            // Check if search term contains any part of "no project"
+            $matchesNoProject = str_contains('no project', $searchTermLower) ||
+                               str_contains($searchTermLower, 'no') ||
+                               str_contains($searchTermLower, 'project');
+            
+            // Get IDs of time logs with no project or deleted projects
+            $noProjectLogIds = collect();
+            
+            if ($matchesNoProject) {
+                // Get all time logs with null project_id
+                $nullProjectLogs = TimeLog::where('user_id', auth()->id())
+                    ->whereNull('project_id')
+                    ->pluck('id');
+                
+                // Get all time logs with soft-deleted projects
+                $deletedProjectLogs = TimeLog::where('user_id', auth()->id())
+                    ->whereNotNull('project_id')
+                    ->whereExists(function($subquery) {
+                        $subquery->from('projects')
+                                ->whereColumn('projects.id', 'time_logs.project_id')
+                                ->whereNotNull('projects.deleted_at');
+                    })
+                    ->pluck('id');
+                
+                // Combine both sets of IDs
+                $noProjectLogIds = $nullProjectLogs->merge($deletedProjectLogs);
+            }
+            
+            // Apply all search conditions
+            $query->where(function($q) use ($searchTerm, $noProjectLogIds, $matchesNoProject) {
+                // Regular search in description and project name
+                $q->where('description', 'like', '%' . $searchTerm . '%')
+                  ->orWhereHas('project', function($q) use ($searchTerm) {
+                      $q->where('name', 'like', '%' . $searchTerm . '%');
                   });
+                
+                // Include "No Project" results if the search term matches
+                if ($matchesNoProject && $noProjectLogIds->count() > 0) {
+                    $q->orWhereIn('id', $noProjectLogIds);
+                }
             });
         }
         
@@ -632,8 +907,17 @@ class TimeLogs extends Component
             $query->orderBy($this->sortField, $this->sortDirection);
         }
         
+        // Get the filtered time logs
+        $timeLogs = $query->with(['project' => function($q) {
+            $q->withTrashed(); // Include soft-deleted projects
+        }, 'tags', 'timer'])->get();
+        
+        // Calculate total duration of filtered logs
+        $totalFilteredDuration = $timeLogs->sum('duration_minutes');
+        
         return view('livewire.time-logs', [
-            'timeLogs' => $query->with(['project', 'tags', 'timer'])->get(),
+            'timeLogs' => $timeLogs,
+            'totalFilteredDuration' => $totalFilteredDuration,
             'projects' => Project::where('user_id', auth()->id())->get(),
             'tags' => Tag::where('user_id', auth()->id())->get(),
             'allTags' => Tag::where('user_id', auth()->id())->get(),

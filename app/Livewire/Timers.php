@@ -35,6 +35,11 @@ class Timers extends Component
     public $editingTimerDescription = null;
     public $editingTimerProjectName = null;
     public $editingTimerTagInput = null;
+    public $editingTimeLogId = null;
+    public $editingDurationHours = 0;
+    public $editingDurationMinutes = 0;
+    public $editingDurationHuman = '';
+    public $timeFormat = 'human'; // hms, hm, human
     
     protected $rules = [
         'project_name' => 'nullable|string|max:255',
@@ -48,6 +53,7 @@ class Timers extends Component
     protected $listeners = [
         'timerStarted' => 'handleTimerStarted',
         'timerStopped' => 'handleTimerStopped',
+        'timerPaused' => 'handleTimerPaused',
     ];
 
     public function mount()
@@ -188,7 +194,8 @@ class Timers extends Component
                 return Tag::findOrCreateForUser($name, auth()->id());
             });
             
-            $timer->tags()->attach($tags->pluck('id'));
+            // Use unique() to prevent duplicate tag IDs
+            $timer->tags()->attach($tags->pluck('id')->unique());
             
             // If we have a project, also attach the tags to it
             if ($project_id) {
@@ -197,7 +204,7 @@ class Timers extends Component
         }
         
         // Create time log
-        TimeLog::create([
+        $timeLog = TimeLog::create([
             'timer_id' => $timer->id,
             'user_id' => auth()->id(),
             'project_id' => $project_id,
@@ -205,8 +212,11 @@ class Timers extends Component
             'description' => $this->description ?: null,
         ]);
         
+        // Refresh the timer to include the latest time log
+        $timer->refresh();
+        
         $this->showNotification('Timer started successfully', 'success');
-        $this->dispatch('timerStarted');
+        $this->dispatch('timerStarted', ['timerId' => $timer->id, 'startTime' => $timeLog->start_time->toIso8601String()]);
         
         // Reset form, making sure to initialize existingTimers as a collection
         $this->reset(['name', 'description', 'project_name', 'tag_input', 'search']);
@@ -273,6 +283,57 @@ class Timers extends Component
     /**
      * Stop a timer and open the edit modal
      */
+    /**
+     * Parse a human-readable duration string into minutes
+     *
+     * @param string $durationString Human-readable duration (e.g., "1h 30m", "45m", "2h")
+     * @return int Total minutes
+     */
+    public function parseHumanDuration($durationString)
+    {
+        $totalMinutes = 0;
+        
+        // Match hours
+        if (preg_match('/(\d+)h/', $durationString, $matches)) {
+            $totalMinutes += (int)$matches[1] * 60;
+        }
+        
+        // Match minutes
+        if (preg_match('/(\d+)m/', $durationString, $matches)) {
+            $totalMinutes += (int)$matches[1];
+        }
+        
+        return $totalMinutes;
+    }
+    
+    /**
+     * Format minutes into a human-readable duration string
+     *
+     * @param int $minutes Total minutes
+     * @return string Human-readable duration (e.g., "1h 30m")
+     */
+    public function formatHumanDuration($minutes)
+    {
+        $hours = floor($minutes / 60);
+        $mins = $minutes % 60;
+        
+        $result = '';
+        if ($hours > 0) {
+            $result .= $hours . 'h';
+            if ($mins > 0) {
+                $result .= ' ' . $mins . 'm';
+            }
+        } else {
+            if ($mins > 0) {
+                $result .= $mins . 'm';
+            } else {
+                $result = '0m';
+            }
+        }
+        
+        return $result;
+    }
+
     public function stopAndEditTimer($timerId)
     {
         $timer = Timer::with(['timeLogs', 'tags', 'project'])->findOrFail($timerId);
@@ -280,17 +341,35 @@ class Timers extends Component
         // Get the latest time log for this timer
         $latestLog = $timer->timeLogs()->latest()->first();
         
-        if ($latestLog && !$latestLog->end_time) {
-            // Stop the timer first
-            $now = now();
-            $latestLog->end_time = $now;
-            $latestLog->duration_minutes = $latestLog->start_time->diffInMinutes($now);
-            $latestLog->save();
-        }
+        // Store the time log ID and calculated duration for editing
+        $this->editingTimeLogId = null;
+        $this->editingDurationHours = 0;
+        $this->editingDurationMinutes = 0;
+        $this->editingDurationHuman = '';
         
-        // Mark timer as not running
-        $timer->is_running = false;
-        $timer->save();
+        if ($latestLog && !$latestLog->end_time) {
+            // Calculate the current duration but don't save it yet
+            $now = now();
+            $durationMinutes = $latestLog->start_time->diffInMinutes($now);
+            
+            if ($durationMinutes > 0) {
+                // Store the time log ID and calculated duration for editing
+                $this->editingTimeLogId = $latestLog->id;
+                $this->editingDurationHours = floor($durationMinutes / 60);
+                $this->editingDurationMinutes = $durationMinutes % 60;
+                $this->editingDurationHuman = $this->formatHumanDuration($durationMinutes);
+            } else {
+                // If duration is 0 minutes, we'll still allow editing but start with 0
+                $this->editingTimeLogId = $latestLog->id;
+                $this->editingDurationHours = 0;
+                $this->editingDurationMinutes = 0;
+                $this->editingDurationHuman = '0m';
+            }
+            
+            // Mark timer as not running but don't save the time log yet
+            $timer->is_running = false;
+            $timer->save();
+        }
         
         // Set up editing properties
         $this->editingTimerId = $timer->id;
@@ -311,6 +390,7 @@ class Timers extends Component
     public function saveEditedTimer()
     {
         $timer = Timer::findOrFail($this->editingTimerId);
+        $wasRunning = $timer->is_running;
         
         // Find or create project if name is provided
         $project_id = null;
@@ -349,6 +429,50 @@ class Timers extends Component
             $timer->tags()->detach();
         }
         
+        // Handle time log update if we have a time log ID
+        if ($this->editingTimeLogId) {
+            $timeLog = TimeLog::find($this->editingTimeLogId);
+            
+            if ($timeLog) {
+                // Calculate total minutes from human duration input
+                $totalMinutes = 0;
+                
+                if (!empty($this->editingDurationHuman)) {
+                    $totalMinutes = $this->parseHumanDuration($this->editingDurationHuman);
+                } else {
+                    // Fallback to hours and minutes inputs if human format is empty
+                    $totalMinutes = ($this->editingDurationHours * 60) + $this->editingDurationMinutes;
+                }
+                
+                if ($totalMinutes > 0) {
+                    // Calculate the end time based on start time + duration
+                    $endTime = (clone $timeLog->start_time)->addMinutes($totalMinutes);
+                    
+                    // Update the time log with the new duration and end time
+                    $timeLog->update([
+                        'end_time' => $endTime,
+                        'duration_minutes' => $totalMinutes,
+                        'project_id' => $project_id,
+                        'description' => $this->editingTimerDescription ?: null,
+                    ]);
+                } else {
+                    // If duration is 0 minutes, delete the time log
+                    $timeLog->delete();
+                    $this->showNotification('Timer had 0 minutes and was not saved', 'info');
+                }
+            }
+        }
+        // Update the latest time log's project_id if the timer is running
+        elseif ($wasRunning) {
+            $latestLog = $timer->timeLogs()->latest()->first();
+            if ($latestLog && !$latestLog->end_time) {
+                $latestLog->update([
+                    'project_id' => $project_id,
+                    'description' => $this->editingTimerDescription ?: null,
+                ]);
+            }
+        }
+        
         // Close the modal
         $this->closeEditTimerModal();
         
@@ -366,6 +490,10 @@ class Timers extends Component
         $this->editingTimerDescription = null;
         $this->editingTimerProjectName = null;
         $this->editingTimerTagInput = null;
+        $this->editingTimeLogId = null;
+        $this->editingDurationHours = 0;
+        $this->editingDurationMinutes = 0;
+        $this->editingDurationHuman = '';
     }
     
     public function completeTimerStop($timerId, $endTime)
@@ -378,10 +506,23 @@ class Timers extends Component
         $latestLog = $timer->timeLogs()->latest()->first();
         
         if ($latestLog && !$latestLog->end_time) {
-            // Update the existing log with end time
-            $latestLog->end_time = $endTime;
-            $latestLog->duration_minutes = $latestLog->start_time->diffInMinutes($latestLog->end_time);
-            $latestLog->save();
+            // Calculate duration in minutes
+            $durationMinutes = $latestLog->start_time->diffInMinutes($endTime);
+            
+            // Only save the time log if duration is greater than 0 minutes
+            if ($durationMinutes > 0) {
+                // Update the existing log with end time
+                $latestLog->end_time = $endTime;
+                $latestLog->duration_minutes = $durationMinutes;
+                $latestLog->save();
+            } else {
+                // If duration is 0 minutes, delete the time log instead of saving it
+                $latestLog->delete();
+                $this->showNotification('Timer had 0 minutes and was not saved', 'info');
+                $this->dispatch('timerStopped', ['timerId' => $timerId]);
+                $this->resetLongRunningTimerModal();
+                return;
+            }
         }
         
         $this->showNotification('Timer stopped successfully', 'info');
@@ -391,16 +532,90 @@ class Timers extends Component
         $this->resetLongRunningTimerModal();
     }
     
-    public function handleTimerStarted()
+    public function handleTimerStarted($data = null)
     {
         // This method can be used for additional actions when a timer is started
-        // For now, it's just a placeholder for the event listener
+        // The $data parameter may contain timerId and startTime
+        if ($data && isset($data['timerId'])) {
+            $this->log("Timer started/restarted: Timer ID {$data['timerId']}");
+        }
+    }
+    
+    /**
+     * Log debug messages to the console
+     */
+    private function log($message)
+    {
+        if (config('app.debug')) {
+            logger($message);
+        }
     }
     
     public function handleTimerStopped($data)
     {
         // This method can be used for additional actions when a timer is stopped
         // For now, it's just a placeholder for the event listener
+    }
+    
+    /**
+     * Handle timer paused event
+     */
+    public function handleTimerPaused($data)
+    {
+        // This method can be used for additional actions when a timer is paused
+        if ($data && isset($data['timerId'])) {
+            $this->log("Timer paused: Timer ID {$data['timerId']}");
+        }
+    }
+    
+    
+    /**
+     * Pause a timer without completely stopping it
+     * This will create a time log entry and mark the timer as paused
+     */
+    public function pauseTimer($timerId)
+    {
+        $timer = Timer::with('timeLogs')->findOrFail($timerId);
+        
+        // Get the latest time log for this timer
+        $latestLog = $timer->timeLogs()->latest()->first();
+        
+        if ($latestLog && !$latestLog->end_time) {
+            $now = now();
+            $durationMinutes = $latestLog->start_time->diffInMinutes($now);
+            
+            // Only save the time log if duration is greater than 0 minutes
+            if ($durationMinutes > 0) {
+                $latestLog->end_time = $now;
+                $latestLog->duration_minutes = $durationMinutes;
+                $latestLog->save();
+            } else {
+                // If duration is 0 minutes, delete the time log instead of saving it
+                $latestLog->delete();
+                $this->showNotification('Timer had 0 minutes and was not saved', 'info');
+            }
+        }
+        
+        // Mark timer as not running but paused
+        $timer->is_running = false;
+        $timer->is_paused = true;
+        $timer->save();
+        
+        // Get the total duration for today to include in the event
+        $totalDuration = $this->getTimerTotalDurationForToday($timer);
+        
+        // Get the last time log duration to include in the event
+        $lastDuration = null;
+        if ($latestLog && $latestLog->duration_minutes) {
+            $lastDuration = $this->formatDuration($latestLog->duration_minutes * 60);
+        }
+        
+        $this->showNotification('Timer paused', 'info');
+        $this->dispatch('timerPaused', [
+            'timerId' => $timerId,
+            'totalDuration' => $totalDuration,
+            'lastDuration' => $lastDuration
+        ]);
     }
     
     public function resetLongRunningTimerModal()
@@ -474,7 +689,6 @@ class Timers extends Component
     {
         $this->showNotification = false;
     }
-    
     public function getContrastColor($hexColor)
     {
         $hexColor = ltrim($hexColor, '#');
@@ -485,21 +699,103 @@ class Timers extends Component
         return ($luminance > 0.5) ? '#000000' : '#FFFFFF';
     }
     
+    /**
+     * Format duration based on the selected time format
+     *
+     * @param int $seconds Number of seconds to format
+     * @return string Formatted duration string
+     */
+    public function formatDuration($seconds)
+    {
+        $hours = floor($seconds / 3600);
+        $minutes = floor(($seconds % 3600) / 60);
+        $secs = $seconds % 60;
+        
+        if ($this->timeFormat === 'hms') {
+            // Format as HH:MM:SS
+            return sprintf('%02d:%02d:%02d', $hours, $minutes, $secs);
+        } elseif ($this->timeFormat === 'hm') {
+            // Format as HH:MM
+            return sprintf('%02d:%02d', $hours, $minutes);
+        } else {
+            // Human readable format (e.g., 3h 40m 5s)
+            if ($hours > 0) {
+                if ($minutes > 0) {
+                    if ($secs > 0) {
+                        return $hours . 'h ' . $minutes . 'm ' . $secs . 's';
+                    }
+                    return $hours . 'h ' . $minutes . 'm';
+                }
+                return $hours . 'h';
+            }
+            
+            if ($minutes > 0) {
+                if ($secs > 0) {
+                    return $minutes . 'm ' . $secs . 's';
+                }
+                return $minutes . 'm';
+            }
+            
+            return $secs . 's';
+        }
+    }
+    
+    /**
+     * Set the time format
+     *
+     * @param string $format Format to use (hms, hm, human)
+     */
+    public function setTimeFormat($format)
+    {
+        $this->timeFormat = $format;
+    }
+    
+    
+    /**
+     * Get the duration of the current timer session
+     */
     public function getTimerDuration($timer)
     {
         if (!$timer->latestTimeLog) {
-            return '00:00:00';
+            return $this->timeFormat === 'human' ? '0s' : '00:00:00';
         }
         
         $startTime = $timer->latestTimeLog->start_time;
         $endTime = $timer->latestTimeLog->end_time ?? now();
         
         $diff = $startTime->diffInSeconds($endTime);
-        $hours = floor($diff / 3600);
-        $minutes = floor(($diff % 3600) / 60);
-        $seconds = $diff % 60;
         
-        return sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
+        return $this->formatDuration($diff);
+    }
+    
+    /**
+     * Get the total duration for a timer for the current day
+     */
+    public function getTimerTotalDurationForToday($timer)
+    {
+        // Get all time logs for today for this timer
+        $today = now()->startOfDay();
+        $timeLogs = $timer->timeLogs()
+            ->where('created_at', '>=', $today)
+            ->get();
+        
+        // Calculate total seconds
+        $totalSeconds = 0;
+        
+        foreach ($timeLogs as $log) {
+            if ($log->duration_minutes) {
+                // For completed logs, use the stored duration
+                $totalSeconds += $log->duration_minutes * 60;
+            } elseif (!$log->end_time) {
+                // For active logs, calculate the current duration
+                $startTime = $log->start_time;
+                $endTime = now();
+                $totalSeconds += $startTime->diffInSeconds($endTime);
+            }
+        }
+        
+        // Format the total duration using our formatDuration method
+        return $this->formatDuration($totalSeconds);
     }
     
     /**
@@ -545,18 +841,38 @@ class Timers extends Component
     }
     
     /**
+     * Edit a running timer without stopping it
+     */
+    public function editRunningTimer($timerId)
+    {
+        $timer = Timer::with(['tags', 'project'])->findOrFail($timerId);
+        
+        // Set up editing properties
+        $this->editingTimerId = $timer->id;
+        $this->editingTimerName = $timer->name;
+        $this->editingTimerDescription = $timer->description;
+        $this->editingTimerProjectName = $timer->project ? $timer->project->name : '';
+        $this->editingTimerTagInput = $timer->tags->pluck('name')->implode(', ');
+        
+        // Show the edit modal
+        $this->showEditTimerModal = true;
+    }
+    
+    /**
      * Restart a timer that is not currently running
      */
     public function restartTimer($timerId)
     {
         $timer = Timer::findOrFail($timerId);
+        $wasPaused = $timer->is_paused;
         
-        // Mark timer as running
+        // Mark timer as running and not paused
         $timer->is_running = true;
+        $timer->is_paused = false;
         $timer->save();
         
-        // Create a new time log
-        TimeLog::create([
+        // Create a new time log with current time
+        $timeLog = TimeLog::create([
             'timer_id' => $timer->id,
             'user_id' => auth()->id(),
             'project_id' => $timer->project_id,
@@ -564,8 +880,22 @@ class Timers extends Component
             'description' => $timer->description ?: null,
         ]);
         
-        $this->showNotification('Timer restarted successfully', 'success');
-        $this->dispatch('timerStarted');
+        // Refresh the timer to include the latest time log
+        $timer->refresh();
+        
+        $message = $wasPaused ? 'Timer resumed successfully' : 'Timer restarted successfully';
+        $this->showNotification($message, 'success');
+        
+        // Get the total duration for today to include in the event
+        $totalDuration = $this->getTimerTotalDurationForToday($timer);
+        
+        // Dispatch event with timer ID to ensure frontend updates correctly
+        $this->dispatch('timerStarted', [
+            'timerId' => $timerId,
+            'startTime' => $timeLog->start_time->toIso8601String(),
+            'totalDuration' => $totalDuration,
+            'wasPaused' => $wasPaused
+        ]);
     }
     
     /**
@@ -606,9 +936,10 @@ class Timers extends Component
             ->orderBy('updated_at', 'desc')
             ->get();
         
-        // Separate running and non-running timers
+        // Separate running, paused, and non-running timers
         $runningTimers = $allTimers->where('is_running', true);
-        $savedTimers = $allTimers->where('is_running', false);
+        $pausedTimers = $allTimers->where('is_running', false)->where('is_paused', true);
+        $savedTimers = $allTimers->where('is_running', false)->where('is_paused', false);
         
         // Filter saved timers if search is provided
         if (!empty($this->savedTimersSearch)) {
@@ -643,6 +974,7 @@ class Timers extends Component
         return view('livewire.timers', [
             'recentTags' => $recentTags,
             'runningTimers' => $runningTimers,
+            'pausedTimers' => $pausedTimers,
             'savedTimers' => $savedTimers,
         ]);
     }
