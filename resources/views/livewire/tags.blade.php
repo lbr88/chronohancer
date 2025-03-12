@@ -2,8 +2,8 @@
     <div class="p-6 lg:p-8 max-w-7xl mx-auto">
         <!-- Page Header -->
         <div class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Projects</h1>
-            <p class="mt-2 text-lg text-gray-600 dark:text-gray-400">Organize your work into projects for better time tracking</p>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Tags</h1>
+            <p class="mt-2 text-lg text-gray-600 dark:text-gray-400">Manage your tags for better organization</p>
         </div>
 
         @if (session()->has('message'))
@@ -20,27 +20,27 @@
 
         <div class="mb-6 flex justify-end">
             <button
-                wire:click="openCreateProjectModal"
+                wire:click="openCreateTagModal"
                 class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                Create New Project
+                Create New Tag
             </button>
         </div>
 
-        <!-- Projects List Panel -->
+        <!-- Tags List Panel -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div class="p-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">All Projects</h2>
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">All Tags</h2>
                 
                 <!-- Search Box -->
                 <div class="relative max-w-xs">
                     <input
                         type="text"
                         wire:model.live.debounce.300ms="search"
-                        placeholder="Search projects..."
+                        placeholder="Search tags..."
                         class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm pr-10"
                     >
                     <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -51,33 +51,30 @@
                 </div>
             </div>
                     
+                    
             <div class="divide-y divide-gray-200 dark:divide-gray-700">
-                @forelse($projects as $project)
+                @forelse($tags as $tag)
                     <div class="p-5 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors duration-200">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center">
-                                    <div class="w-4 h-4 rounded-full mr-2" style="background-color: {{ $project->color ?? '#3b82f6' }}"></div>
-                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ $project->name }}</h3>
+                            <div class="flex-1 min-w-0 flex items-center">
+                                <span class="inline-flex items-center justify-center w-10 h-10 rounded-full mr-3"
+                                    style="background-color: {{ $tag->color }}; color: {{ $this->getContrastColor($tag->color) }}">
+                                    {{ strtoupper(substr($tag->name, 0, 1)) }}
+                                </span>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ $tag->name }}</h3>
+                                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                                        Used in {{ $tag->timers->count() }} timers,
+                                        {{ $tag->timeLogs->count() }} logs,
+                                        {{ $tag->projects->count() }} projects
+                                    </p>
                                 </div>
-                                <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">{{ $project->description }}</p>
-                                
-                                @if($project->tags->count() > 0)
-                                    <div class="mt-3 flex flex-wrap gap-1.5">
-                                        @foreach($project->tags as $tag)
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs"
-                                                style="background-color: {{ $tag->color }}; color: {{ $this->getContrastColor($tag->color) }}">
-                                                {{ $tag->name }}
-                                            </span>
-                                        @endforeach
-                                    </div>
-                                @endif
                             </div>
                             
                             <div class="flex-shrink-0 flex items-center space-x-2">
                                 <div class="flex space-x-2">
                                     <button
-                                        wire:click="editProject({{ $project->id }})"
+                                        wire:click="editTag({{ $tag->id }})"
                                         class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -87,8 +84,8 @@
                                     </button>
                                     
                                     <button
-                                        wire:click="deleteProject({{ $project->id }})"
-                                        wire:confirm="Are you sure you want to delete this project?"
+                                        wire:click="deleteTag({{ $tag->id }})"
+                                        wire:confirm="Are you sure you want to delete this tag? It will be removed from all associated timers, logs, and projects."
                                         class="inline-flex items-center px-3 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -96,14 +93,6 @@
                                         </svg>
                                         Delete
                                     </button>
-                                    
-                                    <a href="{{ route('timers') }}" class="inline-flex items-center px-3 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        Start Timer
-                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -112,71 +101,59 @@
                     <div class="p-8 flex flex-col items-center justify-center text-center">
                         <div class="h-16 w-16 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center mb-4">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                             </svg>
                         </div>
-                        <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-2">No Projects Yet</h3>
+                        <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-2">No Tags Yet</h3>
                         <p class="text-gray-500 dark:text-gray-400 max-w-md">
-                            Create your first project to organize your work and track time more effectively.
+                            Create your first tag to better organize your timers and projects.
                         </p>
                     </div>
                 @endforelse
             </div>
         </div>
     </div>
-    
-    <!-- Edit Project Modal -->
-    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50 flex items-center justify-center" style="display: {{ $showEditProjectModal ? 'flex' : 'none' }}">
+
+    <!-- Edit Tag Modal -->
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50 flex items-center justify-center" style="display: {{ $showEditTagModal ? 'flex' : 'none' }}">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl transform transition-all max-w-lg w-full p-6">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Edit Project</h3>
-                <button wire:click="closeEditProjectModal" class="text-gray-400 hover:text-gray-500">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Edit Tag</h3>
+                <button wire:click="closeEditTagModal" class="text-gray-400 hover:text-gray-500">
                     <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
             
-            <form wire:submit.prevent="saveEditedProject" class="space-y-4">
-                <!-- Project Name -->
+            <form wire:submit.prevent="saveEditedTag" class="space-y-4">
+                <!-- Tag Name -->
                 <div>
-                    <label for="editingProjectName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Project Name</label>
+                    <label for="editingTagName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tag Name</label>
                     <input
                         type="text"
-                        id="editingProjectName"
-                        wire:model="editingProjectName"
+                        id="editingTagName"
+                        wire:model="editingTagName"
                         required
                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     >
-                    @error('editingProjectName') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                </div>
-                
-                <!-- Description -->
-                <div>
-                    <label for="editingProjectDescription" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
-                    <textarea
-                        id="editingProjectDescription"
-                        wire:model="editingProjectDescription"
-                        rows="3"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    ></textarea>
-                    @error('editingProjectDescription') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    @error('editingTagName') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
                 
                 <!-- Color -->
                 <div>
-                    <label for="editingProjectColor" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Color</label>
+                    <label for="editingTagColor" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Color</label>
                     <div class="flex items-center space-x-3 mt-1">
                         <input
                             type="color"
-                            wire:model.live="editingProjectColor"
-                            id="editingProjectColor"
+                            wire:model.live="editingTagColor"
+                            id="editingTagColor"
                             class="h-10 w-10 rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 cursor-pointer"
                         >
                         <div class="flex-1">
                             <input
                                 type="text"
-                                wire:model="editingProjectColor"
+                                wire:model="editingTagColor"
                                 class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                 placeholder="#RRGGBB"
                             >
@@ -185,29 +162,17 @@
                     <div class="mt-2 flex items-center space-x-2">
                         <span class="text-sm text-gray-500 dark:text-gray-400">Preview:</span>
                         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm"
-                            style="background-color: {{ $editingProjectColor }}; color: {{ $this->getContrastColor($editingProjectColor) }}">
-                            {{ $editingProjectName ?: 'Sample Project' }}
+                            style="background-color: {{ $editingTagColor }}; color: {{ $this->getContrastColor($editingTagColor) }}">
+                            {{ $editingTagName ?: 'Sample Tag' }}
                         </span>
                     </div>
-                    @error('editingProjectColor') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                </div>
-                
-                <!-- Tags -->
-                <div>
-                    <label for="editingProjectTagInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tags</label>
-                    <input
-                        type="text"
-                        id="editingProjectTagInput"
-                        wire:model="editingProjectTagInput"
-                        placeholder="Comma-separated tags"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    >
+                    @error('editingTagColor') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
                 
                 <div class="mt-5 flex justify-end space-x-3">
                     <button
                         type="button"
-                        wire:click="closeEditProjectModal"
+                        wire:click="closeEditTagModal"
                         class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
                         Cancel
@@ -223,12 +188,12 @@
         </div>
     </div>
     
-    <!-- Create Project Modal -->
-    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50 flex items-center justify-center" style="display: {{ $showCreateProjectModal ? 'flex' : 'none' }}">
+    <!-- Create Tag Modal -->
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50 flex items-center justify-center" style="display: {{ $showCreateTagModal ? 'flex' : 'none' }}">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl transform transition-all max-w-lg w-full p-6">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Create New Project</h3>
-                <button wire:click="closeCreateProjectModal" class="text-gray-400 hover:text-gray-500">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Create New Tag</h3>
+                <button wire:click="closeCreateTagModal" class="text-gray-400 hover:text-gray-500">
                     <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -236,32 +201,18 @@
             </div>
             
             <form wire:submit.prevent="save" class="space-y-4">
-                <!-- Project Name -->
+                <!-- Tag Name -->
                 <div>
-                    <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Project Name</label>
+                    <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tag Name</label>
                     <input
                         type="text"
                         id="name"
                         wire:model="name"
                         required
                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        placeholder="Enter project name"
+                        placeholder="Enter tag name"
                     >
                     @error('name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                </div>
-                
-                <!-- Description -->
-                <div>
-                    <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
-                    <textarea
-                        id="description"
-                        wire:model="description"
-                        rows="3"
-                        required
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        placeholder="Describe the project"
-                    ></textarea>
-                    @error('description') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
                 
                 <!-- Color -->
@@ -287,64 +238,16 @@
                         <span class="text-sm text-gray-500 dark:text-gray-400">Preview:</span>
                         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm"
                             style="background-color: {{ $color }}; color: {{ $this->getContrastColor($color) }}">
-                            {{ $name ?: 'Sample Project' }}
+                            {{ $name ?: 'Sample Tag' }}
                         </span>
                     </div>
                     @error('color') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
                 
-                <!-- Tags -->
-                <div>
-                    <label for="tag_input" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tags</label>
-                    <input
-                        type="text"
-                        id="tag_input"
-                        wire:model.live="tag_input"
-                        placeholder="Add comma-separated tags"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    >
-                    
-                    <!-- Tag Suggestions -->
-                    @if(!empty($tagSuggestions) && count($tagSuggestions) > 0)
-                        <div class="absolute z-10 mt-1 w-full rounded-lg bg-white dark:bg-gray-700 shadow-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
-                            <ul class="max-h-60 py-1 text-base overflow-auto focus:outline-none sm:text-sm">
-                                @foreach($tagSuggestions as $tag)
-                                    <li wire:click="selectTag('{{ $tag->name }}')" class="cursor-pointer relative py-2 px-3 hover:bg-indigo-50 dark:hover:bg-gray-600 transition-colors duration-150">
-                                        <div class="flex items-center">
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs"
-                                                style="background-color: {{ $tag->color }}; color: {{ $this->getContrastColor($tag->color) }}">
-                                                {{ $tag->name }}
-                                            </span>
-                                        </div>
-                                    </li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
-                    
-                    @if($recentTags->isNotEmpty())
-                        <div class="mt-3">
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Recent tags:</p>
-                            <div class="flex flex-wrap gap-2">
-                                @foreach($recentTags as $tag)
-                                    <button
-                                        type="button"
-                                        wire:click="$set('tag_input', '{{ $tag_input ? $tag_input . ', ' . $tag->name : $tag->name }}')"
-                                        class="inline-flex items-center px-2 py-1 rounded-full text-xs hover:ring-2 hover:ring-offset-1 hover:ring-indigo-300 transition-all duration-150"
-                                        style="background-color: {{ $tag->color }}; color: {{ $this->getContrastColor($tag->color) }}"
-                                    >
-                                        {{ $tag->name }}
-                                    </button>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endif
-                </div>
-                
                 <div class="mt-5 flex justify-end space-x-3">
                     <button
                         type="button"
-                        wire:click="closeCreateProjectModal"
+                        wire:click="closeCreateTagModal"
                         class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
                         Cancel
@@ -353,7 +256,7 @@
                         type="submit"
                         class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
-                        Create Project
+                        Create Tag
                     </button>
                 </div>
             </form>

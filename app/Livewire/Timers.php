@@ -915,6 +915,22 @@ class Timers extends Component
     }
     
     /**
+     * Stop a paused timer
+     * This simply marks a paused timer as not paused, since the time logs are already created
+     */
+    public function stopPausedTimer($timerId)
+    {
+        $timer = Timer::findOrFail($timerId);
+        
+        // Mark timer as not paused (it's already not running)
+        $timer->is_paused = false;
+        $timer->save();
+        
+        $this->showNotification('Timer stopped successfully', 'info');
+        $this->dispatch('timerStopped', ['timerId' => $timerId]);
+    }
+    
+    /**
      * Delete a timer
      */
     public function deleteTimer($timerId)
@@ -936,6 +952,21 @@ class Timers extends Component
         // We don't need to do anything here as the filtering happens in the render method
     }
     
+    /**
+     * Get the latest completed time log for a timer
+     *
+     * @param \App\Models\Timer $timer
+     * @return \App\Models\TimeLog|null
+     */
+    public function getLatestCompletedTimeLog($timer)
+    {
+        return $timer->timeLogs()
+            ->whereNotNull('duration_minutes')
+            ->whereNotNull('end_time')
+            ->latest()
+            ->first();
+    }
+
     public function render()
     {
         // Cache recent tags for 5 minutes to improve performance

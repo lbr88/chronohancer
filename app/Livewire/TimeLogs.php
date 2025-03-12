@@ -55,7 +55,12 @@ class TimeLogs extends Component
         'filterTag' => ['except' => null],
         'searchQuery' => ['except' => ''],
         'view' => ['except' => 'list'],
+        'editId' => ['except' => null],
+        'returnToDashboard' => ['except' => false],
     ];
+    
+    public $editId = null;
+    public $returnToDashboard = false;
     
     protected $rules = [
         'project_id' => 'nullable|exists:projects,id',
@@ -69,6 +74,11 @@ class TimeLogs extends Component
         $this->selected_date = now()->format('Y-m-d');
         $this->start_time = now()->format('Y-m-d H:i:s');
         $this->initializeWeek();
+        
+        // If editId is provided, open the edit modal for that time log
+        if ($this->editId) {
+            $this->startEdit($this->editId);
+        }
     }
     
     public function initializeWeek()
@@ -291,6 +301,11 @@ class TimeLogs extends Component
             'editingTimeLog', 'project_id', 'timer_id', 'description',
             'duration_minutes', 'selectedTags'
         ]);
+        
+        // Redirect back to dashboard if requested
+        if ($this->returnToDashboard) {
+            return redirect()->route('dashboard');
+        }
     }
 
     public function updateTimeLog()
@@ -317,8 +332,20 @@ class TimeLogs extends Component
 
         $timeLog->tags()->sync($this->selectedTags);
         
-        $this->cancelEdit();
+        // Store the return to dashboard flag before resetting
+        $returnToDashboard = $this->returnToDashboard;
+        
+        $this->reset([
+            'editingTimeLog', 'project_id', 'timer_id', 'description',
+            'duration_minutes', 'selectedTags'
+        ]);
+        
         session()->flash('message', 'Time log updated successfully.');
+        
+        // Redirect back to dashboard if requested
+        if ($returnToDashboard) {
+            return redirect()->route('dashboard');
+        }
     }
 
     public function deleteTimeLog($timeLogId)
@@ -328,12 +355,18 @@ class TimeLogs extends Component
         $this->confirmingDelete = null;
         $this->editingTimeLog = null; // Reset editing state to close the modal
         session()->flash('message', 'Time log deleted successfully.');
+        
+        // Redirect back to dashboard if requested
+        if ($this->returnToDashboard) {
+            return redirect()->route('dashboard');
+        }
     }
     
     public function getWeeklyDataProperty()
     {
         // Get time logs for the selected week
         $timeLogs = TimeLog::where('user_id', auth()->id())
+            ->whereNotNull('end_time') // Only show logs that have an end time (completed logs)
             ->whereBetween('start_time', [
                 $this->startOfWeek . ' 00:00:00',
                 $this->endOfWeek . ' 23:59:59'
@@ -357,16 +390,50 @@ class TimeLogs extends Component
             ];
         }
         
-        // Group by project
-        $projects = $timeLogs->groupBy('project_id');
+        // Get all active projects (including those without time logs)
+        $allProjects = Project::where('user_id', auth()->id())->get();
         
-        foreach ($projects as $projectId => $projectLogs) {
-            // Handle null project_id (No Project)
-            $projectName = $projectId === null ? 'No Project' : $projectLogs->first()->project->name;
+        // Add "No Project" option
+        $projectsWithNoProject = $allProjects->toArray();
+        $projectsWithNoProject[] = [
+            'id' => null,
+            'name' => 'No Project',
+            'description' => 'Tasks without a project'
+        ];
+        
+        // Get all active timers
+        $allTimers = Timer::where('user_id', auth()->id())->get();
+        
+        // Create a map of project IDs to their timers
+        $projectTimersMap = [];
+        foreach ($allTimers as $timer) {
+            $projectId = $timer->project_id;
+            if (!isset($projectTimersMap[$projectId])) {
+                $projectTimersMap[$projectId] = [];
+            }
+            $projectTimersMap[$projectId][] = $timer;
+        }
+        
+        // Group time logs by project
+        $logsByProject = $timeLogs->groupBy('project_id');
+        
+        // Arrays to store projects with and without logs
+        $projectsWithLogs = [];
+        $projectsWithoutLogs = [];
+        
+        // Process each project (including those without logs)
+        foreach ($projectsWithNoProject as $project) {
+            $projectId = $project['id'] ?? null;
+            $projectName = $project['name'];
             $projectTotal = 0;
-            $timers = [];
+            $timersWithLogs = [];
+            $timersWithoutLogs = [];
             
-            // Group by timer and description
+            // Get logs for this project (if any)
+            $projectLogs = $logsByProject[$projectId] ?? collect();
+            $hasLogs = $projectLogs->isNotEmpty();
+            
+            // Group logs by timer and description
             $timerGroups = $projectLogs->groupBy(function($log) {
                 // Group by timer_id and a sanitized version of the description
                 // This ensures logs with the same timer but different descriptions are grouped separately
@@ -375,6 +442,7 @@ class TimeLogs extends Component
                 return $timerId . '|' . $description;
             });
             
+            // Add timers with logs
             foreach ($timerGroups as $timerKey => $timerLogs) {
                 // Extract timer_id and description from the group key
                 list($timerId, $description) = explode('|', $timerKey, 2);
@@ -404,7 +472,7 @@ class TimeLogs extends Component
                     $displayName .= ': ' . $description;
                 }
                 
-                $timers[] = [
+                $timersWithLogs[] = [
                     'id' => $timerId,
                     'name' => $displayName,
                     'originalName' => $timerName,
@@ -419,15 +487,91 @@ class TimeLogs extends Component
                 $projectTotal += $timerTotal;
             }
             
-            $weekData[] = [
-                'id' => $projectId,
-                'name' => $projectName,
-                'timers' => $timers,
-                'total' => $projectTotal
-            ];
+            // Add timers without logs for this project
+            if (isset($projectTimersMap[$projectId])) {
+                foreach ($projectTimersMap[$projectId] as $timer) {
+                    // Skip timers that already have logs (already added above)
+                    $timerAlreadyAdded = false;
+                    foreach ($timersWithLogs as $existingTimer) {
+                        if ($existingTimer['id'] === $timer->id) {
+                            $timerAlreadyAdded = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!$timerAlreadyAdded) {
+                        $dailyDurations = array_fill_keys(array_keys($weekDays), 0);
+                        $dailyDescriptions = array_fill_keys(array_keys($weekDays), '');
+                        $dailyLogIds = array_fill_keys(array_keys($weekDays), null);
+                        
+                        $timersWithoutLogs[] = [
+                            'id' => $timer->id,
+                            'name' => $timer->name,
+                            'originalName' => $timer->name,
+                            'description' => '',
+                            'daily' => $dailyDurations,
+                            'dailyDescriptions' => $dailyDescriptions,
+                            'dailyLogIds' => $dailyLogIds,
+                            'total' => 0,
+                            'tags' => $timer->tags
+                        ];
+                    }
+                }
+            }
             
-            $totalDuration += $projectTotal;
+            // Add "Manual Entry" option if it doesn't exist
+            $hasManualEntry = false;
+            foreach (array_merge($timersWithLogs, $timersWithoutLogs) as $timer) {
+                if ($timer['id'] === null) {
+                    $hasManualEntry = true;
+                    break;
+                }
+            }
+            
+            if (!$hasManualEntry) {
+                $dailyDurations = array_fill_keys(array_keys($weekDays), 0);
+                $dailyDescriptions = array_fill_keys(array_keys($weekDays), '');
+                $dailyLogIds = array_fill_keys(array_keys($weekDays), null);
+                
+                $timersWithoutLogs[] = [
+                    'id' => null,
+                    'name' => 'Manual Entry',
+                    'originalName' => 'Manual Entry',
+                    'description' => '',
+                    'daily' => $dailyDurations,
+                    'dailyDescriptions' => $dailyDescriptions,
+                    'dailyLogIds' => $dailyLogIds,
+                    'total' => 0,
+                    'tags' => collect()
+                ];
+            }
+            
+            // Combine timers with logs first, followed by timers without logs
+            $timers = array_merge($timersWithLogs, $timersWithoutLogs);
+            
+            // Only add the project if it has timers or if it's a project with logs
+            if (count($timers) > 0) {
+                $projectData = [
+                    'id' => $projectId,
+                    'name' => $projectName,
+                    'timers' => $timers,
+                    'total' => $projectTotal,
+                    'hasLogs' => $hasLogs
+                ];
+                
+                // Add to appropriate array based on whether it has logs
+                if ($hasLogs) {
+                    $projectsWithLogs[] = $projectData;
+                } else {
+                    $projectsWithoutLogs[] = $projectData;
+                }
+                
+                $totalDuration += $projectTotal;
+            }
         }
+        
+        // Combine projects with logs first, followed by projects without logs
+        $weekData = array_merge($projectsWithLogs, $projectsWithoutLogs);
         
         return [
             'weekDays' => $weekDays,
@@ -561,7 +705,8 @@ class TimeLogs extends Component
         
         if ($this->selectAll) {
             // Get all visible time log IDs based on current filters
-            $query = TimeLog::where('user_id', auth()->id());
+            $query = TimeLog::where('user_id', auth()->id())
+                ->whereNotNull('end_time'); // Only include logs that have an end time
             
             // Apply the same filters as in the render method
             if ($this->filterProject) {
@@ -642,7 +787,8 @@ class TimeLogs extends Component
     public function updatedSelectedTimeLogs()
     {
         // Get the count of all visible time logs based on current filters
-        $query = TimeLog::where('user_id', auth()->id());
+        $query = TimeLog::where('user_id', auth()->id())
+            ->whereNotNull('end_time'); // Only include logs that have an end time
         
         // Apply the same filters as in the render method
         if ($this->filterProject) {
@@ -737,6 +883,7 @@ class TimeLogs extends Component
         
         // Get all time logs for the specified date
         $totalMinutes = TimeLog::where('user_id', auth()->id())
+            ->whereNotNull('end_time') // Only include logs that have an end time
             ->whereDate('start_time', $date)
             ->sum('duration_minutes');
         
@@ -827,7 +974,8 @@ class TimeLogs extends Component
     
     public function render()
     {
-        $query = TimeLog::where('user_id', auth()->id());
+        $query = TimeLog::where('user_id', auth()->id())
+            ->whereNotNull('end_time'); // Only show logs that have an end time (completed logs)
         
         // Apply filters
         if ($this->filterProject) {

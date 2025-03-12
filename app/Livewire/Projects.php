@@ -11,21 +11,24 @@ class Projects extends Component
 {
     public $name;
     public $description;
+    public $color = '#3b82f6'; // Default blue color
     public $selectedTags = [];
     public $search = '';
     public $tag_input = '';
     public $tagSuggestions = [];
     public $showEditProjectModal = false;
+    public $showCreateProjectModal = false;
     public $editingProjectId = null;
     public $editingProjectName = null;
     public $editingProjectDescription = null;
+    public $editingProjectColor = null;
     public $editingProjectTagInput = null;
-    protected $listeners = [];
     
     // Rules for creating a new project
     protected $createRules = [
         'name' => 'required|min:3',
         'description' => 'required',
+        'color' => 'required',
         'tag_input' => 'nullable|string',
     ];
     
@@ -33,12 +36,39 @@ class Projects extends Component
     protected $editRules = [
         'editingProjectName' => 'required|min:3',
         'editingProjectDescription' => 'required',
+        'editingProjectColor' => 'required',
         'editingProjectTagInput' => 'nullable|string',
     ];
+    
+    public function mount()
+    {
+        $this->showCreateProjectModal = false;
+        $this->showEditProjectModal = false;
+    }
     
     public function updatedSearch()
     {
         // Search is handled in the render method
+    }
+    
+    /**
+     * Open the create project modal and set default values
+     */
+    public function openCreateProjectModal()
+    {
+        $this->reset(['name', 'description', 'tag_input', 'selectedTags']);
+        $this->color = '#3b82f6'; // Default blue color
+        $this->showCreateProjectModal = true;
+        session()->flash('message', 'Opening create project modal');
+    }
+    
+    /**
+     * Close the create project modal
+     */
+    public function closeCreateProjectModal()
+    {
+        $this->showCreateProjectModal = false;
+        $this->reset(['name', 'description', 'tag_input', 'selectedTags']);
     }
     
     public function updatedTagInput()
@@ -88,6 +118,7 @@ class Projects extends Component
         $project = Project::create([
             'name' => $this->name,
             'description' => $this->description,
+            'color' => $this->color,
             'user_id' => auth()->id(),
         ]);
         
@@ -104,7 +135,7 @@ class Projects extends Component
             $project->tags()->attach($tags->pluck('id'));
         }
         
-        $this->reset(['name', 'description', 'tag_input', 'selectedTags']);
+        $this->showCreateProjectModal = false;
         session()->flash('message', 'Project created successfully.');
     }
     
@@ -137,10 +168,12 @@ class Projects extends Component
         $this->editingProjectId = $project->id;
         $this->editingProjectName = $project->name;
         $this->editingProjectDescription = $project->description;
+        $this->editingProjectColor = $project->color ?? '#3b82f6'; // Use default blue if null
         $this->editingProjectTagInput = $project->tags->pluck('name')->implode(', ');
         
         // Show the edit modal
         $this->showEditProjectModal = true;
+        session()->flash('message', 'Opening edit project modal for project ID: ' . $projectId);
     }
     
     /**
@@ -156,6 +189,7 @@ class Projects extends Component
         $project->update([
             'name' => $this->editingProjectName,
             'description' => $this->editingProjectDescription,
+            'color' => $this->editingProjectColor,
         ]);
         
         // Process tags
@@ -188,6 +222,7 @@ class Projects extends Component
         $this->editingProjectId = null;
         $this->editingProjectName = null;
         $this->editingProjectDescription = null;
+        $this->editingProjectColor = null;
         $this->editingProjectTagInput = null;
     }
     

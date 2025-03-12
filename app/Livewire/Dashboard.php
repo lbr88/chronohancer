@@ -27,6 +27,10 @@ class Dashboard extends Component
         $this->period = $period;
         
         switch ($period) {
+            case 'day':
+                $this->startDate = now()->startOfDay();
+                $this->endDate = now()->endOfDay();
+                break;
             case 'week':
                 $this->startDate = now()->startOfWeek();
                 $this->endDate = now()->endOfWeek();
@@ -55,13 +59,24 @@ class Dashboard extends Component
         foreach ($timeLogs as $log) {
             $projectId = $log->project_id;
             if (!isset($projectTotals[$projectId])) {
-                $projectTotals[$projectId] = [
-                    'id' => $projectId,
-                    'name' => $log->project->name,
-                    'duration' => 0,
-                    'percentage' => 0,
-                    'color' => $this->getRandomColor($projectId)
-                ];
+                if ($projectId === null) {
+                    // Use a fixed color for "No project"
+                    $projectTotals[$projectId] = [
+                        'id' => $projectId,
+                        'name' => 'No Project',
+                        'duration' => 0,
+                        'percentage' => 0,
+                        'color' => '#9ca3af' // Gray color for "No project"
+                    ];
+                } else {
+                    $projectTotals[$projectId] = [
+                        'id' => $projectId,
+                        'name' => $log->project->name,
+                        'duration' => 0,
+                        'percentage' => 0,
+                        'color' => $log->project->color ?? $this->getRandomColor($projectId)
+                    ];
+                }
             }
             
             $projectTotals[$projectId]['duration'] += $log->duration_minutes;
@@ -84,28 +99,56 @@ class Dashboard extends Component
     
     public function getDailyActivityProperty()
     {
-        $days = collect(CarbonPeriod::create($this->startDate, $this->endDate))
-            ->map(function ($date) {
-                return $date->format('Y-m-d');
-            })
-            ->flip()
-            ->map(function () {
-                return 0;
-            })
-            ->toArray();
-        
-        $dailyData = TimeLog::where('user_id', auth()->id())
-            ->whereBetween('start_time', [$this->startDate, $this->endDate])
-            ->get()
-            ->groupBy(function ($log) {
-                return Carbon::parse($log->start_time)->format('Y-m-d');
-            })
-            ->map(function ($logs) {
-                return $logs->sum('duration_minutes');
-            })
-            ->toArray();
-        
-        return array_merge($days, $dailyData);
+        if ($this->period === 'year') {
+            // For year view, group by month
+            $months = [];
+            $startDate = $this->startDate->copy();
+            
+            // Create an array of month start dates
+            while ($startDate <= $this->endDate) {
+                $monthStart = $startDate->copy()->startOfMonth()->format('Y-m-d');
+                $months[$monthStart] = 0;
+                $startDate->addMonth();
+            }
+            
+            // Group time logs by month
+            $monthlyData = TimeLog::where('user_id', auth()->id())
+                ->whereBetween('start_time', [$this->startDate, $this->endDate])
+                ->get()
+                ->groupBy(function ($log) {
+                    return Carbon::parse($log->start_time)->startOfMonth()->format('Y-m-d');
+                })
+                ->map(function ($logs) {
+                    return $logs->sum('duration_minutes');
+                })
+                ->toArray();
+            
+            return array_merge($months, $monthlyData);
+        } else {
+            // For day, week, and month views, continue to group by day
+            $days = collect(CarbonPeriod::create($this->startDate, $this->endDate))
+                ->map(function ($date) {
+                    return $date->format('Y-m-d');
+                })
+                ->flip()
+                ->map(function () {
+                    return 0;
+                })
+                ->toArray();
+            
+            $dailyData = TimeLog::where('user_id', auth()->id())
+                ->whereBetween('start_time', [$this->startDate, $this->endDate])
+                ->get()
+                ->groupBy(function ($log) {
+                    return Carbon::parse($log->start_time)->format('Y-m-d');
+                })
+                ->map(function ($logs) {
+                    return $logs->sum('duration_minutes');
+                })
+                ->toArray();
+            
+            return array_merge($days, $dailyData);
+        }
     }
     
     public function getPopularTagsProperty()
@@ -190,6 +233,7 @@ class Dashboard extends Component
         return view('livewire.dashboard', [
             'projects' => Project::where('user_id', auth()->id())->with('timers')->get(),
             'recentTimeLogs' => TimeLog::where('user_id', auth()->id())
+                ->whereNotNull('end_time') // Only show completed time logs
                 ->with(['project', 'tags'])
                 ->latest()
                 ->take(5)

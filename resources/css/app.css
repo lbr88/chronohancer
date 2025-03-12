@@ -46,6 +46,14 @@
     ::file-selector-button {
         border-color: var(--color-gray-200, currentColor);
     }
+    
+    .dark *,
+    .dark ::after,
+    .dark ::before,
+    .dark ::backdrop,
+    .dark ::file-selector-button {
+        border-color: var(--color-zinc-700, currentColor);
+    }
 }
 
 [data-flux-field] {

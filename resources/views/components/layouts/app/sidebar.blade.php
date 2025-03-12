@@ -20,6 +20,7 @@
                     <flux:navlist.item icon="clock" :href="route('timers')" :current="request()->routeIs('timers')" wire:navigate>{{ __('Timers') }}</flux:navlist.item>
                     <flux:navlist.item icon="calendar" :href="route('time-logs')" :current="request()->routeIs('time-logs')" wire:navigate>{{ __('Time Logs') }}</flux:navlist.item>
                     <flux:navlist.item icon="folder" :href="route('projects')" :current="request()->routeIs('projects')" wire:navigate>{{ __('Projects') }}</flux:navlist.item>
+                    <flux:navlist.item icon="tag" :href="route('tags')" :current="request()->routeIs('tags')" wire:navigate>{{ __('Tags') }}</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
 

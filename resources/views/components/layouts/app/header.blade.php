@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         @include('partials.head')
     </head>
@@ -26,6 +26,10 @@
                 
                 <flux:navbar.item icon="folder" :href="route('projects')" :current="request()->routeIs('projects')" wire:navigate>
                     {{ __('Projects') }}
+                </flux:navbar.item>
+                
+                <flux:navbar.item icon="tag" :href="route('tags')" :current="request()->routeIs('tags')" wire:navigate>
+                    {{ __('Tags') }}
                 </flux:navbar.item>
             </flux:navbar>
 
@@ -126,6 +130,10 @@
                     
                     <flux:navlist.item icon="folder" :href="route('projects')" :current="request()->routeIs('projects')" wire:navigate>
                     {{ __('Projects') }}
+                    </flux:navlist.item>
+                    
+                    <flux:navlist.item icon="tag" :href="route('tags')" :current="request()->routeIs('tags')" wire:navigate>
+                    {{ __('Tags') }}
                     </flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>

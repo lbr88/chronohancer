@@ -211,7 +211,7 @@
                     @if($runningTimers->isNotEmpty())
                         <div class="divide-y divide-gray-200 dark:divide-gray-700">
                             @foreach($runningTimers as $timer)
-                                <div class="py-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors duration-200">
+                                <div class="py-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
                                     <div class="flex items-center justify-between">
                                         <!-- Left side: Timer info -->
                                         <div class="flex items-center flex-grow">
@@ -255,13 +255,21 @@
                                             <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                                 Today: {{ $this->getTimerTotalDurationForToday($timer) }}
                                             </div>
+                                            @php
+                                                $latestCompletedLog = $this->getLatestCompletedTimeLog($timer);
+                                            @endphp
+                                            @if($latestCompletedLog)
+                                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                    Last: {{ $this->formatDuration($latestCompletedLog->duration_minutes * 60) }}
+                                                </div>
+                                            @endif
                                         </div>
                                         
                                         <!-- Right side: Action buttons -->
                                         <div class="flex items-center space-x-1 ml-auto">
                                             <button
                                                 wire:click="cancelTimer({{ $timer->id }})"
-                                                class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                                class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                                                 title="Cancel timer without saving"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -330,7 +338,7 @@
                             </div>
                             <div class="divide-y divide-gray-200 dark:divide-gray-700">
                                 @foreach($pausedTimers as $timer)
-                                    <div class="py-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors duration-200">
+                                    <div class="py-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
                                         <div class="flex items-center justify-between">
                                             <!-- Left side: Timer info -->
                                             <div class="flex items-center flex-grow">
@@ -373,9 +381,12 @@
                                                 <div class="text-xl font-mono font-bold text-yellow-600 dark:text-yellow-400">
                                                     {{ $this->getTimerTotalDurationForToday($timer) }}
                                                 </div>
-                                                @if($timer->latestTimeLog && $timer->latestTimeLog->duration_minutes)
+                                                @php
+                                                    $latestCompletedLog = $this->getLatestCompletedTimeLog($timer);
+                                                @endphp
+                                                @if($latestCompletedLog)
                                                     <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                        Last: {{ $this->formatDuration($timer->latestTimeLog->duration_minutes * 60) }}
+                                                        Last: {{ $this->formatDuration($latestCompletedLog->duration_minutes * 60) }}
                                                     </div>
                                                 @endif
                                             </div>
@@ -396,13 +407,24 @@
                                                 
                                                 <button
                                                     wire:click="editTimer({{ $timer->id }})"
-                                                    class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                                    class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                                                     title="Edit timer"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                                     </svg>
                                                     <span class="sr-only">Edit</span>
+                                                </button>
+                                                
+                                                <button
+                                                    wire:click="stopPausedTimer({{ $timer->id }})"
+                                                    class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 stop-button p-0"
+                                                    title="Stop timer"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                        <rect x="5" y="5" width="14" height="14" rx="2" />
+                                                    </svg>
+                                                    <span class="sr-only">Stop</span>
                                                 </button>
                                             </div>
                                         </div>
@@ -441,7 +463,7 @@
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead class="bg-gray-50 dark:bg-gray-750">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
                                 <tr>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Project</th>
@@ -451,9 +473,9 @@
                                     <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            <tbody class="bg-white dark:bg-zinc-900 divide-y divide-gray-200 dark:divide-gray-700">
                                 @foreach($savedTimers as $timer)
-                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors duration-150">
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
                                                 <div class="ml-4">
@@ -513,7 +535,7 @@
                                                 </button>
                                                 <button
                                                     wire:click="editTimer({{ $timer->id }})"
-                                                    class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                                    class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 dark:border-gray-600 text-xs font-medium rounded text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                                                     title="Edit timer"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -787,7 +809,7 @@
                     <button
                         type="button"
                         wire:click="closeEditTimerModal"
-                        class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
                         Cancel
                     </button>

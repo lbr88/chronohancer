@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Livewire\Dashboard;
 use App\Livewire\Projects;
+use App\Livewire\Tags;
 use App\Livewire\TimeLogs;
 use App\Livewire\Timers;
 use App\Livewire\Settings\Profile;
@@ -21,6 +22,7 @@ Route::get('/home', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', Dashboard::class)->name('dashboard');
     Route::get('/projects', Projects::class)->name('projects');
+    Route::get('/tags', Tags::class)->name('tags');
     Route::get('/time-logs', TimeLogs::class)->name('time-logs');
     Route::get('/timers', Timers::class)->name('timers');
     Route::get('/settings/profile', Profile::class)->name('settings.profile');

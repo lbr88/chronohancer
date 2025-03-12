@@ -1,11 +1,11 @@
 @php
     use App\Models\TimeLog;
 @endphp
-<div>
-    <h1 class="text-2xl font-semibold mb-4">Time Logs</h1>
+<div class="timer-page">
+    <h1 class="text-2xl font-semibold mb-4 dark:text-white">Time Logs</h1>
     
     @if (session()->has('message'))
-        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
+        <div class="bg-green-100 dark:bg-green-900 border-l-4 border-green-500 text-green-700 dark:text-green-300 p-4 mb-4" role="alert">
             <p>{{ session('message') }}</p>
         </div>
     @endif
@@ -30,10 +30,10 @@
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
         <div>
             <div class="inline-flex rounded-md shadow-sm" role="group">
-                <button wire:click="switchView('list')" type="button" class="px-4 py-2 text-sm font-medium {{ $view === 'list' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700' }} border border-gray-200 rounded-l-lg hover:bg-gray-100">
+                <button wire:click="switchView('list')" type="button" class="px-4 py-2 text-sm font-medium {{ $view === 'list' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-300' }} border border-gray-200 dark:border-gray-700 rounded-l-lg hover:bg-gray-100 dark:hover:bg-zinc-700">
                     List View
                 </button>
-                <button wire:click="switchView('weekly')" type="button" class="px-4 py-2 text-sm font-medium {{ $view === 'weekly' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700' }} border border-gray-200 rounded-r-lg hover:bg-gray-100">
+                <button wire:click="switchView('weekly')" type="button" class="px-4 py-2 text-sm font-medium {{ $view === 'weekly' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-300' }} border border-gray-200 dark:border-gray-700 rounded-r-lg hover:bg-gray-100 dark:hover:bg-zinc-700">
                     Weekly Summary
                 </button>
             </div>
@@ -42,19 +42,19 @@
         <div class="flex flex-wrap items-center space-x-2">
             <!-- Time Format Selector -->
             <div class="inline-flex rounded-md shadow-sm" role="group">
-                <button wire:click="setTimeFormat('human')" type="button" class="px-3 py-1 text-xs font-medium {{ $timeFormat === 'human' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700' }} border border-gray-200 rounded-l-lg hover:bg-gray-100">
+                <button wire:click="setTimeFormat('human')" type="button" class="px-3 py-1 text-xs font-medium {{ $timeFormat === 'human' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-300' }} border border-gray-200 dark:border-gray-700 rounded-l-lg hover:bg-gray-100 dark:hover:bg-zinc-700">
                     3h 40m
                 </button>
-                <button wire:click="setTimeFormat('hm')" type="button" class="px-3 py-1 text-xs font-medium {{ $timeFormat === 'hm' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700' }} border border-gray-200 hover:bg-gray-100">
+                <button wire:click="setTimeFormat('hm')" type="button" class="px-3 py-1 text-xs font-medium {{ $timeFormat === 'hm' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-300' }} border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-zinc-700">
                     HH:MM
                 </button>
-                <button wire:click="setTimeFormat('hms')" type="button" class="px-3 py-1 text-xs font-medium {{ $timeFormat === 'hms' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700' }} border border-gray-200 rounded-r-lg hover:bg-gray-100">
+                <button wire:click="setTimeFormat('hms')" type="button" class="px-3 py-1 text-xs font-medium {{ $timeFormat === 'hms' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-300' }} border border-gray-200 dark:border-gray-700 rounded-r-lg hover:bg-gray-100 dark:hover:bg-zinc-700">
                     HH:MM:SS
                 </button>
             </div>
             
             <!-- Filter Toggle Button -->
-            <button wire:click="toggleFilters" class="px-3 py-1 text-xs font-medium border rounded-md hover:bg-gray-100 flex items-center">
+            <button wire:click="toggleFilters" class="px-3 py-1 text-xs font-medium border dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-700 dark:text-gray-300 flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                 </svg>
@@ -68,18 +68,18 @@
     
     <!-- Filters Panel -->
     @if($showFilters)
-    <div class="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200">
+    <div class="bg-gray-50 dark:bg-zinc-800 p-4 rounded-lg mb-6 border border-gray-200 dark:border-gray-700">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-                <label for="filterSearchQuery" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                <label for="filterSearchQuery" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search</label>
                 <input type="text" wire:model.live.debounce.300ms="searchQuery" id="filterSearchQuery"
-                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                    class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-zinc-700 dark:text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                     placeholder="Search description or project...">
             </div>
             
             <div>
-                <label for="filterProject" class="block text-sm font-medium text-gray-700 mb-1">Project</label>
-                <select wire:model.live="filterProject" id="filterProject" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                <label for="filterProject" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Project</label>
+                <select wire:model.live="filterProject" id="filterProject" class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-zinc-700 dark:text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                     <option value="">All Projects</option>
                     @foreach($projects as $project)
                         <option value="{{ $project->id }}">{{ $project->name }}</option>
@@ -88,8 +88,8 @@
             </div>
             
             <div>
-                <label for="filterTag" class="block text-sm font-medium text-gray-700 mb-1">Tag</label>
-                <select wire:model.live="filterTag" id="filterTag" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                <label for="filterTag" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tag</label>
+                <select wire:model.live="filterTag" id="filterTag" class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-zinc-700 dark:text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                     <option value="">All Tags</option>
                     @foreach($allTags as $tag)
                         <option value="{{ $tag->id }}">{{ $tag->name }}</option>
@@ -99,18 +99,18 @@
             
             <div class="grid grid-cols-2 gap-2">
                 <div>
-                    <label for="filterDateFrom" class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
-                    <input type="date" wire:model.live="filterDateFrom" id="filterDateFrom" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <label for="filterDateFrom" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">From Date</label>
+                    <input type="date" wire:model.live="filterDateFrom" id="filterDateFrom" class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-zinc-700 dark:text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                 </div>
                 <div>
-                    <label for="filterDateTo" class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
-                    <input type="date" wire:model.live="filterDateTo" id="filterDateTo" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <label for="filterDateTo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">To Date</label>
+                    <input type="date" wire:model.live="filterDateTo" id="filterDateTo" class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-zinc-700 dark:text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                 </div>
             </div>
         </div>
         
         <div class="mt-4 flex justify-end">
-            <button wire:click="resetFilters" class="px-3 py-1 text-sm font-medium border rounded-md hover:bg-gray-100">
+            <button wire:click="resetFilters" class="px-3 py-1 text-sm font-medium border dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-700 dark:text-gray-300">
                 Reset Filters
             </button>
         </div>
@@ -119,14 +119,14 @@
 
     @if($view === 'weekly')
         <!-- Weekly Summary View -->
-        <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+        <div class="bg-white dark:bg-zinc-900 shadow-md rounded-lg p-6 mb-6">
             <div class="flex justify-between items-center mb-6">
-                <button wire:click="previousWeek" class="px-3 py-1 border rounded-md hover:bg-gray-100">
+                <button wire:click="previousWeek" class="px-3 py-1 border dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 dark:text-gray-300">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
                     </svg>
                 </button>
-                <h2 class="text-xl font-medium">
+                <h2 class="text-xl font-medium dark:text-white">
                     {{ Carbon\Carbon::parse($startOfWeek)->format('M d') }} - {{ Carbon\Carbon::parse($endOfWeek)->format('M d, Y') }}
                 </h2>
                 <div class="flex items-center space-x-2">
@@ -146,23 +146,23 @@
                         </button>
                         
                         @if($remainingMinutes > 0)
-                            <div class="absolute z-10 hidden group-hover:block bg-white border border-gray-200 rounded shadow-lg p-2 mt-1 right-0 min-w-[180px] text-xs text-left">
-                                <div class="{{ $remainingMinutes < 60 ? 'text-orange-500' : 'text-blue-500' }} font-medium">
+                            <div class="absolute z-10 hidden group-hover:block bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg p-2 mt-1 right-0 min-w-[180px] text-xs text-left">
+                                <div class="{{ $remainingMinutes < 60 ? 'text-orange-500 dark:text-orange-400' : 'text-blue-500 dark:text-blue-400' }} font-medium">
                                     Missing to reach 7h 24m today: {{ $this->formatRemainingTime($remainingMinutes) }}
                                 </div>
                             </div>
                         @else
-                            <div class="absolute z-10 hidden group-hover:block bg-white border border-gray-200 rounded shadow-lg p-2 mt-1 right-0 min-w-[180px] text-xs text-left">
-                                <div class="text-green-500 font-medium">
+                            <div class="absolute z-10 hidden group-hover:block bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg p-2 mt-1 right-0 min-w-[180px] text-xs text-left">
+                                <div class="text-green-500 dark:text-green-400 font-medium">
                                     7h 24m target reached for today!
                                 </div>
                             </div>
                         @endif
                     </div>
-                    <button wire:click="currentWeek" class="px-3 py-1 border rounded-md hover:bg-gray-100 {{ $currentWeek->isCurrentWeek() ? 'bg-gray-200' : '' }}">
+                    <button wire:click="currentWeek" class="px-3 py-1 border dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 dark:text-gray-300 {{ $currentWeek->isCurrentWeek() ? 'bg-gray-200 dark:bg-zinc-700' : '' }}">
                         Today
                     </button>
-                    <button wire:click="nextWeek" class="px-3 py-1 border rounded-md hover:bg-gray-100">
+                    <button wire:click="nextWeek" class="px-3 py-1 border dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 dark:text-gray-300">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
                         </svg>
@@ -171,19 +171,19 @@
             </div>
 
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead>
                         <tr>
-                            <th scope="col" class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                            <th scope="col" class="px-6 py-3 bg-gray-50 dark:bg-zinc-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-1/4">
                                 Projects & Tasks
                             </th>
                             @foreach($this->weeklyData['weekDays'] as $day)
-                                <th scope="col" class="px-6 py-3 bg-gray-50 text-center text-xs font-medium text-gray-500 uppercase tracking-wider {{ Carbon\Carbon::parse($day['date'])->isToday() ? 'bg-indigo-50' : '' }}">
+                                <th scope="col" class="px-6 py-3 bg-gray-50 dark:bg-zinc-800 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider {{ Carbon\Carbon::parse($day['date'])->isToday() ? 'bg-indigo-50 dark:bg-indigo-900' : '' }}">
                                     <div class="flex items-center justify-center space-x-1">
                                         <div>{{ $day['day'] }}</div>
                                         <button
                                             wire:click="openQuickTimeModal('{{ $day['date'] }}')"
-                                            class="text-indigo-600 hover:text-indigo-800"
+                                            class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
                                             title="Add time log for {{ Carbon\Carbon::parse($day['date'])->format('M d, Y') }}"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -194,18 +194,77 @@
                                     <div>{{ Carbon\Carbon::parse($day['date'])->format('M d') }}</div>
                                 </th>
                             @endforeach
-                            <th scope="col" class="px-6 py-3 bg-gray-50 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th scope="col" class="px-6 py-3 bg-gray-50 dark:bg-zinc-800 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                 Total
                             </th>
                         </tr>
+                        <!-- Totals Row (Moved from bottom to top) -->
+                        <tr class="bg-indigo-50 dark:bg-indigo-900 font-bold">
+                            <td class="px-6 py-3 whitespace-nowrap text-right text-sm dark:text-white">
+                                Total Hours
+                            </td>
+                            @foreach($this->weeklyData['weekDays'] as $day)
+                                @php
+                                    $dayTotal = 0;
+                                    foreach($this->weeklyData['projects'] as $project) {
+                                        foreach($project['timers'] as $timer) {
+                                            $dayTotal += $timer['daily'][$day['date']];
+                                        }
+                                    }
+                                    
+                                    $targetMinutes = 444; // 7h 24m = 444 minutes
+                                    $remainingMinutes = max(0, $targetMinutes - $dayTotal);
+                                    $isToday = Carbon\Carbon::parse($day['date'])->isToday();
+                                    $isPast = Carbon\Carbon::parse($day['date'])->isPast();
+                                    $targetMet = $remainingMinutes == 0;
+                                    
+                                    // Determine text color class based on requirements
+                                    $textColorClass = '';
+                                    if ($targetMet) {
+                                        $textColorClass = 'text-green-600';
+                                    } elseif ($isPast && !$isToday) {
+                                        $textColorClass = 'text-red-600';
+                                    }
+                                @endphp
+                                <td class="px-6 py-3 whitespace-nowrap text-center text-sm">
+                                    <div class="{{ $textColorClass }}">
+                                        {{ $this->formatDuration($dayTotal) }}
+                                        @if($dayTotal > $targetMinutes)
+                                            <span class="text-green-600 dark:text-green-400">(+{{ $this->formatRemainingTime($dayTotal - $targetMinutes) }})</span>
+                                        @endif
+                                        @if(!$targetMet && ($isPast || $isToday))
+                                            <div class="text-xs font-normal {{ $textColorClass }}">
+                                                Missing: {{ $this->formatRemainingTime($remainingMinutes) }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                </td>
+                            @endforeach
+                            <td class="px-6 py-3 whitespace-nowrap text-center text-sm dark:text-white">
+                                {{ $this->formatDuration($this->weeklyData['total']) }}
+                            </td>
+                        </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
+                    <tbody class="bg-white dark:bg-zinc-900 divide-y divide-gray-200 dark:divide-gray-700">
                         @if(count($this->weeklyData['projects']) > 0)
                             @foreach($this->weeklyData['projects'] as $project)
                                 <!-- Project Row -->
-                                <tr class="bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900 flex items-center justify-between">
-                                        <span>{{ $project['name'] }}</span>
+                                <tr class="bg-gray-50 dark:bg-zinc-800 {{ !$project['hasLogs'] ? 'border-t-2 border-indigo-200 dark:border-indigo-800' : '' }}">
+                                    <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-white flex items-center justify-between">
+                                        <span>
+                                            @if($project['id'] === null)
+                                                <a href="{{ route('time-logs') }}?view=list&searchQuery=No Project" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
+                                                    <span>No Project</span>
+                                                </a>
+                                            @else
+                                                <a href="{{ route('time-logs') }}?view=list&filterProject={{ $project['id'] }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
+                                                    {{ $project['name'] }}
+                                                </a>
+                                            @endif
+                                            @if(!$project['hasLogs'])
+                                                <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">(No logs this week)</span>
+                                            @endif
+                                        </span>
                                         @php
                                             $todayDate = now()->format('Y-m-d');
                                             $remainingMinutes = $this->getRemainingTimeForDate($todayDate);
@@ -213,7 +272,7 @@
                                         <div class="group relative">
                                             <button
                                                 wire:click="openQuickTimeModal('{{ $todayDate }}', {{ $project['id'] === null ? 'null' : $project['id'] }})"
-                                                class="text-gray-400 hover:text-indigo-600"
+                                                class="text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400"
                                                 title="Add quick time log for {{ $project['name'] }}"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -222,14 +281,14 @@
                                             </button>
                                             
                                             @if($remainingMinutes > 0)
-                                                <div class="absolute z-10 hidden group-hover:block bg-white border border-gray-200 rounded shadow-lg p-2 mt-1 right-0 min-w-[150px] text-xs text-left">
-                                                    <div class="{{ $remainingMinutes < 60 ? 'text-orange-500' : 'text-blue-500' }} font-medium">
+                                                <div class="absolute z-10 hidden group-hover:block bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg p-2 mt-1 right-0 min-w-[150px] text-xs text-left">
+                                                    <div class="{{ $remainingMinutes < 60 ? 'text-orange-500 dark:text-orange-400' : 'text-blue-500 dark:text-blue-400' }} font-medium">
                                                         Missing to reach 7h 24m today: {{ $this->formatRemainingTime($remainingMinutes) }}
                                                     </div>
                                                 </div>
                                             @else
-                                                <div class="absolute z-10 hidden group-hover:block bg-white border border-gray-200 rounded shadow-lg p-2 mt-1 right-0 min-w-[150px] text-xs text-left">
-                                                    <div class="text-green-500 font-medium">
+                                                <div class="absolute z-10 hidden group-hover:block bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg p-2 mt-1 right-0 min-w-[150px] text-xs text-left">
+                                                    <div class="text-green-500 dark:text-green-400 font-medium">
                                                         7h 24m target reached for today!
                                                     </div>
                                                 </div>
@@ -239,19 +298,30 @@
                                     @foreach($this->weeklyData['weekDays'] as $day)
                                         <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500"></td>
                                     @endforeach
-                                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-bold">
+                                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-bold dark:text-white">
                                         {{ $this->formatDuration($project['total']) }}
                                     </td>
                                 </tr>
                                 
                                 <!-- Timer Rows -->
                                 @foreach($project['timers'] as $timer)
-                                    <tr>
+                                    <tr class="{{ $timer['total'] == 0 ? 'bg-gray-50/50 dark:bg-zinc-800/50' : '' }}">
                                         <td class="px-6 py-3 whitespace-nowrap text-sm">
                                             <div class="flex items-center">
                                                 <div class="ml-4">
-                                                    <div class="text-sm font-medium text-gray-900">
-                                                        {{ $timer['name'] }}
+                                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                                        @if($timer['id'])
+                                                            <a href="{{ route('time-logs') }}?view=list&searchQuery={{ urlencode($timer['originalName']) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
+                                                                {{ $timer['name'] }}
+                                                            </a>
+                                                        @else
+                                                            <a href="{{ route('time-logs') }}?view=list&searchQuery=Manual Entry" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
+                                                                {{ $timer['name'] }}
+                                                            </a>
+                                                        @endif
+                                                        @if($timer['total'] == 0)
+                                                            <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">(No logs)</span>
+                                                        @endif
                                                     </div>
                                                     @if(count($timer['tags']) > 0)
                                                         <div class="flex flex-wrap gap-1 mt-1">
@@ -267,13 +337,13 @@
                                             </div>
                                         </td>
                                         @foreach($this->weeklyData['weekDays'] as $day)
-                                            <td class="px-6 py-3 whitespace-nowrap text-center text-sm {{ $timer['daily'][$day['date']] > 0 ? 'bg-indigo-50' : '' }}">
+                                            <td class="px-6 py-3 whitespace-nowrap text-center text-sm {{ $timer['daily'][$day['date']] > 0 ? 'bg-indigo-50 dark:bg-indigo-900' : '' }}">
                                                 @if($timer['daily'][$day['date']] > 0)
                                                     <div class="flex items-center justify-center space-x-1">
                                                         <div class="group relative">
                                                             <button
                                                                 wire:click="findAndEditTimeLog('{{ $day['date'] }}', {{ $project['id'] === null ? 'null' : $project['id'] }}, {{ $timer['id'] ?: 'null' }}, '{{ addslashes($timer['dailyDescriptions'][$day['date']]) }}')"
-                                                                class="text-indigo-600 hover:text-indigo-900 font-medium"
+                                                                class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 font-medium"
                                                                 title="{{ !empty($timer['dailyDescriptions'][$day['date']]) ? 'Description: ' . $timer['dailyDescriptions'][$day['date']] : 'No description' }}"
                                                             >
                                                                 {{ $this->formatDuration($timer['daily'][$day['date']]) }}
@@ -312,7 +382,7 @@
                                                             </button>
                                                             
                                                             @if(!empty($timer['dailyDescriptions'][$day['date']]))
-                                                                <div class="absolute z-10 hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 mt-1 min-w-[150px] max-w-[250px] whitespace-normal">
+                                                                <div class="absolute z-10 hidden group-hover:block bg-gray-800 dark:bg-black text-white text-xs rounded p-2 mt-1 min-w-[150px] max-w-[250px] whitespace-normal">
                                                                     {{ $timer['dailyDescriptions'][$day['date']] }}
                                                                 </div>
                                                             @endif
@@ -320,7 +390,7 @@
                                                         <div class="flex space-x-1">
                                                             <button
                                                                 wire:click="openQuickTimeModal('{{ $day['date'] }}', {{ $project['id'] === null ? 'null' : $project['id'] }}, {{ $timer['id'] ?: 'null' }}, '{{ addslashes($timer['dailyDescriptions'][$day['date']]) }}')"
-                                                                class="text-gray-400 hover:text-indigo-600"
+                                                                class="text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400"
                                                                 title="Add new time log for {{ $timer['name'] }} on {{ Carbon\Carbon::parse($day['date'])->format('M d, Y') }}"
                                                             >
                                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -330,7 +400,7 @@
                                                             
                                                             <button
                                                                 wire:click="findAndEditTimeLog('{{ $day['date'] }}', {{ $project['id'] === null ? 'null' : $project['id'] }}, {{ $timer['id'] ?: 'null' }}, '{{ addslashes($timer['dailyDescriptions'][$day['date']]) }}')"
-                                                                class="text-gray-400 hover:text-indigo-600"
+                                                                class="text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400"
                                                                 title="Edit time log"
                                                             >
                                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -339,7 +409,7 @@
                                                             </button>
                                                             
                                                             @if(!empty($timer['dailyDescriptions'][$day['date']]))
-                                                                <span class="text-gray-400" title="Has description: {{ $timer['dailyDescriptions'][$day['date']] }}">
+                                                                <span class="text-gray-400 dark:text-gray-500" title="Has description: {{ $timer['dailyDescriptions'][$day['date']] }}">
                                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                                                                     </svg>
@@ -354,7 +424,7 @@
                                                     <div class="group relative">
                                                         <button
                                                             wire:click="openQuickTimeModal('{{ $day['date'] }}', {{ $project['id'] === null ? 'null' : $project['id'] }}, {{ $timer['id'] ?: 'null' }}, '{{ addslashes($timer['dailyDescriptions'][$day['date']]) }}')"
-                                                            class="text-gray-400 hover:text-indigo-600 w-full h-full flex items-center justify-center"
+                                                            class="text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 w-full h-full flex items-center justify-center"
                                                             title="Add quick time log for {{ $timer['name'] }} on {{ Carbon\Carbon::parse($day['date'])->format('M d, Y') }}"
                                                         >
                                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -363,14 +433,14 @@
                                                         </button>
                                                         
                                                         @if($remainingMinutes > 0)
-                                                            <div class="absolute z-10 hidden group-hover:block bg-white border border-gray-200 rounded shadow-lg p-2 mt-1 min-w-[150px] text-xs text-left">
-                                                                <div class="{{ $remainingMinutes < 60 ? 'text-orange-500' : 'text-blue-500' }} font-medium">
+                                                            <div class="absolute z-10 hidden group-hover:block bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg p-2 mt-1 min-w-[150px] text-xs text-left">
+                                                                <div class="{{ $remainingMinutes < 60 ? 'text-orange-500 dark:text-orange-400' : 'text-blue-500 dark:text-blue-400' }} font-medium">
                                                                     Missing to reach 7h 24m: {{ $this->formatRemainingTime($remainingMinutes) }}
                                                                 </div>
                                                             </div>
                                                         @else
-                                                            <div class="absolute z-10 hidden group-hover:block bg-white border border-gray-200 rounded shadow-lg p-2 mt-1 min-w-[150px] text-xs text-left">
-                                                                <div class="text-green-500 font-medium">
+                                                            <div class="absolute z-10 hidden group-hover:block bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg p-2 mt-1 min-w-[150px] text-xs text-left">
+                                                                <div class="text-green-500 dark:text-green-400 font-medium">
                                                                     7h 24m target reached for this day!
                                                                 </div>
                                                             </div>
@@ -379,62 +449,17 @@
                                                 @endif
                                             </td>
                                         @endforeach
-                                        <td class="px-6 py-3 whitespace-nowrap text-center text-sm font-medium">
+                                        <td class="px-6 py-3 whitespace-nowrap text-center text-sm font-medium dark:text-white">
                                             {{ $this->formatDuration($timer['total']) }}
                                         </td>
                                     </tr>
                                 @endforeach
                             @endforeach
                             
-                            <!-- Grand Total Row -->
-                            <tr class="bg-indigo-50 font-bold">
-                                <td class="px-6 py-3 whitespace-nowrap text-right text-sm">
-                                    Total Hours
-                                </td>
-                                @foreach($this->weeklyData['weekDays'] as $day)
-                                    @php
-                                        $dayTotal = 0;
-                                        foreach($this->weeklyData['projects'] as $project) {
-                                            foreach($project['timers'] as $timer) {
-                                                $dayTotal += $timer['daily'][$day['date']];
-                                            }
-                                        }
-                                        
-                                        $targetMinutes = 444; // 7h 24m = 444 minutes
-                                        $remainingMinutes = max(0, $targetMinutes - $dayTotal);
-                                        $isToday = Carbon\Carbon::parse($day['date'])->isToday();
-                                        $isPast = Carbon\Carbon::parse($day['date'])->isPast();
-                                        $targetMet = $remainingMinutes == 0;
-                                        
-                                        // Determine text color class based on requirements
-                                        $textColorClass = '';
-                                        if ($targetMet) {
-                                            $textColorClass = 'text-green-600';
-                                        } elseif ($isPast && !$isToday) {
-                                            $textColorClass = 'text-red-600';
-                                        }
-                                    @endphp
-                                    <td class="px-6 py-3 whitespace-nowrap text-center text-sm">
-                                        <div class="{{ $textColorClass }}">
-                                            {{ $this->formatDuration($dayTotal) }}
-                                            @if($dayTotal > $targetMinutes)
-                                                <span class="text-green-600">(+{{ $this->formatRemainingTime($dayTotal - $targetMinutes) }})</span>
-                                            @endif
-                                            @if(!$targetMet && ($isPast || $isToday))
-                                                <div class="text-xs font-normal {{ $textColorClass }}">
-                                                    Missing: {{ $this->formatRemainingTime($remainingMinutes) }}
-                                                </div>
-                                            @endif
-                                        </div>
-                                    </td>
-                                @endforeach
-                                <td class="px-6 py-3 whitespace-nowrap text-center text-sm">
-                                    {{ $this->formatDuration($this->weeklyData['total']) }}
-                                </td>
-                            </tr>
+                            <!-- Grand Total Row moved to the top of the table -->
                         @else
                             <tr>
-                                <td colspan="{{ count($this->weeklyData['weekDays']) + 2 }}" class="px-6 py-10 text-center text-gray-500">
+                                <td colspan="{{ count($this->weeklyData['weekDays']) + 2 }}" class="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
                                     No time logs for this week
                                 </td>
                             </tr>
@@ -449,13 +474,13 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         @if($view === 'list')
             <div class="lg:col-span-2">
-                <div class="bg-white shadow-md rounded-lg p-6">
+                <div class="bg-white dark:bg-zinc-900 shadow-md rounded-lg p-6">
                     <div class="mb-4">
                         <div class="flex justify-between items-center mb-4">
                             <div>
-                                <h2 class="text-xl font-semibold">All Time Logs</h2>
+                                <h2 class="text-xl font-semibold dark:text-white">All Time Logs</h2>
                                 @if($filterProject || $filterTag || $filterDateFrom || $filterDateTo || $searchQuery)
-                                    <div class="text-sm text-indigo-600 mt-1">
+                                    <div class="text-sm text-indigo-600 dark:text-indigo-400 mt-1">
                                         <span class="font-medium">Filtered:</span> {{ count($timeLogs) }} entries | Total: {{ $this->formatDuration($totalFilteredDuration) }}
                                     </div>
                                 @endif
@@ -477,14 +502,14 @@
                                     </button>
                                     
                                     @if($remainingMinutes > 0)
-                                        <div class="absolute z-10 hidden group-hover:block bg-white border border-gray-200 rounded shadow-lg p-2 mt-1 right-0 min-w-[180px] text-xs text-left">
-                                            <div class="{{ $remainingMinutes < 60 ? 'text-orange-500' : 'text-blue-500' }} font-medium">
+                                        <div class="absolute z-10 hidden group-hover:block bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg p-2 mt-1 right-0 min-w-[180px] text-xs text-left">
+                                            <div class="{{ $remainingMinutes < 60 ? 'text-orange-500 dark:text-orange-400' : 'text-blue-500 dark:text-blue-400' }} font-medium">
                                                 Missing to reach 7h 24m today: {{ $this->formatRemainingTime($remainingMinutes) }}
                                             </div>
                                         </div>
                                     @else
-                                        <div class="absolute z-10 hidden group-hover:block bg-white border border-gray-200 rounded shadow-lg p-2 mt-1 right-0 min-w-[180px] text-xs text-left">
-                                            <div class="text-green-500 font-medium">
+                                        <div class="absolute z-10 hidden group-hover:block bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg p-2 mt-1 right-0 min-w-[180px] text-xs text-left">
+                                            <div class="text-green-500 dark:text-green-400 font-medium">
                                                 7h 24m target reached for today!
                                             </div>
                                         </div>
@@ -510,28 +535,28 @@
                         <!-- Search Input -->
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <svg class="h-5 w-5 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
                                 </svg>
                             </div>
                             <input
                                 type="text"
                                 wire:model.live.debounce.300ms="searchQuery"
-                                class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md leading-5 bg-white dark:bg-zinc-800 placeholder-gray-500 dark:placeholder-gray-400 dark:text-white focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                 placeholder="Search time logs by description or project..."
                             >
                         </div>
                     </div>
                     
                     <!-- Sortable Headers -->
-                    <div class="grid grid-cols-13 gap-4 mb-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <div class="col-span-1">
+                    <div class="grid grid-cols-12 gap-4 mb-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <div class="col-span-1 flex items-center">
                             <label class="inline-flex items-center">
                                 <input type="checkbox" wire:click="toggleSelectAll" {{ $selectAll ? 'checked' : '' }} class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                             </label>
                         </div>
-                        <div class="col-span-3 flex items-center cursor-pointer" wire:click="sortBy('start_time')">
-                            Date
+                        <div class="col-span-2 flex items-center cursor-pointer" wire:click="sortBy('start_time')">
+                            DATE
                             @if($sortField === 'start_time')
                                 <svg class="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20">
                                     @if($sortDirection === 'asc')
@@ -543,7 +568,7 @@
                             @endif
                         </div>
                         <div class="col-span-3 flex items-center cursor-pointer" wire:click="sortBy('project')">
-                            Project
+                            PROJECT
                             @if($sortField === 'project')
                                 <svg class="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20">
                                     @if($sortDirection === 'asc')
@@ -554,9 +579,9 @@
                                 </svg>
                             @endif
                         </div>
-                        <div class="col-span-3">Description</div>
-                        <div class="col-span-1 flex items-center cursor-pointer" wire:click="sortBy('duration')">
-                            Time
+                        <div class="col-span-3">DESCRIPTION</div>
+                        <div class="col-span-2 flex items-center cursor-pointer" wire:click="sortBy('duration')">
+                            TIME
                             @if($sortField === 'duration')
                                 <svg class="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20">
                                     @if($sortDirection === 'asc')
@@ -567,50 +592,59 @@
                                 </svg>
                             @endif
                         </div>
-                        <div class="col-span-2 text-right">Actions</div>
+                        <div class="col-span-1 text-right">ACTIONS</div>
                     </div>
                     
                     <div class="space-y-3">
                         @forelse($timeLogs as $timeLog)
-                            <div class="grid grid-cols-13 gap-4 py-3 border-b items-center hover:bg-gray-50 rounded-lg transition-colors {{ in_array($timeLog->id, $selectedTimeLogs) ? 'bg-indigo-50' : '' }}">
-                                <div class="col-span-1">
+                            <div class="grid grid-cols-12 gap-4 py-3 border-b dark:border-gray-700 items-center hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors {{ in_array($timeLog->id, $selectedTimeLogs) ? 'bg-indigo-50 dark:bg-indigo-900' : '' }}">
+                                <div class="col-span-1 flex items-center">
                                     <label class="inline-flex items-center">
                                         <input type="checkbox" value="{{ $timeLog->id }}" wire:model.live="selectedTimeLogs" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                     </label>
                                 </div>
-                                <div class="col-span-3">
-                                    <div class="text-sm font-medium text-gray-900">
+                                <div class="col-span-2">
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
                                         {{ $timeLog->start_time->format('M d, Y') }}
                                     </div>
-                                    <div class="text-xs text-gray-500">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
                                         {{ $timeLog->start_time ? $timeLog->start_time->format('H:i') : '?' }} - {{ $timeLog->end_time ? $timeLog->end_time->format('H:i') : '?' }}
                                     </div>
                                 </div>
                                 
                                 <div class="col-span-3">
-                                    <div class="text-sm font-medium text-gray-900">
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
                                         @if($timeLog->project_id && $timeLog->project->trashed())
-                                            <span class="line-through text-gray-500">{{ $timeLog->project->name }}</span>
-                                            <span class="text-xs text-red-500">(deleted)</span>
+                                            <span class="line-through text-gray-500 dark:text-gray-400">{{ $timeLog->project->name }}</span>
+                                            <span class="text-xs text-red-500 dark:text-red-400">(deleted)</span>
                                         @elseif($timeLog->project_id)
-                                            {{ $timeLog->project->name }}
+                                            <a href="{{ route('time-logs') }}?view=list&filterProject={{ $timeLog->project_id }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
+                                                {{ $timeLog->project->name }}
+                                            </a>
                                         @else
-                                            <span class="text-gray-500">No Project</span>
+                                            <a href="{{ route('time-logs') }}?view=list&searchQuery=No Project" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
+                                                No Project
+                                            </a>
                                         @endif
                                     </div>
                                     @if($timeLog->timer)
-                                        <div class="text-xs text-gray-500">
-                                            Timer: {{ $timeLog->timer->name }}
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                                            Timer:
+                                            <a href="{{ route('time-logs') }}?view=list&searchQuery={{ urlencode($timeLog->timer->name) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
+                                                {{ $timeLog->timer->name }}
+                                            </a>
                                         </div>
                                     @else
-                                        <div class="text-xs text-gray-500">
-                                            Manual Entry
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                                            <a href="{{ route('time-logs') }}?view=list&searchQuery=Manual Entry" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
+                                                Manual Entry
+                                            </a>
                                         </div>
                                     @endif
                                 </div>
                                 
                                 <div class="col-span-3">
-                                    <div class="text-sm text-gray-600 line-clamp-2">
+                                    <div class="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
                                         {{ $timeLog->description ?: 'No description' }}
                                     </div>
                                     @if($timeLog->tags->count() > 0)
@@ -625,13 +659,13 @@
                                     @endif
                                 </div>
                                 
-                                <div class="col-span-1">
+                                <div class="col-span-2">
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $this->getDurationClass($timeLog->duration_minutes) }}">
                                         {{ $this->formatDuration($timeLog->duration_minutes) }}
                                     </span>
                                 </div>
                                 
-                                <div class="col-span-2 text-right">
+                                <div class="col-span-1 text-right">
                                     <div class="flex justify-end space-x-2">
                                         <button wire:click="startEdit({{ $timeLog->id }})" class="text-indigo-600 hover:text-indigo-900">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -647,13 +681,13 @@
                                 </div>
                             </div>
                         @empty
-                            <div class="py-8 text-center text-gray-500">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <div class="py-8 text-center text-gray-500 dark:text-gray-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 <p>No time logs found matching your criteria.</p>
                                 @if($filterProject || $filterTag || $filterDateFrom || $filterDateTo || $searchQuery)
-                                    <button wire:click="resetFilters" class="mt-2 text-indigo-600 hover:text-indigo-900 text-sm font-medium">
+                                    <button wire:click="resetFilters" class="mt-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 text-sm font-medium">
                                         Clear filters
                                     </button>
                                 @else
@@ -666,14 +700,14 @@
             </div>
         @endif
         
-        <div id="time-log-form" class="{{ $view === 'list' ? '' : 'lg:col-span-3' }} bg-white shadow-md rounded-lg p-6 transition-colors duration-300">
-            <h2 class="text-xl font-semibold mb-4">
+        <div id="time-log-form" class="{{ $view === 'list' ? '' : 'lg:col-span-3' }} bg-white dark:bg-zinc-900 shadow-md rounded-lg p-6 transition-colors duration-300">
+            <h2 class="text-xl font-semibold mb-4 dark:text-white">
                 @if($editingTimeLog)
                     Edit Time Log
                 @else
                     Create Manual Time Log
                     @if($selected_date && $selected_date != now()->format('Y-m-d'))
-                        <span class="text-sm font-normal text-indigo-600">
+                        <span class="text-sm font-normal text-indigo-600 dark:text-indigo-400">
                             for {{ Carbon\Carbon::parse($selected_date)->format('M d, Y') }}
                         </span>
                     @endif
@@ -681,25 +715,25 @@
             </h2>
             <form wire:submit.prevent="{{ $editingTimeLog ? 'updateTimeLog' : 'save' }}" class="space-y-4">
                 <div>
-                    <label for="project_id" class="block text-sm font-medium text-gray-700">Project</label>
-                    <select wire:model="project_id" id="project_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <label for="project_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Project</label>
+                    <select wire:model="project_id" id="project_id" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm">
                         <option value="">Select a project</option>
                         @foreach($projects as $project)
                             <option value="{{ $project->id }}">{{ $project->name }}</option>
                         @endforeach
                     </select>
-                    @error('project_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    @error('project_id') <span class="text-red-500 dark:text-red-400 text-xs">{{ $message }}</span> @enderror
                 </div>
                 <div>
-                    <label for="selected_date" class="block text-sm font-medium text-gray-700">Date</label>
-                    <input type="date" wire:model.live="selected_date" id="selected_date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                    @error('selected_date') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    <label for="selected_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
+                    <input type="date" wire:model.live="selected_date" id="selected_date" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm">
+                    @error('selected_date') <span class="text-red-500 dark:text-red-400 text-xs">{{ $message }}</span> @enderror
                     
                     @if($selected_date)
                         @php
                             $remainingMinutes = $this->getRemainingTimeForDate($selected_date);
                         @endphp
-                        <div class="mt-1 text-xs {{ $remainingMinutes > 0 ? ($remainingMinutes < 60 ? 'text-orange-500' : 'text-blue-500') : 'text-green-500' }}">
+                        <div class="mt-1 text-xs {{ $remainingMinutes > 0 ? ($remainingMinutes < 60 ? 'text-orange-500 dark:text-orange-400' : 'text-blue-500 dark:text-blue-400') : 'text-green-500 dark:text-green-400' }}">
                             @if($remainingMinutes > 0)
                                 <span class="font-medium">Missing to reach 7h 24m:</span> {{ $this->formatRemainingTime($remainingMinutes) }}
                             @else
@@ -709,21 +743,21 @@
                     @endif
                 </div>
                 <div>
-                    <label for="description" class="block text-sm font-medium text-gray-700">Description (optional)</label>
-                    <textarea wire:model="description" id="description" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
+                    <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description (optional)</label>
+                    <textarea wire:model="description" id="description" rows="2" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm"></textarea>
                 </div>
                 <div>
-                    <label for="duration_minutes" class="block text-sm font-medium text-gray-700">Duration</label>
+                    <label for="duration_minutes" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Duration</label>
                     <div class="flex items-center space-x-2">
-                        <input type="text" wire:model="duration_minutes" id="duration_minutes" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        <input type="text" wire:model="duration_minutes" id="duration_minutes" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm">
                         @if($duration_minutes)
-                            <span class="text-sm text-gray-500">
+                            <span class="text-sm text-gray-500 dark:text-gray-400">
                                 ({{ $this->formatDuration($this->parseDurationString($duration_minutes)) }})
                             </span>
                         @endif
                     </div>
-                    <p class="text-xs text-gray-500 mt-1">Enter duration in minutes or format like "3h5m"</p>
-                    @error('duration_minutes') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Enter duration in minutes or format like "3h5m"</p>
+                    @error('duration_minutes') <span class="text-red-500 dark:text-red-400 text-xs">{{ $message }}</span> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Tags</label>
@@ -747,7 +781,7 @@
                 </div>
                 <div class="flex justify-between">
                     @if($editingTimeLog)
-                        <button type="button" wire:click="cancelEdit" class="px-4 py-2 border rounded-md hover:bg-gray-100">
+                        <button type="button" wire:click="cancelEdit" class="px-4 py-2 border dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 dark:text-gray-300">
                             Cancel
                         </button>
                     @endif
@@ -762,12 +796,12 @@
     <!-- Edit Form (shown when editing) -->
     @if($editingTimeLog)
     <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
-            <h2 class="text-xl font-semibold mb-4">Edit Time Log</h2>
+        <div class="bg-white dark:bg-zinc-900 rounded-lg p-6 max-w-2xl w-full mx-4">
+            <h2 class="text-xl font-semibold mb-4 dark:text-white">Edit Time Log</h2>
             <form wire:submit.prevent="updateTimeLog" class="space-y-4">
                 <div>
-                    <label for="edit_project_id" class="block text-sm font-medium text-gray-700">Project</label>
-                    <select wire:model="project_id" id="edit_project_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <label for="edit_project_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Project</label>
+                    <select wire:model="project_id" id="edit_project_id" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm">
                         <option value="">Select a project</option>
                         @foreach($projects as $project)
                             <option value="{{ $project->id }}">{{ $project->name }}</option>
@@ -776,15 +810,15 @@
                     @error('project_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
                 <div>
-                    <label for="edit_selected_date" class="block text-sm font-medium text-gray-700">Date</label>
-                    <input type="date" wire:model.live="selected_date" id="edit_selected_date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <label for="edit_selected_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
+                    <input type="date" wire:model.live="selected_date" id="edit_selected_date" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm">
                     @error('selected_date') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     
                     @if($selected_date)
                         @php
                             $remainingMinutes = $this->getRemainingTimeForDate($selected_date);
                         @endphp
-                        <div class="mt-1 text-xs {{ $remainingMinutes > 0 ? ($remainingMinutes < 60 ? 'text-orange-500' : 'text-blue-500') : 'text-green-500' }}">
+                        <div class="mt-1 text-xs {{ $remainingMinutes > 0 ? ($remainingMinutes < 60 ? 'text-orange-500 dark:text-orange-400' : 'text-blue-500 dark:text-blue-400') : 'text-green-500 dark:text-green-400' }}">
                             @if($remainingMinutes > 0)
                                 <span class="font-medium">Missing to reach 7h 24m:</span> {{ $this->formatRemainingTime($remainingMinutes) }}
                             @else
@@ -794,24 +828,24 @@
                     @endif
                 </div>
                 <div>
-                    <label for="edit_description" class="block text-sm font-medium text-gray-700">Description (optional)</label>
-                    <textarea wire:model="description" id="edit_description" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
+                    <label for="edit_description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description (optional)</label>
+                    <textarea wire:model="description" id="edit_description" rows="2" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm"></textarea>
                 </div>
                 <div>
-                    <label for="edit_duration_minutes" class="block text-sm font-medium text-gray-700">Duration</label>
+                    <label for="edit_duration_minutes" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Duration</label>
                     <div class="flex items-center space-x-2">
-                        <input type="text" wire:model="duration_minutes" id="edit_duration_minutes" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        <input type="text" wire:model="duration_minutes" id="edit_duration_minutes" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm">
                         @if($duration_minutes)
-                            <span class="text-sm text-gray-500">
+                            <span class="text-sm text-gray-500 dark:text-gray-400">
                                 ({{ $this->formatDuration($this->parseDurationString($duration_minutes)) }})
                             </span>
                         @endif
                     </div>
-                    <p class="text-xs text-gray-500 mt-1">Enter duration in minutes or format like "3h5m"</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Enter duration in minutes or format like "3h5m"</p>
                     @error('duration_minutes') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Tags</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tags</label>
                     <div class="mt-1 flex flex-wrap gap-2">
                         @foreach($tags as $tag)
                             <label 
@@ -835,7 +869,7 @@
                         Delete
                     </button>
                     <div class="flex space-x-3">
-                        <button type="button" wire:click="cancelEdit" class="px-4 py-2 border rounded-md hover:bg-gray-100">
+                        <button type="button" wire:click="cancelEdit" class="px-4 py-2 border dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 dark:text-gray-300">
                             Cancel
                         </button>
                         <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
@@ -851,11 +885,11 @@
     <!-- Delete Confirmation Modal -->
     @if($confirmingDelete)
     <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 class="text-xl font-semibold mb-4">Confirm Delete</h2>
-            <p class="mb-4">Are you sure you want to delete this time log? This action cannot be undone.</p>
+        <div class="bg-white dark:bg-zinc-900 rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 class="text-xl font-semibold mb-4 dark:text-white">Confirm Delete</h2>
+            <p class="mb-4 dark:text-gray-300">Are you sure you want to delete this time log? This action cannot be undone.</p>
             <div class="flex justify-end space-x-3">
-                <button type="button" wire:click="cancelDelete" class="px-4 py-2 border rounded-md hover:bg-gray-100">
+                <button type="button" wire:click="cancelDelete" class="px-4 py-2 border dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 dark:text-gray-300">
                     Cancel
                 </button>
                 <button type="button" wire:click="deleteTimeLog({{ $confirmingDelete }})" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
@@ -869,11 +903,11 @@
     <!-- Bulk Delete Confirmation Modal -->
     @if($confirmingBulkDelete)
     <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 class="text-xl font-semibold mb-4">Confirm Bulk Delete</h2>
-            <p class="mb-4">Are you sure you want to delete {{ count($selectedTimeLogs) }} selected time {{ count($selectedTimeLogs) === 1 ? 'log' : 'logs' }}? This action cannot be undone.</p>
+        <div class="bg-white dark:bg-zinc-900 rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 class="text-xl font-semibold mb-4 dark:text-white">Confirm Bulk Delete</h2>
+            <p class="mb-4 dark:text-gray-300">Are you sure you want to delete {{ count($selectedTimeLogs) }} selected time {{ count($selectedTimeLogs) === 1 ? 'log' : 'logs' }}? This action cannot be undone.</p>
             <div class="flex justify-end space-x-3">
-                <button type="button" wire:click="cancelBulkDelete" class="px-4 py-2 border rounded-md hover:bg-gray-100">
+                <button type="button" wire:click="cancelBulkDelete" class="px-4 py-2 border dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 dark:text-gray-300">
                     Cancel
                 </button>
                 <button type="button" wire:click="bulkDeleteTimeLogs" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
@@ -887,22 +921,22 @@
     <!-- Time Log Selection Modal -->
     @if($showTimeLogSelectionModal)
     <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 class="text-xl font-semibold mb-4">Select Time Log to Edit</h2>
-            <p class="text-sm text-gray-600 mb-4">Multiple time logs found for this period. Please select one to edit:</p>
+        <div class="bg-white dark:bg-zinc-900 rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 class="text-xl font-semibold mb-4 dark:text-white">Select Time Log to Edit</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Multiple time logs found for this period. Please select one to edit:</p>
             
             <div class="space-y-2 max-h-80 overflow-y-auto mb-4">
                 @foreach($timeLogSelectionOptions as $option)
                     <button
                         wire:click="selectTimeLogToEdit({{ $option['id'] }})"
-                        class="w-full text-left p-3 border rounded-md hover:bg-indigo-50 transition-colors"
+                        class="w-full text-left p-3 border dark:border-gray-700 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-900 transition-colors dark:text-white"
                     >
                         <div class="flex justify-between items-center">
                             <div>
                                 <div class="font-medium">{{ $option['description'] }}</div>
-                                <div class="text-sm text-gray-500">{{ $option['start_time'] }} - {{ $option['end_time'] }}</div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">{{ $option['start_time'] }} - {{ $option['end_time'] }}</div>
                             </div>
-                            <div class="text-indigo-600 font-medium">{{ $option['duration'] }}</div>
+                            <div class="text-indigo-600 dark:text-indigo-400 font-medium">{{ $option['duration'] }}</div>
                         </div>
                     </button>
                 @endforeach
@@ -911,7 +945,7 @@
             <div class="flex justify-end">
                 <button
                     wire:click="closeTimeLogSelectionModal"
-                    class="px-4 py-2 border rounded-md hover:bg-gray-100"
+                    class="px-4 py-2 border dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 dark:text-gray-300"
                 >
                     Cancel
                 </button>
@@ -923,10 +957,10 @@
     <!-- Quick Time Modal -->
     @if($showQuickTimeModal)
     <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 class="text-xl font-semibold mb-2">Quick Time Entry</h2>
+        <div class="bg-white dark:bg-zinc-900 rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 class="text-xl font-semibold mb-2 dark:text-white">Quick Time Entry</h2>
             @if($quickTimeProjectId)
-                <div class="text-sm text-indigo-600 mb-4">
+                <div class="text-sm text-indigo-600 dark:text-indigo-400 mb-4">
                     @if($quickTimeTimerId)
                         @php
                             $timerName = 'Manual Entry';
@@ -947,11 +981,11 @@
             @endif
             
             <div class="mb-6">
-                <div class="bg-gray-100 p-4 rounded-lg text-center mb-4">
-                    <div class="text-3xl font-mono font-bold text-indigo-600">
+                <div class="bg-gray-100 dark:bg-zinc-800 p-4 rounded-lg text-center mb-4">
+                    <div class="text-3xl font-mono font-bold text-indigo-600 dark:text-indigo-400">
                         {{ floor($quickTimeDuration / 60) }}:{{ str_pad($quickTimeDuration % 60, 2, '0', STR_PAD_LEFT) }}
                     </div>
-                    <div class="text-sm text-gray-500">
+                    <div class="text-sm text-gray-500 dark:text-gray-400">
                         {{ $this->formatDuration($quickTimeDuration) }}
                     </div>
                     
@@ -960,50 +994,50 @@
                     @endphp
                     
                     @if($remainingMinutes > 0)
-                        <div class="mt-2 text-sm {{ $remainingMinutes < 60 ? 'text-orange-500' : 'text-blue-500' }}">
+                        <div class="mt-2 text-sm {{ $remainingMinutes < 60 ? 'text-orange-500 dark:text-orange-400' : 'text-blue-500 dark:text-blue-400' }}">
                             <span class="font-medium">Missing to reach 7h 24m:</span>
                             {{ $this->formatRemainingTime($remainingMinutes) }}
                             
                             @if($quickTimeDuration > 0 && $quickTimeDuration < $remainingMinutes)
-                                <span class="text-gray-500">
+                                <span class="text-gray-500 dark:text-gray-400">
                                     ({{ $this->formatRemainingTime($remainingMinutes - $quickTimeDuration) }} after this entry)
                                 </span>
                             @elseif($quickTimeDuration >= $remainingMinutes)
-                                <span class="text-green-500">
+                                <span class="text-green-500 dark:text-green-400">
                                     (Completed with this entry!)
                                 </span>
                             @endif
                         </div>
                     @else
-                        <div class="mt-2 text-sm text-green-500">
+                        <div class="mt-2 text-sm text-green-500 dark:text-green-400">
                             <span class="font-medium">7h 24m target reached for today!</span>
                         </div>
                     @endif
                 </div>
                 
                 <div class="grid grid-cols-4 gap-2 mb-4">
-                    <button type="button" wire:click="addQuickTime(5)" class="px-3 py-2 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200">
+                    <button type="button" wire:click="addQuickTime(5)" class="px-3 py-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-md hover:bg-indigo-200 dark:hover:bg-indigo-800">
                         +5m
                     </button>
-                    <button type="button" wire:click="addQuickTime(15)" class="px-3 py-2 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200">
+                    <button type="button" wire:click="addQuickTime(15)" class="px-3 py-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-md hover:bg-indigo-200 dark:hover:bg-indigo-800">
                         +15m
                     </button>
-                    <button type="button" wire:click="addQuickTime(30)" class="px-3 py-2 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200">
+                    <button type="button" wire:click="addQuickTime(30)" class="px-3 py-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-md hover:bg-indigo-200 dark:hover:bg-indigo-800">
                         +30m
                     </button>
-                    <button type="button" wire:click="addQuickTime(60)" class="px-3 py-2 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200">
+                    <button type="button" wire:click="addQuickTime(60)" class="px-3 py-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-md hover:bg-indigo-200 dark:hover:bg-indigo-800">
                         +1h
                     </button>
-                    <button type="button" wire:click="setQuickTime(30)" class="px-3 py-2 bg-indigo-200 text-indigo-700 rounded-md hover:bg-indigo-300">
+                    <button type="button" wire:click="setQuickTime(30)" class="px-3 py-2 bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 rounded-md hover:bg-indigo-300 dark:hover:bg-indigo-700">
                         30m
                     </button>
-                    <button type="button" wire:click="setQuickTime(60)" class="px-3 py-2 bg-indigo-200 text-indigo-700 rounded-md hover:bg-indigo-300">
+                    <button type="button" wire:click="setQuickTime(60)" class="px-3 py-2 bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 rounded-md hover:bg-indigo-300 dark:hover:bg-indigo-700">
                         1h
                     </button>
-                    <button type="button" wire:click="setQuickTime(120)" class="px-3 py-2 bg-indigo-200 text-indigo-700 rounded-md hover:bg-indigo-300">
+                    <button type="button" wire:click="setQuickTime(120)" class="px-3 py-2 bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 rounded-md hover:bg-indigo-300 dark:hover:bg-indigo-700">
                         2h
                     </button>
-                    <button type="button" wire:click="setQuickTime(444)" class="px-3 py-2 bg-indigo-300 text-indigo-800 rounded-md hover:bg-indigo-400 font-medium">
+                    <button type="button" wire:click="setQuickTime(444)" class="px-3 py-2 bg-indigo-300 dark:bg-indigo-700 text-indigo-800 dark:text-indigo-200 rounded-md hover:bg-indigo-400 dark:hover:bg-indigo-600 font-medium">
                         7h 24m
                     </button>
                 </div>
@@ -1011,13 +1045,13 @@
             
             <div class="space-y-4">
                 <div>
-                    <label for="quick_time_date" class="block text-sm font-medium text-gray-700">Date</label>
-                    <input type="date" wire:model="quickTimeDate" id="quick_time_date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <label for="quick_time_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
+                    <input type="date" wire:model="quickTimeDate" id="quick_time_date" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm">
                 </div>
                 
                 <div>
-                    <label for="quick_time_project_id" class="block text-sm font-medium text-gray-700">Project</label>
-                    <select wire:model="quickTimeProjectId" id="quick_time_project_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <label for="quick_time_project_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Project</label>
+                    <select wire:model="quickTimeProjectId" id="quick_time_project_id" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm">
                         <option value="">Select a project</option>
                         @foreach($projects as $project)
                             <option value="{{ $project->id }}">{{ $project->name }}</option>
@@ -1026,8 +1060,8 @@
                 </div>
                 
                 <div>
-                    <label for="quick_time_timer_id" class="block text-sm font-medium text-gray-700">Timer</label>
-                    <select wire:model="quickTimeTimerId" id="quick_time_timer_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <label for="quick_time_timer_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Timer</label>
+                    <select wire:model="quickTimeTimerId" id="quick_time_timer_id" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm">
                         <option value="">Manual Entry</option>
                         @foreach($quickTimeProjectTimers as $timer)
                             <option value="{{ $timer->id }}">{{ $timer->name }}</option>
@@ -1036,13 +1070,13 @@
                 </div>
                 
                 <div>
-                    <label for="quick_time_description" class="block text-sm font-medium text-gray-700">Description (optional)</label>
-                    <textarea wire:model="quickTimeDescription" id="quick_time_description" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
+                    <label for="quick_time_description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description (optional)</label>
+                    <textarea wire:model="quickTimeDescription" id="quick_time_description" rows="2" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm"></textarea>
                 </div>
             </div>
             
             <div class="flex justify-end space-x-3 mt-6">
-                <button type="button" wire:click="closeQuickTimeModal" class="px-4 py-2 border rounded-md hover:bg-gray-100">
+                <button type="button" wire:click="closeQuickTimeModal" class="px-4 py-2 border dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 dark:text-gray-300">
                     Cancel
                 </button>
                 <button type="button" wire:click="saveQuickTime" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
