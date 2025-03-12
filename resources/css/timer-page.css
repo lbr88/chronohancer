@@ -1,0 +1,376 @@
+/* Timer Page Styles */
+
+/* Base Styles */
+.timer-page {
+    --timer-primary: #4f46e5;
+    --timer-primary-light: #818cf8;
+    --timer-primary-dark: #3730a3;
+    --timer-success: #10b981;
+    --timer-danger: #ef4444;
+    --timer-warning: #f59e0b;
+    --timer-info: #3b82f6;
+    --timer-gray-50: #f9fafb;
+    --timer-gray-100: #f3f4f6;
+    --timer-gray-200: #e5e7eb;
+    --timer-gray-300: #d1d5db;
+    --timer-gray-400: #9ca3af;
+    --timer-gray-500: #6b7280;
+    --timer-gray-600: #4b5563;
+    --timer-gray-700: #374151;
+    --timer-gray-800: #1f2937;
+    --timer-gray-900: #111827;
+}
+
+/* Dark mode variables */
+.dark .timer-page {
+    --timer-gray-50: #1f2937;
+    --timer-gray-100: #374151;
+    --timer-gray-200: #4b5563;
+    --timer-gray-300: #6b7280;
+    --timer-gray-400: #9ca3af;
+    --timer-gray-500: #d1d5db;
+    --timer-gray-600: #e5e7eb;
+    --timer-gray-700: #f3f4f6;
+    --timer-gray-800: #f9fafb;
+    --timer-gray-900: #ffffff;
+}
+
+/* Timer Card Styles */
+.timer-card {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid var(--timer-gray-200);
+    border-radius: 0.75rem;
+    background-color: white;
+}
+
+.dark .timer-card {
+    background-color: var(--timer-gray-800);
+    border-color: var(--timer-gray-700);
+}
+
+.timer-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Timer Display Styles */
+.timer-display {
+    font-family: 'JetBrains Mono', monospace, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New";
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.timer-display.timer-pulse {
+    animation: timer-pulse 0.5s ease-in-out;
+}
+
+@keyframes timer-pulse {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.05); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* Timer Status Indicator */
+.timer-status-indicator {
+    height: 8px;
+    width: 8px;
+    border-radius: 50%;
+    background-color: var(--timer-success);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.2); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* Form Styles */
+.timer-form-group {
+    margin-bottom: 1.25rem;
+}
+
+.timer-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--timer-gray-700);
+}
+
+.dark .timer-label {
+    color: var(--timer-gray-300);
+}
+
+.timer-input {
+    width: 100%;
+    padding: 0.625rem 0.75rem;
+    border: 1px solid var(--timer-gray-300);
+    border-radius: 0.5rem;
+    background-color: white;
+    color: var(--timer-gray-900);
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.dark .timer-input {
+    background-color: var(--timer-gray-800);
+    border-color: var(--timer-gray-600);
+    color: var(--timer-gray-100);
+}
+
+.timer-input:focus {
+    outline: none;
+    border-color: var(--timer-primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+.dark .timer-input:focus {
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+}
+
+.timer-input::placeholder {
+    color: var(--timer-gray-400);
+}
+
+/* Button Styles */
+.timer-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.625rem 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.timer-btn:focus {
+    outline: none;
+}
+
+.timer-btn:active {
+    transform: scale(0.98);
+}
+
+.timer-btn-primary {
+    background-color: var(--timer-primary);
+    color: white;
+}
+
+.timer-btn-primary:hover {
+    background-color: var(--timer-primary-dark);
+}
+
+.timer-btn-primary:focus {
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.4);
+}
+
+.timer-btn-danger {
+    background-color: var(--timer-danger);
+    color: white;
+}
+
+.timer-btn-danger:hover {
+    background-color: #dc2626;
+}
+
+.timer-btn-danger:focus {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.4);
+}
+
+/* Tag Styles */
+.timer-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.timer-tag:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* Dropdown Styles */
+.timer-dropdown {
+    position: relative;
+}
+
+.timer-dropdown-content {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 10;
+    width: 100%;
+    margin-top: 0.25rem;
+    border-radius: 0.5rem;
+    background-color: white;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-10px);
+    visibility: hidden;
+    transition: all 0.2s ease;
+}
+
+.dark .timer-dropdown-content {
+    background-color: var(--timer-gray-800);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+.timer-dropdown.active .timer-dropdown-content {
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+}
+
+.timer-dropdown-item {
+    padding: 0.625rem 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.timer-dropdown-item:hover {
+    background-color: var(--timer-gray-100);
+}
+
+.dark .timer-dropdown-item:hover {
+    background-color: var(--timer-gray-700);
+}
+
+/* Notification Styles */
+.timer-notification {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    background-color: var(--timer-primary);
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    z-index: 50;
+    transform: translateY(0);
+    opacity: 1;
+    transition: all 0.3s ease;
+}
+
+.timer-notification.timer-notification-success {
+    background-color: var(--timer-success);
+}
+
+.timer-notification.timer-notification-danger {
+    background-color: var(--timer-danger);
+}
+
+.timer-notification.timer-notification-info {
+    background-color: var(--timer-info);
+}
+
+.timer-notification.timer-notification-warning {
+    background-color: var(--timer-warning);
+}
+
+.timer-notification.timer-notification-hide {
+    transform: translateY(-20px);
+    opacity: 0;
+}
+
+/* Empty State Styles */
+.timer-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1.5rem;
+    text-align: center;
+}
+
+.timer-empty-state-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 4rem;
+    height: 4rem;
+    margin-bottom: 1.5rem;
+    border-radius: 9999px;
+    background-color: var(--timer-gray-100);
+}
+
+.dark .timer-empty-state-icon {
+    background-color: var(--timer-gray-700);
+}
+
+.timer-empty-state-title {
+    margin-bottom: 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--timer-gray-900);
+}
+
+.dark .timer-empty-state-title {
+    color: var(--timer-gray-100);
+}
+
+.timer-empty-state-description {
+    max-width: 24rem;
+    color: var(--timer-gray-500);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 640px) {
+    .timer-card {
+        margin-bottom: 1rem;
+    }
+    
+    .timer-form-group {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Accessibility Enhancements */
+.timer-btn:focus,
+.timer-input:focus,
+.timer-tag:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.4);
+}
+
+/* High Contrast Mode */
+@media (forced-colors: active) {
+    .timer-btn,
+    .timer-input,
+    .timer-card,
+    .timer-tag {
+        border: 1px solid;
+    }
+}
+
+/* Animation for timer actions */
+@keyframes timer-slide-in {
+    0% { transform: translateY(20px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+}
+
+.timer-slide-in {
+    animation: timer-slide-in 0.3s ease forwards;
+}
+
+/* Smooth transitions for all interactive elements */
+.timer-page button,
+.timer-page input,
+.timer-page textarea,
+.timer-page select,
+.timer-page a {
+    transition: all 0.2s ease;
+}

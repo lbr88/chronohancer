@@ -24,11 +24,37 @@ class TimeLogs extends Component
     public $currentWeek;
     public $editingTimeLog = null;
     public $selected_date;
+    public $sortField = 'start_time';
+    public $sortDirection = 'desc';
+    public $filterProject = null;
+    public $filterTag = null;
+    public $filterDateFrom = null;
+    public $filterDateTo = null;
+    public $searchQuery = '';
+    public $timeFormat = 'human'; // human, hms, hm
+    public $showFilters = false;
+    public $confirmingDelete = null;
+    public $showQuickTimeModal = false;
+    public $quickTimeDate;
+    public $quickTimeProjectId;
+    public $quickTimeTimerId;
+    public $quickTimeDescription;
+    public $quickTimeDuration = 0;
+    public $quickTimeProjectTimers = [];
+    
+    protected $queryString = [
+        'sortField' => ['except' => 'start_time'],
+        'sortDirection' => ['except' => 'desc'],
+        'filterProject' => ['except' => null],
+        'filterTag' => ['except' => null],
+        'searchQuery' => ['except' => ''],
+        'view' => ['except' => 'list'],
+    ];
     
     protected $rules = [
         'project_id' => 'nullable|exists:projects,id',
         'description' => 'nullable',
-        'duration_minutes' => 'required|numeric|min:1',
+        'duration_minutes' => 'required',
         'selected_date' => 'required|date'
     ];
     
@@ -83,13 +109,51 @@ class TimeLogs extends Component
         }
     }
     
+    /**
+     * Parse duration string in format like "3h5m" or "45m" into minutes
+     *
+     * @param string $durationString
+     * @return int
+     */
+    public function parseDurationString($durationString)
+    {
+        // If it's already a number, return it
+        if (is_numeric($durationString)) {
+            return (int) $durationString;
+        }
+        
+        $minutes = 0;
+        
+        // Match hours
+        if (preg_match('/(\d+)h/', $durationString, $matches)) {
+            $minutes += (int) $matches[1] * 60;
+        }
+        
+        // Match minutes
+        if (preg_match('/(\d+)m/', $durationString, $matches)) {
+            $minutes += (int) $matches[1];
+        }
+        
+        return $minutes ?: (int) $durationString; // Fallback to treating it as minutes
+    }
+    
+    public function createForDate($date)
+    {
+        $this->selected_date = $date;
+        $this->reset(['project_id', 'description', 'duration_minutes', 'selectedTags']);
+        $this->dispatch('scroll-to-form');
+    }
+    
     public function save()
     {
         $this->validate();
         
+        // Parse duration string into minutes
+        $durationMinutes = $this->parseDurationString($this->duration_minutes);
+        
         // Create start and end times from the selected date
         $start_time = Carbon::parse($this->selected_date)->startOfDay();
-        $end_time = $start_time->copy()->addMinutes((int) $this->duration_minutes);
+        $end_time = $start_time->copy()->addMinutes($durationMinutes);
         
         $timeLog = TimeLog::create([
             'project_id' => $this->project_id,
@@ -97,7 +161,7 @@ class TimeLogs extends Component
             'description' => $this->description,
             'start_time' => $start_time,
             'end_time' => $end_time,
-            'duration_minutes' => (int) $this->duration_minutes,
+            'duration_minutes' => $durationMinutes,
         ]);
         
         if (!empty($this->selectedTags)) {
@@ -115,8 +179,47 @@ class TimeLogs extends Component
         $this->editingTimeLog = $timeLogId;
         $this->project_id = $timeLog->project_id;
         $this->description = $timeLog->description;
-        $this->duration_minutes = $timeLog->duration_minutes;
+        $this->selected_date = $timeLog->start_time->format('Y-m-d');
+        
+        // Format the duration in a user-friendly way
+        $minutes = $timeLog->duration_minutes;
+        $hours = floor($minutes / 60);
+        $mins = $minutes % 60;
+        
+        if ($hours > 0 && $mins > 0) {
+            $this->duration_minutes = "{$hours}h{$mins}m";
+        } elseif ($hours > 0) {
+            $this->duration_minutes = "{$hours}h";
+        } else {
+            $this->duration_minutes = "{$mins}m";
+        }
+        
         $this->selectedTags = $timeLog->tags->pluck('id')->toArray();
+    }
+    
+    public function findAndEditTimeLog($date, $projectId, $timerId = null)
+    {
+        // Find time logs for the specific date, project and timer
+        $query = TimeLog::where('user_id', auth()->id())
+            ->where('project_id', $projectId)
+            ->whereDate('start_time', $date);
+            
+        if ($timerId) {
+            $query->where('timer_id', $timerId);
+        } else {
+            $query->whereNull('timer_id');
+        }
+        
+        // Get the first log for this combination
+        $timeLog = $query->first();
+        
+        if ($timeLog) {
+            $this->startEdit($timeLog->id);
+        } else {
+            // If no log exists, set up for creating a new one
+            $this->createForDate($date);
+            $this->project_id = $projectId;
+        }
     }
 
     public function cancelEdit()
@@ -133,16 +236,19 @@ class TimeLogs extends Component
         
         $timeLog = TimeLog::findOrFail($this->editingTimeLog);
         
-        // Keep the original start time and calculate end time based on duration
-        $start_time = $timeLog->start_time;
-        $end_time = $start_time->copy()->addMinutes((int) $this->duration_minutes);
+        // Parse duration string into minutes
+        $durationMinutes = $this->parseDurationString($this->duration_minutes);
+        
+        // Use the selected date if it's been changed
+        $start_time = Carbon::parse($this->selected_date)->startOfDay();
+        $end_time = $start_time->copy()->addMinutes($durationMinutes);
         
         $timeLog->update([
             'project_id' => $this->project_id,
             'description' => $this->description,
             'start_time' => $start_time,
             'end_time' => $end_time,
-            'duration_minutes' => (int) $this->duration_minutes,
+            'duration_minutes' => $durationMinutes,
         ]);
 
         $timeLog->tags()->sync($this->selectedTags);
@@ -155,6 +261,7 @@ class TimeLogs extends Component
     {
         $timeLog = TimeLog::findOrFail($timeLogId);
         $timeLog->delete();
+        $this->confirmingDelete = null;
         session()->flash('message', 'Time log deleted successfully.');
     }
     
@@ -200,11 +307,22 @@ class TimeLogs extends Component
                 $timerName = $timerId ? ($timerLogs->first()->timer->name ?? 'Unnamed Timer') : 'Manual Entry';
                 $timerTotal = 0;
                 $dailyDurations = array_fill_keys(array_keys($weekDays), 0);
+                $dailyDescriptions = array_fill_keys(array_keys($weekDays), '');
+                $dailyLogIds = array_fill_keys(array_keys($weekDays), null);
                 
-                // Calculate daily durations
+                // Calculate daily durations and collect descriptions
                 foreach ($timerLogs as $log) {
                     $logDate = Carbon::parse($log->start_time)->format('Y-m-d');
                     $dailyDurations[$logDate] = ($dailyDurations[$logDate] ?? 0) + $log->duration_minutes;
+                    
+                    // Store the description for this day
+                    if (!empty($log->description)) {
+                        $dailyDescriptions[$logDate] = $log->description;
+                    }
+                    
+                    // Store the log ID for this day (for editing)
+                    $dailyLogIds[$logDate] = $log->id;
+                    
                     $timerTotal += $log->duration_minutes;
                 }
                 
@@ -212,6 +330,8 @@ class TimeLogs extends Component
                     'id' => $timerId,
                     'name' => $timerName,
                     'daily' => $dailyDurations,
+                    'dailyDescriptions' => $dailyDescriptions,
+                    'dailyLogIds' => $dailyLogIds,
                     'total' => $timerTotal,
                     'tags' => $timerLogs->flatMap->tags->unique('id')->values()
                 ];
@@ -261,22 +381,213 @@ class TimeLogs extends Component
     
     public function formatDuration($minutes)
     {
-        $hours = floor($minutes / 60);
-        $mins = $minutes % 60;
+        if ($this->timeFormat === 'hms') {
+            // Format as HH:MM:SS
+            $hours = floor($minutes / 60);
+            $mins = $minutes % 60;
+            $secs = 0; // We don't have seconds in our data model
+            
+            return sprintf('%02d:%02d:%02d', $hours, $mins, $secs);
+        } elseif ($this->timeFormat === 'hm') {
+            // Format as HH:MM
+            $hours = floor($minutes / 60);
+            $mins = $minutes % 60;
+            
+            return sprintf('%02d:%02d', $hours, $mins);
+        } else {
+            // Human readable format (e.g., 3h 40m)
+            $hours = floor($minutes / 60);
+            $mins = $minutes % 60;
+            
+            if ($hours > 0) {
+                return $hours . 'h ' . ($mins > 0 ? $mins . 'm' : '');
+            }
+            
+            return $mins . 'm';
+        }
+    }
+    
+    public function getDurationClass($minutes)
+    {
+        if ($minutes < 30) {
+            return 'bg-green-100 text-green-800'; // Short duration
+        } elseif ($minutes < 120) {
+            return 'bg-blue-100 text-blue-800'; // Medium duration
+        } else {
+            return 'bg-purple-100 text-purple-800'; // Long duration
+        }
+    }
+    
+    public function sortBy($field)
+    {
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
+    }
+    
+    public function toggleFilters()
+    {
+        $this->showFilters = !$this->showFilters;
+    }
+    
+    public function resetFilters()
+    {
+        $this->filterProject = null;
+        $this->filterTag = null;
+        $this->filterDateFrom = null;
+        $this->filterDateTo = null;
+        $this->searchQuery = '';
+    }
+    
+    /**
+     * This method is automatically called by Livewire when the duration_minutes property is updated
+     */
+    public function updatedDurationMinutes()
+    {
+        // This will trigger the display of the formatted duration in the UI
+        // No need to do anything here as the template will show the formatted duration
+    }
+    
+    public function setTimeFormat($format)
+    {
+        $this->timeFormat = $format;
+    }
+    
+    public function confirmDelete($timeLogId)
+    {
+        $this->confirmingDelete = $timeLogId;
+    }
+    
+    public function cancelDelete()
+    {
+        $this->confirmingDelete = null;
+    }
+    
+    public function openQuickTimeModal($date = null, $projectId = null, $timerId = null)
+    {
+        $this->quickTimeDate = $date ?? now()->format('Y-m-d');
+        $this->quickTimeProjectId = $projectId;
+        $this->quickTimeTimerId = $timerId;
+        $this->quickTimeDescription = null;
+        $this->quickTimeDuration = 0;
         
-        if ($hours > 0) {
-            return $hours . 'h ' . ($mins > 0 ? $mins . 'm' : '');
+        // Load timers
+        $this->loadProjectTimers($projectId);
+        
+        $this->showQuickTimeModal = true;
+    }
+    
+    public function loadProjectTimers($projectId = null)
+    {
+        $query = Timer::where('user_id', auth()->id());
+        
+        if ($projectId) {
+            // If project is selected, show timers for that project and timers without a project
+            $query->where(function($q) use ($projectId) {
+                $q->where('project_id', $projectId)
+                  ->orWhereNull('project_id');
+            });
         }
         
-        return $mins . 'm';
+        $this->quickTimeProjectTimers = $query->orderBy('name')->get();
+    }
+    
+    public function closeQuickTimeModal()
+    {
+        $this->showQuickTimeModal = false;
+    }
+    
+    public function updatedQuickTimeProjectId($value)
+    {
+        $this->loadProjectTimers($value);
+        $this->quickTimeTimerId = null; // Reset timer selection when project changes
+    }
+    
+    public function addQuickTime($minutes)
+    {
+        $this->quickTimeDuration += $minutes;
+    }
+    
+    public function setQuickTime($minutes)
+    {
+        $this->quickTimeDuration = $minutes;
+    }
+    
+    public function saveQuickTime()
+    {
+        if ($this->quickTimeDuration <= 0) {
+            return;
+        }
+        
+        // Create start and end times from the selected date
+        $start_time = Carbon::parse($this->quickTimeDate)->startOfDay();
+        $end_time = $start_time->copy()->addMinutes($this->quickTimeDuration);
+        
+        $timeLog = TimeLog::create([
+            'project_id' => $this->quickTimeProjectId,
+            'timer_id' => $this->quickTimeTimerId,
+            'user_id' => auth()->id(),
+            'description' => $this->quickTimeDescription,
+            'start_time' => $start_time,
+            'end_time' => $end_time,
+            'duration_minutes' => $this->quickTimeDuration,
+        ]);
+        
+        $this->closeQuickTimeModal();
+        session()->flash('message', 'Time log created successfully.');
     }
     
     public function render()
     {
+        $query = TimeLog::where('user_id', auth()->id());
+        
+        // Apply filters
+        if ($this->filterProject) {
+            $query->where('project_id', $this->filterProject);
+        }
+        
+        if ($this->filterTag) {
+            $query->whereHas('tags', function($q) {
+                $q->where('tags.id', $this->filterTag);
+            });
+        }
+        
+        if ($this->filterDateFrom) {
+            $query->where('start_time', '>=', $this->filterDateFrom . ' 00:00:00');
+        }
+        
+        if ($this->filterDateTo) {
+            $query->where('start_time', '<=', $this->filterDateTo . ' 23:59:59');
+        }
+        
+        if ($this->searchQuery) {
+            $query->where(function($q) {
+                $q->where('description', 'like', '%' . $this->searchQuery . '%')
+                  ->orWhereHas('project', function($q) {
+                      $q->where('name', 'like', '%' . $this->searchQuery . '%');
+                  });
+            });
+        }
+        
+        // Apply sorting
+        if ($this->sortField === 'project') {
+            $query->join('projects', 'time_logs.project_id', '=', 'projects.id')
+                  ->orderBy('projects.name', $this->sortDirection)
+                  ->select('time_logs.*');
+        } elseif ($this->sortField === 'duration') {
+            $query->orderBy('duration_minutes', $this->sortDirection);
+        } else {
+            $query->orderBy($this->sortField, $this->sortDirection);
+        }
+        
         return view('livewire.time-logs', [
-            'timeLogs' => TimeLog::where('user_id', auth()->id())->latest()->get(),
+            'timeLogs' => $query->with(['project', 'tags', 'timer'])->get(),
             'projects' => Project::where('user_id', auth()->id())->get(),
-            'tags' => Tag::all(),
+            'tags' => Tag::where('user_id', auth()->id())->get(),
+            'allTags' => Tag::where('user_id', auth()->id())->get(),
         ]);
     }
 }
