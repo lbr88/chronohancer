@@ -13,13 +13,18 @@ class Project extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['name', 'description', 'user_id', 'color', 'is_default'];
+    protected $fillable = ['name', 'description', 'user_id', 'workspace_id', 'color', 'is_default'];
     
     protected $dates = ['deleted_at'];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+    
+    public function workspace(): BelongsTo
+    {
+        return $this->belongsTo(Workspace::class);
     }
 
     public function timers(): HasMany
@@ -38,14 +43,22 @@ class Project extends Model
     }
     
     /**
-     * Find or create the default "No Project" project for a user
+     * Find or create the default "No Project" project for a user in a workspace
      *
      * @param int $userId
+     * @param int|null $workspaceId
      * @return \App\Models\Project
      */
-    public static function findOrCreateDefault(int $userId): self
+    public static function findOrCreateDefault(int $userId, ?int $workspaceId = null): self
     {
+        // If no workspace ID is provided, get the user's default workspace
+        if (!$workspaceId) {
+            $workspace = Workspace::findOrCreateDefault($userId);
+            $workspaceId = $workspace->id;
+        }
+        
         $defaultProject = self::where('user_id', $userId)
+            ->where('workspace_id', $workspaceId)
             ->where('is_default', true)
             ->first();
             
@@ -54,6 +67,7 @@ class Project extends Model
                 'name' => 'No Project',
                 'description' => 'Default project for unassigned timers and time logs',
                 'user_id' => $userId,
+                'workspace_id' => $workspaceId,
                 'color' => '#9ca3af', // Gray color
                 'is_default' => true,
             ]);

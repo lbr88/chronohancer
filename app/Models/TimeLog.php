@@ -12,12 +12,13 @@ class TimeLog extends Model
     use HasFactory;
 
     protected $fillable = [
-        'timer_id', 
-        'user_id', 
-        'project_id', 
-        'description', 
-        'start_time', 
-        'end_time', 
+        'timer_id',
+        'user_id',
+        'project_id',
+        'workspace_id',
+        'description',
+        'start_time',
+        'end_time',
         'duration_minutes'
     ];
 
@@ -36,6 +37,11 @@ class TimeLog extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+    
+    public function workspace(): BelongsTo
+    {
+        return $this->belongsTo(Workspace::class);
     }
 
     public function project(): BelongsTo

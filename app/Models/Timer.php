@@ -13,7 +13,7 @@ class Timer extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'description', 'project_id', 'is_running', 'is_paused', 'user_id'];
+    protected $fillable = ['name', 'description', 'project_id', 'workspace_id', 'is_running', 'is_paused', 'user_id'];
 
     protected $casts = [
         'is_running' => 'boolean',
@@ -43,6 +43,11 @@ class Timer extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+    
+    public function workspace(): BelongsTo
+    {
+        return $this->belongsTo(Workspace::class);
     }
 
     public function timeLogs(): HasMany
