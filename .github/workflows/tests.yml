@@ -52,11 +52,3 @@ jobs:
 
       - name: Run Tests
         run: ./vendor/bin/pest
-        
-      # Add explicit reference to upload-artifact to fix security check
-      - name: Upload Artifact Reference
-        uses: actions/upload-artifact@v3
-        if: false # This step won't run, it's just to reference the action
-        with:
-          name: dummy-artifact
-          path: ./
