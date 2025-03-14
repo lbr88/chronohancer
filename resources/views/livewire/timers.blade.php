@@ -23,9 +23,9 @@
             <!-- Running Timers Panel -->
             <div>
                 <!-- Running Timers -->
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <div class="p-5 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Running Timers</h2>
+                <div class="ch-card">
+                    <div class="ch-card-header">
+                        <h2 class="ch-card-title">Running Timers</h2>
                         <div class="flex items-center gap-4">
                             <!-- Time Format Selector -->
                             <div class="inline-flex flex-col">
@@ -48,7 +48,7 @@
                     
                     <!-- Running Timers -->
                     @if($runningTimers->isNotEmpty())
-                        <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                        <div class="ch-card-body">
                             @foreach($runningTimers as $timer)
                                 <div class="py-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
                                     <div class="flex items-center justify-between">
@@ -68,9 +68,9 @@
                                                 </div>
                                                 
                                                 @if($timer->tags->count() > 0)
-                                                    <div class="mt-1 flex flex-wrap gap-1">
+                                                    <div class="mt-1 ch-tag-list">
                                                         @foreach($timer->tags as $tag)
-                                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs"
+                                                            <span class="ch-tag"
                                                                 style="background-color: {{ $tag->color }}; color: {{ $this->getContrastColor($tag->color) }}">
                                                                 {{ $tag->name }}
                                                             </span>
@@ -108,7 +108,7 @@
                                         <div class="flex items-center space-x-1 ml-auto">
                                             <button
                                                 wire:click="cancelTimer({{ $timer->id }})"
-                                                class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                                class="ch-btn-icon-secondary"
                                                 title="Cancel timer without saving"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -119,7 +119,7 @@
                                             
                                             <button
                                                 wire:click="pauseTimer({{ $timer->id }})"
-                                                class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                                                class="ch-btn-icon-warning"
                                                 title="Pause timer"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -130,7 +130,7 @@
                                             
                                             <button
                                                 wire:click="stopAndEditTimer({{ $timer->id }})"
-                                                class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                                class="ch-btn-icon-primary"
                                                 title="Stop timer and edit details"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -141,7 +141,7 @@
                                             
                                             <button
                                                 wire:click="stopTimer({{ $timer->id }})"
-                                                class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 stop-button p-0"
+                                                class="ch-btn-icon-danger stop-button p-0"
                                                 title="Stop timer and save time"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -155,14 +155,14 @@
                             @endforeach
                         </div>
                     @else
-                        <div class="p-8 flex flex-col items-center justify-center text-center">
-                            <div class="h-16 w-16 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center mb-4">
+                        <div class="ch-empty-state">
+                            <div class="ch-empty-state-icon">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                             </div>
-                            <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-2">No Active Timers</h3>
-                            <p class="text-gray-500 dark:text-gray-400 max-w-md">
+                            <h3 class="ch-empty-state-title">No Active Timers</h3>
+                            <p class="ch-empty-state-description">
                                 Start a new timer to track your time. You can create multiple timers for different tasks.
                             </p>
                         </div>
@@ -171,11 +171,11 @@
                     <!-- Paused Timers Section -->
                     @if($pausedTimers->isNotEmpty())
                         <div class="border-t border-gray-200 dark:border-gray-700">
-                            <div class="p-5 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Paused Timers</h2>
+                            <div class="ch-card-header">
+                                <h2 class="ch-card-title">Paused Timers</h2>
                                 <span class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ $pausedTimers->count() }} paused</span>
                             </div>
-                            <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <div class="ch-card-body">
                                 @foreach($pausedTimers as $timer)
                                     <div class="py-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
                                         <div class="flex items-center justify-between">
@@ -197,9 +197,9 @@
                                                     </div>
                                                     
                                                     @if($timer->tags->count() > 0)
-                                                        <div class="mt-1 flex flex-wrap gap-1">
+                                                        <div class="mt-1 ch-tag-list">
                                                             @foreach($timer->tags as $tag)
-                                                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs"
+                                                                <span class="ch-tag"
                                                                     style="background-color: {{ $tag->color }}; color: {{ $this->getContrastColor($tag->color) }}">
                                                                     {{ $tag->name }}
                                                                 </span>
@@ -234,7 +234,7 @@
                                             <div class="flex items-center space-x-1 ml-auto">
                                                 <button
                                                     wire:click="restartTimer({{ $timer->id }})"
-                                                    class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                                    class="ch-btn-icon-primary"
                                                     title="Resume timer"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -246,7 +246,7 @@
                                                 
                                                 <button
                                                     wire:click="editTimer({{ $timer->id }})"
-                                                    class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                                    class="ch-btn-icon-secondary"
                                                     title="Edit timer"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -257,7 +257,7 @@
                                                 
                                                 <button
                                                     wire:click="stopPausedTimer({{ $timer->id }})"
-                                                    class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 stop-button p-0"
+                                                    class="ch-btn-icon-danger stop-button p-0"
                                                     title="Stop timer"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -299,23 +299,23 @@
             </div>
             
             @if($savedTimers->isNotEmpty())
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div class="ch-card">
                     <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead class="bg-gray-50 dark:bg-gray-700">
+                        <table class="ch-table">
+                            <thead class="ch-table-header">
                                 <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Project</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tags</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Last Used</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Duration</th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                                    <th scope="col" class="ch-table-header-cell">Name</th>
+                                    <th scope="col" class="ch-table-header-cell">Project</th>
+                                    <th scope="col" class="ch-table-header-cell">Tags</th>
+                                    <th scope="col" class="ch-table-header-cell">Last Used</th>
+                                    <th scope="col" class="ch-table-header-cell">Duration</th>
+                                    <th scope="col" class="ch-table-header-cell text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white dark:bg-zinc-900 divide-y divide-gray-200 dark:divide-gray-700">
+                            <tbody class="ch-table-body">
                                 @foreach($savedTimers as $timer)
-                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
-                                        <td class="px-6 py-4 whitespace-nowrap">
+                                    <tr class="ch-table-row">
+                                        <td class="ch-table-cell">
                                             <div class="flex items-center">
                                                 <div class="ml-4">
                                                     <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $timer->name }}</div>
@@ -325,18 +325,18 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
+                                        <td class="ch-table-cell">
                                             @if($timer->project)
                                                 <div class="text-sm text-gray-900 dark:text-white">{{ $timer->project->name }}</div>
                                             @else
                                                 <span class="text-sm text-gray-500 dark:text-gray-400">No project</span>
                                             @endif
                                         </td>
-                                        <td class="px-6 py-4">
+                                        <td class="ch-table-cell">
                                             @if($timer->tags->count() > 0)
-                                                <div class="flex flex-wrap gap-1.5 max-w-xs">
+                                                <div class="ch-tag-list max-w-xs">
                                                     @foreach($timer->tags as $tag)
-                                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs"
+                                                        <span class="ch-tag"
                                                             style="background-color: {{ $tag->color }}; color: {{ $this->getContrastColor($tag->color) }}">
                                                             {{ $tag->name }}
                                                         </span>
@@ -346,25 +346,25 @@
                                                 <span class="text-sm text-gray-500 dark:text-gray-400">No tags</span>
                                             @endif
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <td class="ch-table-cell text-sm text-gray-500 dark:text-gray-400">
                                             @if($timer->latestTimeLog)
                                                 {{ $timer->latestTimeLog->created_at->diffForHumans() }}
                                             @else
                                                 Never used
                                             @endif
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <td class="ch-table-cell text-sm text-gray-500 dark:text-gray-400">
                                             @if($timer->latestTimeLog && $timer->latestTimeLog->duration_minutes)
                                                 {{ $this->formatDuration($timer->latestTimeLog->duration_minutes * 60) }}
                                             @else
                                                 -
                                             @endif
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <td class="ch-table-cell text-right text-sm font-medium">
                                             <div class="flex justify-end space-x-2">
                                                 <button
                                                     wire:click="restartTimer({{ $timer->id }})"
-                                                    class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                                    class="ch-btn-primary inline-flex items-center px-2.5 py-1.5 text-xs"
                                                     title="Restart timer"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -374,7 +374,7 @@
                                                 </button>
                                                 <button
                                                     wire:click="editTimer({{ $timer->id }})"
-                                                    class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 dark:border-gray-600 text-xs font-medium rounded text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                                    class="ch-btn-secondary inline-flex items-center px-2.5 py-1.5 text-xs"
                                                     title="Edit timer"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -384,7 +384,7 @@
                                                 <button
                                                     wire:click="deleteTimer({{ $timer->id }})"
                                                     wire:confirm="Are you sure you want to delete this timer?"
-                                                    class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                                    class="ch-btn-danger inline-flex items-center px-2.5 py-1.5 text-xs"
                                                     title="Delete timer"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -400,16 +400,18 @@
                     </div>
                 </div>
             @else
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 flex flex-col items-center justify-center text-center">
-                    <div class="h-16 w-16 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
+                <div class="ch-card">
+                    <div class="ch-empty-state">
+                        <div class="ch-empty-state-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                        </div>
+                        <h3 class="ch-empty-state-title">No Saved Timers</h3>
+                        <p class="ch-empty-state-description">
+                            Start a new timer to track your time. Your stopped timers will appear here.
+                        </p>
                     </div>
-                    <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-2">No Saved Timers</h3>
-                    <p class="text-gray-500 dark:text-gray-400 max-w-md">
-                        Start a new timer to track your time. Your stopped timers will appear here.
-                    </p>
                 </div>
             @endif
         </div>
