@@ -59,6 +59,9 @@ class Projects extends Component
         $this->showCreateProjectModal = false;
         $this->showEditProjectModal = false;
 
+        // Fix any issues with default projects and duplicate names
+        Project::fixDefaultProjects(auth()->id(), app('current.workspace')->id);
+
         // Ensure a default project exists for the current workspace
         Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
     }
@@ -133,6 +136,18 @@ class Projects extends Component
         // Validate using the createRules
         $this->validate($this->createRules);
 
+        // Check if a project with this name already exists for this user and workspace
+        $existingProject = Project::where('user_id', auth()->id())
+            ->where('workspace_id', app('current.workspace')->id)
+            ->where('name', $this->name)
+            ->first();
+
+        if ($existingProject) {
+            session()->flash('error', 'A project with this name already exists.');
+
+            return;
+        }
+
         $project = Project::create([
             'name' => $this->name,
             'description' => $this->description,
@@ -206,6 +221,19 @@ class Projects extends Component
 
         $project = Project::findOrFail($this->editingProjectId);
 
+        // Check if a project with this name already exists for this user and workspace (excluding the current project)
+        $existingProject = Project::where('user_id', auth()->id())
+            ->where('workspace_id', app('current.workspace')->id)
+            ->where('name', $this->editingProjectName)
+            ->where('id', '!=', $this->editingProjectId)
+            ->first();
+
+        if ($existingProject) {
+            session()->flash('error', 'A project with this name already exists.');
+
+            return;
+        }
+
         // If setting this project as default, unset any existing default project
         if ($this->editingProjectIsDefault && ! $project->is_default) {
             Project::where('user_id', auth()->id())
@@ -269,7 +297,7 @@ class Projects extends Component
 
         // Prevent deletion of default project
         if ($project->is_default) {
-            session()->flash('error', 'The default "No Project" project cannot be deleted.');
+            session()->flash('error', 'The default project cannot be deleted.');
 
             return;
         }

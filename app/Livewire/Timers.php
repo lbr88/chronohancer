@@ -230,20 +230,18 @@ class Timers extends Component
     {
         $this->validate();
 
-        // Find or create project if name is provided
-        $project_id = null;
+        // Find or create project if name is provided, or use default project
         $project = null;
         if ($this->project_name) {
             $project = Project::firstOrCreate(
                 ['name' => $this->project_name, 'user_id' => auth()->id(), 'workspace_id' => app('current.workspace')->id],
                 ['description' => 'Project created from timer']
             );
-            $project_id = $project->id;
         } else {
-            // Use the default "No Project" project if no project name is provided
-            $project = Project::findOrCreateDefault(auth()->id());
-            $project_id = $project->id;
+            // Always use the default project if no project name is provided
+            $project = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
         }
+        $project_id = $project->id;
 
         // Create new timer
         $timer = Timer::create([
@@ -467,15 +465,18 @@ class Timers extends Component
         $timer = Timer::findOrFail($this->editingTimerId);
         $wasRunning = $timer->is_running;
 
-        // Find or create project if name is provided
-        $project_id = null;
+        // Find or create project if name is provided, or use default project
+        $project = null;
         if ($this->editingTimerProjectName) {
             $project = Project::firstOrCreate(
                 ['name' => $this->editingTimerProjectName, 'user_id' => auth()->id(), 'workspace_id' => app('current.workspace')->id],
                 ['description' => 'Project created from timer']
             );
-            $project_id = $project->id;
+        } else {
+            // Always use the default project if no project name is provided
+            $project = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
         }
+        $project_id = $project->id;
 
         // Update timer details
         $timer->update([
@@ -979,11 +980,15 @@ class Timers extends Component
         $timer->is_paused = false;
         $timer->save();
 
-        // Get project_id, using default project if none is assigned
+        // Always use the timer's project_id if it exists, otherwise use default project
         $project_id = $timer->project_id;
         if (! $project_id) {
-            $defaultProject = Project::findOrCreateDefault(auth()->id());
+            $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
             $project_id = $defaultProject->id;
+
+            // Update the timer to use the default project
+            $timer->project_id = $project_id;
+            $timer->save();
         }
 
         // Create a new time log with current time

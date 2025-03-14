@@ -95,7 +95,6 @@
             <div>
                 <label for="quick_time_project_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Project</label>
                 <select wire:model="quickTimeProjectId" id="quick_time_project_id" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2">
-                    <option value="">Select a project</option>
                     @foreach($projects as $project)
                         <option value="{{ $project->id }}">{{ $project->name }}</option>
                     @endforeach

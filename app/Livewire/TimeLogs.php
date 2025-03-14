@@ -205,10 +205,10 @@ class TimeLogs extends Component
         $start_time = Carbon::parse($this->selected_date)->startOfDay();
         $end_time = $start_time->copy()->addMinutes($durationMinutes);
 
-        // Get project_id, using default project if none is assigned
+        // Always use the selected project_id if it exists, otherwise use default project
         $project_id = $this->project_id;
         if ($project_id === null) {
-            $defaultProject = Project::findOrCreateDefault(auth()->id());
+            $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
             $project_id = $defaultProject->id;
         }
 
@@ -267,9 +267,11 @@ class TimeLogs extends Component
             ->where('workspace_id', app('current.workspace')->id)
             ->whereDate('start_time', $date);
 
-        // Handle project_id (could be null for "No Project")
+        // Handle project_id
         if ($projectId === 'null' || $projectId === null) {
-            $query->whereNull('project_id');
+            // Get the default project ID
+            $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+            $query->where('project_id', $defaultProject->id);
         } else {
             $query->where('project_id', $projectId);
         }
@@ -367,10 +369,10 @@ class TimeLogs extends Component
         $start_time = Carbon::parse($this->selected_date)->startOfDay();
         $end_time = $start_time->copy()->addMinutes($durationMinutes);
 
-        // Get project_id, using default project if none is assigned
+        // Always use the selected project_id if it exists, otherwise use default project
         $project_id = $this->project_id;
         if ($project_id === null) {
-            $defaultProject = Project::findOrCreateDefault(auth()->id());
+            $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
             $project_id = $defaultProject->id;
         }
 
@@ -455,13 +457,27 @@ class TimeLogs extends Component
         // Get all active projects (including those without time logs)
         $allProjects = Project::where('user_id', auth()->id())->get();
 
-        // Add "No Project" option
-        $projectsWithNoProject = $allProjects->toArray();
-        $projectsWithNoProject[] = [
-            'id' => null,
-            'name' => 'No Project',
-            'description' => 'Tasks without a project',
-        ];
+        // Make sure the default project is included
+        $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+        $projectsWithDefaultProject = $allProjects->toArray();
+
+        // Check if the default project is already in the list
+        $defaultProjectExists = false;
+        foreach ($projectsWithDefaultProject as $project) {
+            if ($project['id'] === $defaultProject->id) {
+                $defaultProjectExists = true;
+                break;
+            }
+        }
+
+        // Add the default project if it's not already in the list
+        if (! $defaultProjectExists) {
+            $projectsWithDefaultProject[] = [
+                'id' => $defaultProject->id,
+                'name' => $defaultProject->name,
+                'description' => $defaultProject->description,
+            ];
+        }
 
         // Get all active timers
         $allTimers = Timer::where('user_id', auth()->id())->get();
@@ -484,7 +500,7 @@ class TimeLogs extends Component
         $projectsWithoutLogs = [];
 
         // Process each project (including those without logs)
-        foreach ($projectsWithNoProject as $project) {
+        foreach ($projectsWithDefaultProject as $project) {
             $projectId = $project['id'] ?? null;
             $projectName = $project['name'];
             $projectTotal = 0;
@@ -796,45 +812,25 @@ class TimeLogs extends Component
                 $searchTerm = trim($this->searchQuery);
                 $searchTermLower = strtolower($searchTerm);
 
-                // Check if search term contains any part of "no project"
-                $matchesNoProject = str_contains('no project', $searchTermLower) ||
-                                   str_contains($searchTermLower, 'no') ||
-                                   str_contains($searchTermLower, 'project');
+                // Check if search term contains any part of "no project" or default project
+                $matchesDefaultProject = str_contains('no project', $searchTermLower) ||
+                                        str_contains($searchTermLower, 'no') ||
+                                        str_contains($searchTermLower, 'project');
 
-                // Get IDs of time logs with no project or deleted projects
-                $noProjectLogIds = collect();
-
-                if ($matchesNoProject) {
-                    // Get all time logs with null project_id
-                    $nullProjectLogs = TimeLog::where('user_id', auth()->id())
-                        ->whereNull('project_id')
-                        ->pluck('id');
-
-                    // Get all time logs with soft-deleted projects
-                    $deletedProjectLogs = TimeLog::where('user_id', auth()->id())
-                        ->whereNotNull('project_id')
-                        ->whereExists(function ($subquery) {
-                            $subquery->from('projects')
-                                ->whereColumn('projects.id', 'time_logs.project_id')
-                                ->whereNotNull('projects.deleted_at');
-                        })
-                        ->pluck('id');
-
-                    // Combine both sets of IDs
-                    $noProjectLogIds = $nullProjectLogs->merge($deletedProjectLogs);
-                }
+                // Get the default project
+                $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
 
                 // Apply all search conditions
-                $query->where(function ($q) use ($searchTerm, $noProjectLogIds, $matchesNoProject) {
+                $query->where(function ($q) use ($searchTerm, $defaultProject, $matchesDefaultProject) {
                     // Regular search in description and project name
                     $q->where('description', 'like', '%'.$searchTerm.'%')
                         ->orWhereHas('project', function ($q) use ($searchTerm) {
                             $q->where('name', 'like', '%'.$searchTerm.'%');
                         });
 
-                    // Include "No Project" results if the search term matches
-                    if ($matchesNoProject && $noProjectLogIds->count() > 0) {
-                        $q->orWhereIn('id', $noProjectLogIds);
+                    // Include default project results if the search term matches
+                    if ($matchesDefaultProject) {
+                        $q->orWhere('project_id', $defaultProject->id);
                     }
                 });
             }
@@ -876,12 +872,29 @@ class TimeLogs extends Component
 
         // Handle search query
         if ($this->searchQuery) {
-            // Apply search filters (simplified for brevity)
-            $query->where(function ($q) {
-                $q->where('description', 'like', '%'.$this->searchQuery.'%')
-                    ->orWhereHas('project', function ($q) {
-                        $q->where('name', 'like', '%'.$this->searchQuery.'%');
+            $searchTerm = trim($this->searchQuery);
+            $searchTermLower = strtolower($searchTerm);
+
+            // Check if search term contains any part of "no project" or default project
+            $matchesDefaultProject = str_contains('no project', $searchTermLower) ||
+                                    str_contains($searchTermLower, 'no') ||
+                                    str_contains($searchTermLower, 'project');
+
+            // Get the default project
+            $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+
+            // Apply all search conditions
+            $query->where(function ($q) use ($searchTerm, $defaultProject, $matchesDefaultProject) {
+                // Regular search in description and project name
+                $q->where('description', 'like', '%'.$searchTerm.'%')
+                    ->orWhereHas('project', function ($q) use ($searchTerm) {
+                        $q->where('name', 'like', '%'.$searchTerm.'%');
                     });
+
+                // Include default project results if the search term matches
+                if ($matchesDefaultProject) {
+                    $q->orWhere('project_id', $defaultProject->id);
+                }
             });
         }
 
@@ -1029,10 +1042,10 @@ class TimeLogs extends Component
         $start_time = Carbon::parse($this->quickTimeDate)->startOfDay();
         $end_time = $start_time->copy()->addMinutes($this->quickTimeDuration);
 
-        // Get project_id, using default project if none is assigned
+        // Always use the selected project_id if it exists, otherwise use default project
         $project_id = $this->quickTimeProjectId;
         if ($project_id === null) {
-            $defaultProject = Project::findOrCreateDefault(auth()->id());
+            $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
             $project_id = $defaultProject->id;
         }
 
@@ -1084,45 +1097,25 @@ class TimeLogs extends Component
             $searchTerm = trim($this->searchQuery);
             $searchTermLower = strtolower($searchTerm);
 
-            // Check if search term contains any part of "no project"
-            $matchesNoProject = str_contains('no project', $searchTermLower) ||
-                               str_contains($searchTermLower, 'no') ||
-                               str_contains($searchTermLower, 'project');
+            // Check if search term contains any part of "no project" or default project
+            $matchesDefaultProject = str_contains('no project', $searchTermLower) ||
+                                    str_contains($searchTermLower, 'no') ||
+                                    str_contains($searchTermLower, 'project');
 
-            // Get IDs of time logs with no project or deleted projects
-            $noProjectLogIds = collect();
-
-            if ($matchesNoProject) {
-                // Get all time logs with null project_id
-                $nullProjectLogs = TimeLog::where('user_id', auth()->id())
-                    ->whereNull('project_id')
-                    ->pluck('id');
-
-                // Get all time logs with soft-deleted projects
-                $deletedProjectLogs = TimeLog::where('user_id', auth()->id())
-                    ->whereNotNull('project_id')
-                    ->whereExists(function ($subquery) {
-                        $subquery->from('projects')
-                            ->whereColumn('projects.id', 'time_logs.project_id')
-                            ->whereNotNull('projects.deleted_at');
-                    })
-                    ->pluck('id');
-
-                // Combine both sets of IDs
-                $noProjectLogIds = $nullProjectLogs->merge($deletedProjectLogs);
-            }
+            // Get the default project
+            $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
 
             // Apply all search conditions
-            $query->where(function ($q) use ($searchTerm, $noProjectLogIds, $matchesNoProject) {
+            $query->where(function ($q) use ($searchTerm, $defaultProject, $matchesDefaultProject) {
                 // Regular search in description and project name
                 $q->where('description', 'like', '%'.$searchTerm.'%')
                     ->orWhereHas('project', function ($q) use ($searchTerm) {
                         $q->where('name', 'like', '%'.$searchTerm.'%');
                     });
 
-                // Include "No Project" results if the search term matches
-                if ($matchesNoProject && $noProjectLogIds->count() > 0) {
-                    $q->orWhereIn('id', $noProjectLogIds);
+                // Include default project results if the search term matches
+                if ($matchesDefaultProject) {
+                    $q->orWhere('project_id', $defaultProject->id);
                 }
             });
         }

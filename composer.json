@@ -15,7 +15,8 @@
         "laravel/tinker": "^2.10.1",
         "livewire/flux": "^2.0",
         "livewire/livewire": "^3.6",
-        "livewire/volt": "^1.6.7"
+        "livewire/volt": "^1.6.7",
+        "socialiteproviders/microsoft": "^4.6"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

@@ -253,8 +253,11 @@
                                     <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-white flex items-center justify-between">
                                         <span>
                                             @if($project['id'] === null)
-                                                <a href="{{ route('time-logs') }}?view=list&searchQuery=No Project" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
-                                                    <span>No Project</span>
+                                                @php
+                                                    $defaultProject = App\Models\Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+                                                @endphp
+                                                <a href="{{ route('time-logs') }}?view=list&filterProject={{ $defaultProject->id }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
+                                                    <span>{{ $defaultProject->name }}</span>
                                                 </a>
                                             @else
                                                 <a href="{{ route('time-logs') }}?view=list&filterProject={{ $project['id'] }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
@@ -622,8 +625,11 @@
                                                 {{ $timeLog->project->name }}
                                             </a>
                                         @else
-                                            <a href="{{ route('time-logs') }}?view=list&searchQuery=No Project" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
-                                                No Project
+                                            @php
+                                                $defaultProject = App\Models\Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+                                            @endphp
+                                            <a href="{{ route('time-logs') }}?view=list&filterProject={{ $defaultProject->id }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
+                                                {{ $defaultProject->name }}
                                             </a>
                                         @endif
                                     </div>
@@ -717,7 +723,6 @@
                 <div>
                     <label for="project_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Project</label>
                     <select wire:model="project_id" id="project_id" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2">
-                        <option value="">Select a project</option>
                         @foreach($projects as $project)
                             <option value="{{ $project->id }}">{{ $project->name }}</option>
                         @endforeach

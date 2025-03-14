@@ -77,7 +77,10 @@
                             <div class="flex items-center">
                                 <div class="w-3 h-3 rounded-full mr-2" style="background-color: {{ $project['color'] }}"></div>
                                 @if($project['id'] === null)
-                                    <a href="{{ route('time-logs', ['searchQuery' => 'No Project']) }}" class="dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200">{{ $project['name'] }}</a>
+                                    @php
+                                        $defaultProject = App\Models\Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+                                    @endphp
+                                    <a href="{{ route('time-logs', ['filterProject' => $defaultProject->id]) }}" class="dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200">{{ $project['name'] }}</a>
                                 @else
                                     <a href="{{ route('time-logs', ['filterProject' => $project['id']]) }}" class="dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200">{{ $project['name'] }}</a>
                                 @endif
@@ -314,7 +317,11 @@
                 <div class="space-y-4">
                     @forelse($recentTimeLogs as $timeLog)
                         <div class="border-b dark:border-zinc-700 pb-3">
-                            <a href="{{ route('time-logs', ['filterProject' => $timeLog->project_id]) }}" class="font-medium dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200">{{ $timeLog->project->name ?? 'No Project' }}</a>
+                            @php
+                                $defaultProject = App\Models\Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+                                $projectName = $timeLog->project ? $timeLog->project->name : $defaultProject->name;
+                            @endphp
+                            <a href="{{ route('time-logs', ['filterProject' => $timeLog->project_id ?: $defaultProject->id]) }}" class="font-medium dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200">{{ $projectName }}</a>
                             @if($timeLog->description)
                                 <a href="{{ route('time-logs', ['editId' => $timeLog->id, 'returnToDashboard' => true]) }}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200">{{ $timeLog->description }}</a>
                             @endif

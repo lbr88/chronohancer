@@ -134,7 +134,8 @@
                     $duration = ($hours > 0 ? $hours . 'h ' : '') . ($minutes > 0 ? $minutes . 'm' : '');
                     
                     // Format tooltip content
-                    $projectName = $log->project ? $log->project->name : 'No Project';
+                    $defaultProject = App\Models\Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+                    $projectName = $log->project ? $log->project->name : $defaultProject->name;
                     $timerName = $log->timer ? $log->timer->name : 'No Timer';
                     $description = $log->description ?: 'No description';
                     $tooltipContent = "{$projectName} - {$timerName}: {$description} ({$duration})";
