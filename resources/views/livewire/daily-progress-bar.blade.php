@@ -32,8 +32,9 @@
                     
                     // Format tooltip content
                     $projectName = $log->project ? $log->project->name : 'No Project';
+                    $timerName = $log->timer ? $log->timer->name : 'No Timer';
                     $description = $log->description ?: 'No description';
-                    $tooltipContent = "{$projectName}: {$description} ({$duration})";
+                    $tooltipContent = "{$projectName} - {$timerName}: {$description} ({$duration})";
                 @endphp
                 
                 <div

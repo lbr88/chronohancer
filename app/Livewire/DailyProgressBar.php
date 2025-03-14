@@ -47,7 +47,7 @@ class DailyProgressBar extends Component
             ->whereNotNull('end_time') // Only completed logs
             ->where('start_time', '>=', $today)
             ->where('start_time', '<', $tomorrow)
-            ->with(['project', 'tags'])
+            ->with(['project', 'tags', 'timer'])
             ->orderBy('start_time')
             ->get();
     }
