@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chronohancer-redis
+  namespace: chronohancer
+spec:
+  selector:
+    matchLabels:
+      app: chronohancer-redis
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: chronohancer-redis
+    spec:
+      containers:
+      - image: redis:7.0
+        name: redis
+        args: ["--requirepass", "$(REDIS_PASSWORD)"]
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: chronohancer-secret
+              key: REDIS_PASSWORD
+        ports:
+        - containerPort: 6379
+          name: redis
+        volumeMounts:
+        - name: redis-persistent-storage
+          mountPath: /data
+        resources:
+          limits:
+            cpu: 300m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+      volumes:
+      - name: redis-persistent-storage
+        persistentVolumeClaim:
+          claimName: chronohancer-redis-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chronohancer-redis
+  namespace: chronohancer
+spec:
+  ports:
+  - port: 6379
+  selector:
+    app: chronohancer-redis
+  clusterIP: None

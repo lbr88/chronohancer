@@ -102,6 +102,7 @@ class Timers extends Component
         if (strlen($this->search) >= 2) {
             $this->existingTimers = Timer::with(['project', 'tags'])
                 ->where('user_id', auth()->id())
+                ->where('workspace_id', app('current.workspace')->id)
                 ->where('name', 'like', '%' . $this->search . '%')
                 ->orderBy('updated_at', 'desc')
                 ->limit(5)
@@ -116,6 +117,7 @@ class Timers extends Component
         if (strlen($this->project_name) >= 2) {
             $this->suggestions['projects'] = Project::with('tags')
                 ->where('user_id', auth()->id())
+                ->where('workspace_id', app('current.workspace')->id)
                 ->where('name', 'like', '%' . $this->project_name . '%')
                 ->limit(5)
                 ->get();
@@ -132,6 +134,7 @@ class Timers extends Component
         
         if (strlen($lastTag) >= 2) {
             $this->suggestions['tags'] = Tag::where('user_id', auth()->id())
+                ->where('workspace_id', app('current.workspace')->id)
                 ->where('name', 'like', '%' . $lastTag . '%')
                 ->orderBy('updated_at', 'desc')
                 ->limit(5)
@@ -203,7 +206,7 @@ class Timers extends Component
         $project_id = null;
         if ($this->project_name) {
             $project = Project::firstOrCreate(
-                ['name' => $this->project_name, 'user_id' => auth()->id()],
+                ['name' => $this->project_name, 'user_id' => auth()->id(), 'workspace_id' => app('current.workspace')->id],
                 ['description' => 'Project created from timer']
             );
             $project_id = $project->id;
@@ -220,6 +223,7 @@ class Timers extends Component
             'name' => $this->name,
             'description' => $this->description,
             'is_running' => true,
+            'workspace_id' => app('current.workspace')->id,
         ]);
         
         // Process tags
@@ -229,7 +233,7 @@ class Timers extends Component
                 ->filter();
                 
             $tags = $tagNames->map(function($name) {
-                return Tag::findOrCreateForUser($name, auth()->id());
+                return Tag::findOrCreateForUser($name, auth()->id(), app('current.workspace')->id);
             });
             
             // Use unique() to prevent duplicate tag IDs
@@ -251,6 +255,7 @@ class Timers extends Component
             'project_id' => $project_id,
             'start_time' => $startTime,
             'description' => $this->description ?: null,
+            'workspace_id' => app('current.workspace')->id,
         ]);
         
         // Refresh the timer to include the latest time log
@@ -436,7 +441,7 @@ class Timers extends Component
         $project_id = null;
         if ($this->editingTimerProjectName) {
             $project = Project::firstOrCreate(
-                ['name' => $this->editingTimerProjectName, 'user_id' => auth()->id()],
+                ['name' => $this->editingTimerProjectName, 'user_id' => auth()->id(), 'workspace_id' => app('current.workspace')->id],
                 ['description' => 'Project created from timer']
             );
             $project_id = $project->id;
@@ -447,6 +452,7 @@ class Timers extends Component
             'name' => $this->editingTimerName,
             'description' => $this->editingTimerDescription,
             'project_id' => $project_id,
+            'workspace_id' => app('current.workspace')->id,
         ]);
         
         // Process tags
@@ -456,7 +462,7 @@ class Timers extends Component
                 ->filter();
                 
             $tags = $tagNames->map(function($name) {
-                return Tag::findOrCreateForUser($name, auth()->id());
+                return Tag::findOrCreateForUser($name, auth()->id(), app('current.workspace')->id);
             });
             
             $timer->tags()->sync($tags->pluck('id'));
@@ -494,6 +500,7 @@ class Timers extends Component
                         'duration_minutes' => $totalMinutes,
                         'project_id' => $project_id,
                         'description' => $this->editingTimerDescription ?: null,
+                        'workspace_id' => app('current.workspace')->id,
                     ]);
                     
                     // Dispatch event to update the daily progress bar
@@ -512,6 +519,7 @@ class Timers extends Component
                 $latestLog->update([
                     'project_id' => $project_id,
                     'description' => $this->editingTimerDescription ?: null,
+                    'workspace_id' => app('current.workspace')->id,
                 ]);
             }
         }
@@ -839,6 +847,7 @@ class Timers extends Component
         $today = now()->startOfDay();
         $timeLogs = $timer->timeLogs()
             ->where('created_at', '>=', $today)
+            ->where('workspace_id', app('current.workspace')->id)
             ->get();
         
         // Calculate total seconds
@@ -947,6 +956,7 @@ class Timers extends Component
             'project_id' => $project_id,
             'start_time' => now(),
             'description' => $timer->description ?: null,
+            'workspace_id' => app('current.workspace')->id,
         ]);
         
         // Refresh the timer to include the latest time log
@@ -1031,6 +1041,7 @@ class Timers extends Component
         $tomorrow = now()->addDay()->startOfDay();
         
         return TimeLog::where('user_id', auth()->id())
+            ->where('workspace_id', app('current.workspace')->id)
             ->whereNotNull('end_time') // Only completed logs
             ->where('start_time', '>=', $today)
             ->where('start_time', '<', $tomorrow)
@@ -1091,8 +1102,9 @@ class Timers extends Component
     public function render()
     {
         // Cache recent tags for 5 minutes to improve performance
-        $recentTags = Cache::remember('user.' . auth()->id() . '.recent_tags', 300, function () {
+        $recentTags = Cache::remember('user.' . auth()->id() . '.workspace.' . app('current.workspace')->id . '.recent_tags', 300, function () {
             return Tag::where('user_id', auth()->id())
+                ->where('workspace_id', app('current.workspace')->id)
                 ->orderBy('updated_at', 'desc')
                 ->limit(10)
                 ->get();
@@ -1101,6 +1113,7 @@ class Timers extends Component
         // Get all timers for the user
         $allTimers = Timer::with(['project', 'tags', 'latestTimeLog'])
             ->where('user_id', auth()->id())
+            ->where('workspace_id', app('current.workspace')->id)
             ->orderBy('updated_at', 'desc')
             ->get();
         

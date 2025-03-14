@@ -97,13 +97,14 @@ class Tags extends Component
             'name' => $this->name,
             'color' => $this->color,
             'user_id' => auth()->id(),
+            'workspace_id' => app('current.workspace')->id,
         ]);
         
         $this->reset(['name']);
         $this->showCreateTagModal = false;
         
         // Clear the cache for recent tags
-        Cache::forget('user.' . auth()->id() . '.recent_tags');
+        Cache::forget('user.' . auth()->id() . '.workspace.' . app('current.workspace')->id . '.recent_tags');
         
         session()->flash('message', 'Tag created successfully.');
     }
@@ -155,13 +156,14 @@ class Tags extends Component
         $tag->update([
             'name' => $this->editingTagName,
             'color' => $this->editingTagColor,
+            'workspace_id' => app('current.workspace')->id,
         ]);
         
         // Close the modal
         $this->closeEditTagModal();
         
         // Clear the cache for recent tags
-        Cache::forget('user.' . auth()->id() . '.recent_tags');
+        Cache::forget('user.' . auth()->id() . '.workspace.' . app('current.workspace')->id . '.recent_tags');
         
         session()->flash('message', 'Tag updated successfully.');
     }
@@ -193,14 +195,15 @@ class Tags extends Component
         $tag->delete();
         
         // Clear the cache for recent tags
-        Cache::forget('user.' . auth()->id() . '.recent_tags');
+        Cache::forget('user.' . auth()->id() . '.workspace.' . app('current.workspace')->id . '.recent_tags');
         
         session()->flash('message', 'Tag deleted successfully.');
     }
     
     public function render()
     {
-        $tagsQuery = Tag::where('user_id', auth()->id());
+        $tagsQuery = Tag::where('user_id', auth()->id())
+            ->where('workspace_id', app('current.workspace')->id);
             
         // Apply search filter if provided
         if (!empty($this->search)) {

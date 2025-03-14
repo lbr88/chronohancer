@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chronohancer.app.fullname" . }}
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "chronohancer.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.app.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "chronohancer.app.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "chronohancer.app.fullname" . }}
+        {{- include "chronohancer.labels" . | nindent 8 }}
+    spec:
+      initContainers:
+      - name: init-migrations
+        image: {{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}
+        imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+        command: ['/bin/sh', '-c']
+        args:
+          - php artisan migrate --force;
+        envFrom:
+        - configMapRef:
+            name: {{ include "chronohancer.fullname" . }}-config
+        - secretRef:
+            name: {{ include "chronohancer.fullname" . }}-secret
+        volumeMounts:
+        - name: app-storage
+          mountPath: /var/www/html/storage
+      containers:
+      - name: php-fpm
+        image: {{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}
+        imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+        envFrom:
+        - configMapRef:
+            name: {{ include "chronohancer.fullname" . }}-config
+        - secretRef:
+            name: {{ include "chronohancer.fullname" . }}-secret
+        ports:
+        - containerPort: 9000
+        volumeMounts:
+        - name: app-storage
+          mountPath: /var/www/html/storage
+        resources:
+          {{- toYaml .Values.app.resources | nindent 10 }}
+        readinessProbe:
+          exec:
+            command:
+            - php
+            - -v
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          exec:
+            command:
+            - php
+            - -v
+          initialDelaySeconds: 15
+          periodSeconds: 20
+      - name: nginx
+        image: {{ .Values.nginx.image.repository }}:{{ .Values.nginx.image.tag }}
+        imagePullPolicy: {{ .Values.nginx.image.pullPolicy }}
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: app-storage
+          mountPath: /var/www/html/storage
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d
+        resources:
+          {{- toYaml .Values.nginx.resources | nindent 10 }}
+      volumes:
+      - name: app-storage
+        persistentVolumeClaim:
+          claimName: {{ include "chronohancer.fullname" . }}-storage
+      - name: nginx-config
+        configMap:
+          name: {{ include "chronohancer.fullname" . }}-nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "chronohancer.app.fullname" . }}
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "chronohancer.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: {{ include "chronohancer.app.fullname" . }}
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  type: ClusterIP

@@ -1,0 +1,54 @@
+name: Deploy to Kubernetes
+
+on:
+  workflow_run:
+    workflows: ["Build and Push Docker Image"]
+    branches: [main]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'latest'
+
+      - name: Configure Kubernetes credentials
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG }}
+        
+      - name: Deploy to Kubernetes
+        run: |
+          # Update the image tag in values.yaml to use the latest image
+          REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_TAG=sha-$(echo ${{ github.sha }} | cut -c1-7)
+          
+          # Update the image tag in the Helm values
+          sed -i "s|image: .*|image: ghcr.io/${REPO}:${IMAGE_TAG}|g" helm/chronohancer/values.yaml
+          
+          # Deploy using Helm
+          helm upgrade --install chronohancer ./helm/chronohancer \
+            --namespace chronohancer \
+            --create-namespace \
+            --wait \
+            --timeout 5m
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -n chronohancer
+          echo "Deployment completed successfully!"

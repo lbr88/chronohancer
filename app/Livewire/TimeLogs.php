@@ -186,6 +186,7 @@ class TimeLogs extends Component
             'start_time' => $start_time,
             'end_time' => $end_time,
             'duration_minutes' => $durationMinutes,
+            'workspace_id' => app('current.workspace')->id,
         ]);
         
         if (!empty($this->selectedTags)) {
@@ -229,6 +230,7 @@ class TimeLogs extends Component
     {
         // Find time logs for the specific date, project and timer
         $query = TimeLog::where('user_id', auth()->id())
+            ->where('workspace_id', app('current.workspace')->id)
             ->whereDate('start_time', $date);
         
         // Handle project_id (could be null for "No Project")
@@ -345,6 +347,7 @@ class TimeLogs extends Component
             'start_time' => $start_time,
             'end_time' => $end_time,
             'duration_minutes' => $durationMinutes,
+            'workspace_id' => app('current.workspace')->id,
         ]);
 
         $timeLog->tags()->sync($this->selectedTags);
@@ -390,6 +393,7 @@ class TimeLogs extends Component
     {
         // Get time logs for the selected week
         $timeLogs = TimeLog::where('user_id', auth()->id())
+            ->where('workspace_id', app('current.workspace')->id)
             ->whereNotNull('end_time') // Only show logs that have an end time (completed logs)
             ->whereBetween('start_time', [
                 $this->startOfWeek . ' 00:00:00',
@@ -730,6 +734,7 @@ class TimeLogs extends Component
         if ($this->selectAll) {
             // Get all visible time log IDs based on current filters
             $query = TimeLog::where('user_id', auth()->id())
+                ->where('workspace_id', app('current.workspace')->id)
                 ->whereNotNull('end_time'); // Only include logs that have an end time
             
             // Apply the same filters as in the render method
@@ -812,6 +817,7 @@ class TimeLogs extends Component
     {
         // Get the count of all visible time logs based on current filters
         $query = TimeLog::where('user_id', auth()->id())
+            ->where('workspace_id', app('current.workspace')->id)
             ->whereNotNull('end_time'); // Only include logs that have an end time
         
         // Apply the same filters as in the render method
@@ -910,6 +916,7 @@ class TimeLogs extends Component
         
         // Get all time logs for the specified date
         $totalMinutes = TimeLog::where('user_id', auth()->id())
+            ->where('workspace_id', app('current.workspace')->id)
             ->whereNotNull('end_time') // Only include logs that have an end time
             ->whereDate('start_time', $date)
             ->sum('duration_minutes');
@@ -941,7 +948,8 @@ class TimeLogs extends Component
     
     public function loadProjectTimers($projectId = null)
     {
-        $query = Timer::where('user_id', auth()->id());
+        $query = Timer::where('user_id', auth()->id())
+            ->where('workspace_id', app('current.workspace')->id);
         
         if ($projectId !== null) {
             // If project is selected, show timers for that project and timers without a project
@@ -1000,6 +1008,7 @@ class TimeLogs extends Component
             'start_time' => $start_time,
             'end_time' => $end_time,
             'duration_minutes' => $this->quickTimeDuration,
+            'workspace_id' => app('current.workspace')->id,
         ]);
         
         // Dispatch event to update the daily progress bar
@@ -1012,6 +1021,7 @@ class TimeLogs extends Component
     public function render()
     {
         $query = TimeLog::where('user_id', auth()->id())
+            ->where('workspace_id', app('current.workspace')->id)
             ->whereNotNull('end_time'); // Only show logs that have an end time (completed logs)
         
         // Apply filters

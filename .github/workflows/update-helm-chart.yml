@@ -1,0 +1,40 @@
+name: Update Helm Chart Version
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-chart-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Get release version
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Update Helm chart version
+        run: |
+          # Extract version without 'v' prefix if present
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          VERSION=${VERSION#v}
+          
+          # Update version in Chart.yaml
+          sed -i "s/^version:.*/version: ${VERSION}/" helm/chronohancer/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"${VERSION}\"/" helm/chronohancer/Chart.yaml
+          
+          echo "Updated Helm chart version to ${VERSION}"
+          cat helm/chronohancer/Chart.yaml
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add helm/chronohancer/Chart.yaml
+          git commit -m "Update Helm chart version to ${{ steps.get_version.outputs.VERSION }}"
+          git push

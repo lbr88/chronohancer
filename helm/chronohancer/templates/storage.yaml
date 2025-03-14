@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "chronohancer.fullname" . }}-storage
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "chronohancer.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.app.storage.size }}
+  storageClassName: {{ .Values.app.storage.storageClass }}
+---
+{{- if .Values.mysql.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "chronohancer.mysql.fullname" . }}-storage
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "chronohancer.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.mysql.storage.size }}
+  storageClassName: {{ .Values.mysql.storage.storageClass }}
+{{- end }}
+---
+{{- if .Values.redis.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "chronohancer.redis.fullname" . }}-storage
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "chronohancer.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.redis.storage.size }}
+  storageClassName: {{ .Values.redis.storage.storageClass }}
+{{- end }}

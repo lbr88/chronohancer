@@ -175,6 +175,153 @@ Alternatively, you can use Laravel Sail for a containerized development environm
 ./vendor/bin/sail npm run build
 ```
 
+## 🐳 Docker Deployment
+
+### Using the Docker Image
+
+Chronohancer can be deployed using Docker. The project includes a Dockerfile in the `kubernetes` directory that builds a production-ready image.
+
+```bash
+# Build the Docker image locally
+docker build -t chronohancer -f kubernetes/Dockerfile .
+
+# Run the container
+docker run -p 9000:9000 chronohancer
+```
+
+### Using Docker Compose
+
+For local development and testing, you can use the included Docker Compose configuration:
+
+```bash
+# Start all services (app, nginx, mysql, redis)
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+```
+
+The Docker Compose setup includes:
+- The Laravel application using the Dockerfile
+- Nginx web server
+- MySQL database
+- Redis for caching and sessions
+
+All necessary environment variables are pre-configured in the docker-compose.yml file.
+
+### GitHub Container Registry
+
+This project is configured with GitHub Actions to automatically build and push Docker images to GitHub Container Registry (GHCR) when changes are pushed to the main branch.
+
+#### Accessing the Docker Image
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/yourusername/chronohancer:latest
+
+# Pull a specific version by commit SHA
+docker pull ghcr.io/yourusername/chronohancer:sha-abc123
+```
+
+#### GitHub Actions Workflows
+
+The project includes seven GitHub Actions workflows:
+
+1. **Laravel Test** (`.github/workflows/laravel-test.yml`):
+   - Runs on pushes to main and pull requests
+   - Sets up PHP, MySQL, and dependencies
+   - Runs the test suite to ensure code quality
+
+2. **Code Quality** (`.github/workflows/code-quality.yml`):
+   - Runs on pushes to main and pull requests
+   - Uses Laravel Pint to check code style against PSR-12 standards
+   - Automatically fixes code style issues in pull requests
+   - Ensures consistent code formatting across the project
+
+3. **Security Scan** (`.github/workflows/security-scan.yml`):
+   - Runs on pushes to main, pull requests, and weekly schedule
+   - Performs security checks using PHP Security Checker, Composer Audit, and NPM Audit
+   - Uses OWASP Dependency-Check to identify vulnerabilities in dependencies
+   - Generates and uploads security reports as artifacts
+   - Helps identify and address security vulnerabilities early
+
+4. **Docker Build and Push** (`.github/workflows/docker-build-push.yml`):
+   - Runs on pushes to main and pull requests
+   - Builds the Docker image using the Dockerfile in the kubernetes directory
+   - Tags the image with 'latest' and the commit SHA
+   - Pushes the image to GitHub Container Registry (only for pushes to main, not pull requests)
+
+5. **Kubernetes Deploy** (`.github/workflows/kubernetes-deploy.yml`):
+   - Runs after successful completion of the Docker Build and Push workflow
+   - Only triggers on pushes to the main branch
+   - Sets up kubectl and Helm
+   - Deploys the application to a Kubernetes cluster using the Helm chart
+   - Requires a Kubernetes configuration secret (KUBE_CONFIG) to be set in the repository settings
+
+6. **Create Release** (`.github/workflows/create-release.yml`):
+   - Triggers when a new version tag is pushed (e.g., v1.0.0)
+   - Automatically creates a GitHub release with the tag name
+   - Generates release notes based on commits since the previous release
+   - Provides a consistent way to create releases
+
+7. **Update Helm Chart Version** (`.github/workflows/update-helm-chart.yml`):
+   - Triggers when a new release is published
+   - Automatically updates the version in the Helm chart's Chart.yaml file
+   - Commits and pushes the changes back to the repository
+   - Ensures the Helm chart version stays in sync with application releases
+
+#### Setting Up Repository Access
+
+To use the GitHub Container Registry image in your deployment:
+
+1. Ensure your GitHub account or organization has proper access to the package
+2. Authenticate with GitHub Container Registry:
+   ```bash
+   echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+   ```
+3. Pull and deploy the image as needed
+
+#### Setting Up GitHub Secrets
+
+For the GitHub Actions workflows to function properly, you need to set up the following secrets in your repository settings:
+
+1. **GITHUB_TOKEN**: Automatically provided by GitHub, used for authentication with GitHub Container Registry.
+
+2. **KUBE_CONFIG**: Required for the Kubernetes deployment workflow. This should contain your Kubernetes cluster configuration in base64 encoded format. You can generate it with:
+   ```bash
+   cat ~/.kube/config | base64
+   ```
+
+To add these secrets:
+1. Go to your GitHub repository
+2. Navigate to Settings > Secrets and variables > Actions
+3. Click "New repository secret"
+4. Add the secrets with the appropriate names and values
+
+#### Release Management
+
+The project includes a convenient script for managing releases:
+
+**make-release.sh**
+- A bash script to simplify the release process
+- When run without parameters, it shows the latest tag:
+  ```bash
+  ./make-release.sh
+  # Output: Latest tag: v1.2.3
+  ```
+- When run with a version parameter, it creates and pushes a new tag:
+  ```bash
+  ./make-release.sh v1.3.0
+  # Creates and pushes tag v1.3.0
+  ```
+- The script validates that the version follows the correct format (vX.Y.Z)
+- After pushing a new tag, the GitHub Actions workflow automatically creates a release
+
+This script works in conjunction with the Create Release and Update Helm Chart Version workflows to automate the release process.
+
 ## 🧪 Testing
 
 Run the test suite with Pest:

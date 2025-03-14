@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chronohancer-app
+  namespace: chronohancer
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: chronohancer-app
+  template:
+    metadata:
+      labels:
+        app: chronohancer-app
+    spec:
+      initContainers:
+      - name: init-migrations
+        image: chronohancer:latest
+        command: ['/bin/sh', '-c']
+        args:
+          - php artisan migrate --force;
+        envFrom:
+        - configMapRef:
+            name: chronohancer-config
+        - secretRef:
+            name: chronohancer-secret
+        volumeMounts:
+        - name: app-storage
+          mountPath: /var/www/html/storage
+      containers:
+      - name: php-fpm
+        image: chronohancer:latest
+        envFrom:
+        - configMapRef:
+            name: chronohancer-config
+        - secretRef:
+            name: chronohancer-secret
+        ports:
+        - containerPort: 9000
+        volumeMounts:
+        - name: app-storage
+          mountPath: /var/www/html/storage
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1Gi
+          requests:
+            cpu: 250m
+            memory: 512Mi
+        readinessProbe:
+          exec:
+            command:
+            - php
+            - -v
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          exec:
+            command:
+            - php
+            - -v
+          initialDelaySeconds: 15
+          periodSeconds: 20
+      - name: nginx
+        image: nginx:1.25
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: app-storage
+          mountPath: /var/www/html/storage
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d
+        resources:
+          limits:
+            cpu: 300m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+      volumes:
+      - name: app-storage
+        persistentVolumeClaim:
+          claimName: chronohancer-storage
+      - name: nginx-config
+        configMap:
+          name: nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chronohancer-app
+  namespace: chronohancer
+spec:
+  selector:
+    app: chronohancer-app
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  type: ClusterIP

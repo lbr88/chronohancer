@@ -80,6 +80,7 @@ class Projects extends Component
         
         if (strlen($lastTag) >= 2) {
             $this->tagSuggestions = Tag::where('user_id', auth()->id())
+                ->where('workspace_id', app('current.workspace')->id)
                 ->where('name', 'like', '%' . $lastTag . '%')
                 ->orderBy('updated_at', 'desc')
                 ->limit(5)
@@ -121,6 +122,7 @@ class Projects extends Component
             'description' => $this->description,
             'color' => $this->color,
             'user_id' => auth()->id(),
+            'workspace_id' => app('current.workspace')->id,
         ]);
         
         // Process tags from tag_input
@@ -130,7 +132,7 @@ class Projects extends Component
                 ->filter();
                 
             $tags = $tagNames->map(function($name) {
-                return Tag::findOrCreateForUser($name, auth()->id());
+                return Tag::findOrCreateForUser($name, auth()->id(), app('current.workspace')->id);
             });
             
             $project->tags()->attach($tags->pluck('id'));
@@ -192,6 +194,7 @@ class Projects extends Component
         // If setting this project as default, unset any existing default project
         if ($this->editingProjectIsDefault && !$project->is_default) {
             Project::where('user_id', auth()->id())
+                ->where('workspace_id', app('current.workspace')->id)
                 ->where('is_default', true)
                 ->update(['is_default' => false]);
         }
@@ -202,6 +205,7 @@ class Projects extends Component
             'description' => $this->editingProjectDescription,
             'color' => $this->editingProjectColor,
             'is_default' => $this->editingProjectIsDefault,
+            'workspace_id' => app('current.workspace')->id,
         ]);
         
         // Process tags
@@ -211,7 +215,7 @@ class Projects extends Component
                 ->filter();
                 
             $tags = $tagNames->map(function($name) {
-                return Tag::findOrCreateForUser($name, auth()->id());
+                return Tag::findOrCreateForUser($name, auth()->id(), app('current.workspace')->id);
             });
             
             $project->tags()->sync($tags->pluck('id'));
@@ -276,6 +280,7 @@ class Projects extends Component
     {
         // Unset any existing default project
         Project::where('user_id', auth()->id())
+            ->where('workspace_id', app('current.workspace')->id)
             ->where('is_default', true)
             ->update(['is_default' => false]);
         
@@ -289,14 +294,16 @@ class Projects extends Component
     public function render()
     {
         // Cache recent tags for 5 minutes to improve performance
-        $recentTags = Cache::remember('user.' . auth()->id() . '.recent_tags', 300, function () {
+        $recentTags = Cache::remember('user.' . auth()->id() . '.workspace.' . app('current.workspace')->id . '.recent_tags', 300, function () {
             return Tag::where('user_id', auth()->id())
+                ->where('workspace_id', app('current.workspace')->id)
                 ->orderBy('updated_at', 'desc')
                 ->limit(10)
                 ->get();
         });
         
         $projectsQuery = Project::where('user_id', auth()->id())
+            ->where('workspace_id', app('current.workspace')->id)
             ->with('tags');
             
         // Apply search filter if provided
@@ -313,7 +320,7 @@ class Projects extends Component
         
         return view('livewire.projects', [
             'projects' => $projectsQuery->get(),
-            'tags' => Tag::where('user_id', auth()->id())->get(),
+            'tags' => Tag::where('user_id', auth()->id())->where('workspace_id', app('current.workspace')->id)->get(),
             'recentTags' => $recentTags,
         ]);
     }

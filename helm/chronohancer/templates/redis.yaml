@@ -1,0 +1,58 @@
+{{- if .Values.redis.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chronohancer.redis.fullname" . }}
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "chronohancer.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ include "chronohancer.redis.fullname" . }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ include "chronohancer.redis.fullname" . }}
+        {{- include "chronohancer.labels" . | nindent 8 }}
+    spec:
+      containers:
+      - image: {{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}
+        imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
+        name: redis
+        args: ["--requirepass", "$(REDIS_PASSWORD)"]
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "chronohancer.fullname" . }}-secret
+              key: REDIS_PASSWORD
+        ports:
+        - containerPort: 6379
+          name: redis
+        volumeMounts:
+        - name: redis-persistent-storage
+          mountPath: /data
+        resources:
+          {{- toYaml .Values.redis.resources | nindent 10 }}
+      volumes:
+      - name: redis-persistent-storage
+        persistentVolumeClaim:
+          claimName: {{ include "chronohancer.redis.fullname" . }}-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "chronohancer.redis.fullname" . }}
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "chronohancer.labels" . | nindent 4 }}
+spec:
+  ports:
+  - port: 6379
+  selector:
+    app: {{ include "chronohancer.redis.fullname" . }}
+  clusterIP: None
+{{- end }}

@@ -1,0 +1,72 @@
+{{- if .Values.mysql.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chronohancer.mysql.fullname" . }}
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "chronohancer.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ include "chronohancer.mysql.fullname" . }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ include "chronohancer.mysql.fullname" . }}
+        {{- include "chronohancer.labels" . | nindent 8 }}
+    spec:
+      containers:
+      - image: {{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}
+        imagePullPolicy: {{ .Values.mysql.image.pullPolicy }}
+        name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "chronohancer.fullname" . }}-secret
+              key: DB_PASSWORD
+        - name: MYSQL_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "chronohancer.fullname" . }}-config
+              key: DB_DATABASE
+        - name: MYSQL_USER
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "chronohancer.fullname" . }}-config
+              key: DB_USERNAME
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "chronohancer.fullname" . }}-secret
+              key: DB_PASSWORD
+        ports:
+        - containerPort: 3306
+          name: mysql
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+        resources:
+          {{- toYaml .Values.mysql.resources | nindent 10 }}
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: {{ include "chronohancer.mysql.fullname" . }}-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "chronohancer.mysql.fullname" . }}
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "chronohancer.labels" . | nindent 4 }}
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: {{ include "chronohancer.mysql.fullname" . }}
+  clusterIP: None
+{{- end }}
