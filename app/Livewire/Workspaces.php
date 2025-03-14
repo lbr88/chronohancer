@@ -95,6 +95,9 @@ class Workspaces extends Component
                 'user_id' => Auth::id(),
             ]);
 
+            // Create a default project for this workspace
+            Project::findOrCreateDefault(Auth::id(), $workspace->id);
+
             // If this is the first workspace or set as default, set it as the current workspace
             if ($this->form['is_default'] || Workspace::where('user_id', Auth::id())->count() === 1) {
                 Session::put('current_workspace_id', $workspace->id);

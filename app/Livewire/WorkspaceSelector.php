@@ -41,6 +41,16 @@ class WorkspaceSelector extends Component
             ->orderBy('name')
             ->get();
     }
+    
+    #[On('workspace-switched')]
+    public function onWorkspaceSwitched($workspaceId)
+    {
+        // Ensure a default project exists for the workspace that was switched to
+        // This is called after the page is refreshed, so it won't cause circular dependencies
+        if (Auth::check() && $workspaceId) {
+            \App\Models\Project::findOrCreateDefault(Auth::id(), $workspaceId);
+        }
+    }
 
     public function switchWorkspace($workspaceId)
     {

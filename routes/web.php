@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
 use App\Livewire\Dashboard;
 use App\Livewire\Projects;
 use App\Livewire\Settings\Appearance;
@@ -32,10 +31,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/settings/password', Password::class)->name('settings.password');
 });
 
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
+// Profile routes are handled by Livewire components
 
 require __DIR__.'/auth.php';
