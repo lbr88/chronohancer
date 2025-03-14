@@ -1,4 +1,4 @@
-name: Create Release and Build Docker Image
+name: Create Release, Build Docker Image, and Update Helm Chart
 
 on:
   push:
@@ -69,3 +69,48 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'latest'
+          
+      - name: Package Helm Chart
+        run: |
+          # Extract version without 'v' prefix
+          VERSION=${GITHUB_REF#refs/tags/v}
+          
+          # Create directories for chart release
+          mkdir -p .cr-release-packages/ .cr-index
+          
+          # Package the Helm chart
+          helm package helm/chronohancer -d .cr-release-packages/
+          
+          # Create index file
+          helm repo index .cr-release-packages/ --url https://lbr88.github.io/chronohancer/
+          
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+          
+      - name: Update Helm Repository
+        run: |
+          # Copy packaged chart and index to gh-pages directory
+          cp .cr-release-packages/*.tgz gh-pages/
+          cp .cr-release-packages/index.yaml gh-pages/
+          
+          # Configure Git
+          cd gh-pages
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          
+          # Commit and push changes
+          git add .
+          git commit -m "Update Helm chart for release ${GITHUB_REF#refs/tags/}"
+          git push
+          
+          # Clean up
+          cd ..
+          rm -rf .cr-release-packages/ .cr-index/

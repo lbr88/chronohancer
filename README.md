@@ -177,6 +177,37 @@ Alternatively, you can use Laravel Sail for a containerized development environm
 
 ## 🐳 Docker Deployment
 
+### Helm Chart Repository
+
+Chronohancer can be deployed to Kubernetes using our Helm chart. The chart is available from our GitHub Pages Helm repository.
+
+#### Adding the Helm Repository
+
+```bash
+# Add the Chronohancer Helm repository
+helm repo add chronohancer https://lbr88.github.io/chronohancer/
+
+# Update your Helm repositories
+helm repo update
+
+# Search for available charts
+helm search repo chronohancer
+```
+
+#### Installing the Chart
+
+```bash
+# Install the chart with the release name "my-chronohancer"
+helm install my-chronohancer chronohancer/chronohancer
+
+# Install with custom values
+helm install my-chronohancer chronohancer/chronohancer --values my-values.yaml
+```
+
+#### Configuration
+
+See the [helm/chronohancer/README.md](helm/chronohancer/README.md) file for detailed configuration options.
+
 ### Using the Docker Image
 
 Chronohancer can be deployed using Docker. The project includes a Dockerfile in the `kubernetes` directory that builds a production-ready image.
