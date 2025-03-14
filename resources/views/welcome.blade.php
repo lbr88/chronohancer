@@ -89,7 +89,7 @@
                     <ul class="flex flex-col mb-6">
                         <li class="flex items-center gap-4 py-2">
                             <span>
-                                <a href="https://chronohancer.com/docs" target="_blank" class="inline-flex items-center space-x-1 font-medium underline underline-offset-4 text-[#f53003] dark:text-[#FF4433]">
+                                <a href="https://github.com/lbr88/cronohancer/" target="_blank" class="inline-flex items-center space-x-1 font-medium underline underline-offset-4 text-[#f53003] dark:text-[#FF4433]">
                                     <span>Documentation</span>
                                     <svg
                                         width="10"
