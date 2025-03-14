@@ -1011,6 +1011,74 @@ class Timers extends Component
             ->first();
     }
 
+    /**
+     * Get all time logs for the current day
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public function getDailyTimeLogs()
+    {
+        $today = now()->startOfDay();
+        $tomorrow = now()->addDay()->startOfDay();
+        
+        return TimeLog::where('user_id', auth()->id())
+            ->whereNotNull('end_time') // Only completed logs
+            ->where('start_time', '>=', $today)
+            ->where('start_time', '<', $tomorrow)
+            ->with(['project', 'tags'])
+            ->orderBy('start_time')
+            ->get();
+    }
+    
+    /**
+     * Get the total minutes logged for the current day
+     *
+     * @return int
+     */
+    public function getTotalDailyMinutes()
+    {
+        return $this->getDailyTimeLogs()->sum('duration_minutes');
+    }
+    
+    /**
+     * Get the percentage of the required daily hours (7.4 hours = 444 minutes)
+     *
+     * @return int
+     */
+    public function getDailyProgressPercentage()
+    {
+        $totalMinutes = $this->getTotalDailyMinutes();
+        $requiredMinutes = 444; // 7.4 hours = 444 minutes
+        
+        $percentage = min(100, round(($totalMinutes / $requiredMinutes) * 100));
+        
+        return $percentage;
+    }
+    
+    /**
+     * Get the remaining time to reach the daily goal of 7.4 hours
+     *
+     * @return string
+     */
+    public function getRemainingDailyTime()
+    {
+        $totalMinutes = $this->getTotalDailyMinutes();
+        $requiredMinutes = 444; // 7.4 hours = 444 minutes
+        
+        $remainingMinutes = max(0, $requiredMinutes - $totalMinutes);
+        
+        $hours = floor($remainingMinutes / 60);
+        $minutes = $remainingMinutes % 60;
+        
+        if ($hours > 0 && $minutes > 0) {
+            return "{$hours}h {$minutes}m";
+        } elseif ($hours > 0) {
+            return "{$hours}h";
+        } else {
+            return "{$minutes}m";
+        }
+    }
+
     public function render()
     {
         // Cache recent tags for 5 minutes to improve performance
@@ -1061,12 +1129,20 @@ class Timers extends Component
                 return false;
             });
         }
+        
+        // Get daily time logs for the progress bar
+        $dailyTimeLogs = $this->getDailyTimeLogs();
+        $dailyProgressPercentage = $this->getDailyProgressPercentage();
+        $remainingDailyTime = $this->getRemainingDailyTime();
             
         return view('livewire.timers', [
             'recentTags' => $recentTags,
             'runningTimers' => $runningTimers,
             'pausedTimers' => $pausedTimers,
             'savedTimers' => $savedTimers,
+            'dailyTimeLogs' => $dailyTimeLogs,
+            'dailyProgressPercentage' => $dailyProgressPercentage,
+            'remainingDailyTime' => $remainingDailyTime,
         ]);
     }
 }
