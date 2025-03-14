@@ -38,6 +38,7 @@ class Projects extends Component
         'editingProjectDescription' => 'required',
         'editingProjectColor' => 'required',
         'editingProjectTagInput' => 'nullable|string',
+        'editingProjectIsDefault' => 'boolean',
     ];
     
     public function mount()
@@ -160,6 +161,8 @@ class Projects extends Component
     /**
      * Edit a project
      */
+    public $editingProjectIsDefault = false;
+    
     public function editProject($projectId)
     {
         $project = Project::with(['tags'])->findOrFail($projectId);
@@ -170,6 +173,7 @@ class Projects extends Component
         $this->editingProjectDescription = $project->description;
         $this->editingProjectColor = $project->color ?? '#3b82f6'; // Use default blue if null
         $this->editingProjectTagInput = $project->tags->pluck('name')->implode(', ');
+        $this->editingProjectIsDefault = $project->is_default;
         
         // Show the edit modal
         $this->showEditProjectModal = true;
@@ -185,11 +189,19 @@ class Projects extends Component
         
         $project = Project::findOrFail($this->editingProjectId);
         
+        // If setting this project as default, unset any existing default project
+        if ($this->editingProjectIsDefault && !$project->is_default) {
+            Project::where('user_id', auth()->id())
+                ->where('is_default', true)
+                ->update(['is_default' => false]);
+        }
+        
         // Update project details
         $project->update([
             'name' => $this->editingProjectName,
             'description' => $this->editingProjectDescription,
             'color' => $this->editingProjectColor,
+            'is_default' => $this->editingProjectIsDefault,
         ]);
         
         // Process tags
@@ -224,6 +236,7 @@ class Projects extends Component
         $this->editingProjectDescription = null;
         $this->editingProjectColor = null;
         $this->editingProjectTagInput = null;
+        $this->editingProjectIsDefault = false;
     }
     
     // Debug methods removed
@@ -234,6 +247,12 @@ class Projects extends Component
     public function deleteProject($projectId)
     {
         $project = Project::findOrFail($projectId);
+        
+        // Prevent deletion of default project
+        if ($project->is_default) {
+            session()->flash('error', 'The default "No Project" project cannot be deleted.');
+            return;
+        }
         
         // Detach tags before soft deleting
         $project->tags()->detach();
@@ -248,6 +267,23 @@ class Projects extends Component
         $project->timeLogs()->update(['project_id' => null]);
         
         session()->flash('message', 'Project deleted successfully.');
+    }
+    
+    /**
+     * Set a project as the default project
+     */
+    public function setAsDefault($projectId)
+    {
+        // Unset any existing default project
+        Project::where('user_id', auth()->id())
+            ->where('is_default', true)
+            ->update(['is_default' => false]);
+        
+        // Set the selected project as default
+        $project = Project::findOrFail($projectId);
+        $project->update(['is_default' => true]);
+        
+        session()->flash('message', 'Default project updated successfully.');
     }
     
     public function render()

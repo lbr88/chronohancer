@@ -26,6 +26,8 @@ class Timers extends Component
     public $notificationType = 'success';
     public $showLongRunningTimerModal = false;
     public $showEditTimerModal = false;
+    public $showNewTimerModal = false;
+    public $timerStartTime = null;
     public $longRunningTimerId = null;
     public $longRunningTimerStartTime = null;
     public $customEndTime = null;
@@ -67,6 +69,32 @@ class Timers extends Component
         
         // Load user's time format preference
         $this->timeFormat = auth()->user()->time_format ?? 'human';
+    }
+    
+    /**
+     * Open the new timer modal and store the current time
+     */
+    public function openNewTimerModal()
+    {
+        $this->timerStartTime = now();
+        $this->showNewTimerModal = true;
+        
+        // Dispatch an event to notify JavaScript that the modal has been opened
+        // and the start time has been captured
+        $this->dispatch('new-timer-modal-opened', [
+            'startTime' => $this->timerStartTime->toIso8601String()
+        ]);
+    }
+    
+    /**
+     * Close the new timer modal
+     */
+    public function closeNewTimerModal()
+    {
+        $this->reset(['name', 'description', 'project_name', 'tag_input', 'search']);
+        $this->existingTimers = collect();
+        $this->suggestions = ['projects' => [], 'tags' => []];
+        $this->showNewTimerModal = false;
     }
 
     public function updatedSearch()
@@ -161,6 +189,9 @@ class Timers extends Component
         $this->search = '';
         $this->existingTimers = collect();
         
+        // Keep the modal open so the user can start the timer with the stored start time
+        // The start time was already captured when the modal was opened
+        
         $this->showNotification('Timer loaded successfully', 'info');
     }
 
@@ -176,6 +207,10 @@ class Timers extends Component
                 ['description' => 'Project created from timer']
             );
             $project_id = $project->id;
+        } else {
+            // Use the default "No Project" project if no project name is provided
+            $defaultProject = Project::findOrCreateDefault(auth()->id());
+            $project_id = $defaultProject->id;
         }
         
         // Create new timer
@@ -206,12 +241,15 @@ class Timers extends Component
             }
         }
         
+        // Use the stored start time if available, otherwise use current time
+        $startTime = $this->timerStartTime ?: now();
+        
         // Create time log
         $timeLog = TimeLog::create([
             'timer_id' => $timer->id,
             'user_id' => auth()->id(),
             'project_id' => $project_id,
-            'start_time' => now(),
+            'start_time' => $startTime,
             'description' => $this->description ?: null,
         ]);
         
@@ -221,10 +259,9 @@ class Timers extends Component
         $this->showNotification('Timer started successfully', 'success');
         $this->dispatch('timerStarted', ['timerId' => $timer->id, 'startTime' => $timeLog->start_time->toIso8601String()]);
         
-        // Reset form, making sure to initialize existingTimers as a collection
-        $this->reset(['name', 'description', 'project_name', 'tag_input', 'search']);
-        $this->existingTimers = collect();
-        $this->suggestions = ['projects' => [], 'tags' => []];
+        // Reset form and close modal
+        $this->closeNewTimerModal();
+        $this->timerStartTime = null;
     }
     
     public function stopTimer($timerId)
@@ -887,11 +924,18 @@ class Timers extends Component
         $timer->is_paused = false;
         $timer->save();
         
+        // Get project_id, using default project if none is assigned
+        $project_id = $timer->project_id;
+        if (!$project_id) {
+            $defaultProject = Project::findOrCreateDefault(auth()->id());
+            $project_id = $defaultProject->id;
+        }
+        
         // Create a new time log with current time
         $timeLog = TimeLog::create([
             'timer_id' => $timer->id,
             'user_id' => auth()->id(),
-            'project_id' => $timer->project_id,
+            'project_id' => $project_id,
             'start_time' => now(),
             'description' => $timer->description ?: null,
         ]);

@@ -40,10 +40,20 @@ class TimeLog extends Model
 
     public function project(): BelongsTo
     {
-        return $this->belongsTo(Project::class)->withDefault([
-            'name' => 'No Project',
-            'description' => 'Time log without assigned project'
-        ]);
+        return $this->belongsTo(Project::class);
+    }
+    
+    /**
+     * Get the project for this time log, using the default project if none is assigned
+     */
+    public function getProjectAttribute($value)
+    {
+        if ($this->project_id) {
+            return $this->getRelationValue('project');
+        }
+        
+        // Use the default project if no project is assigned
+        return Project::findOrCreateDefault($this->user_id);
     }
 
     public function tags(): BelongsToMany

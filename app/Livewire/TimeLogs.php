@@ -171,8 +171,15 @@ class TimeLogs extends Component
         $start_time = Carbon::parse($this->selected_date)->startOfDay();
         $end_time = $start_time->copy()->addMinutes($durationMinutes);
         
+        // Get project_id, using default project if none is assigned
+        $project_id = $this->project_id;
+        if ($project_id === null) {
+            $defaultProject = Project::findOrCreateDefault(auth()->id());
+            $project_id = $defaultProject->id;
+        }
+        
         $timeLog = TimeLog::create([
-            'project_id' => $this->project_id,
+            'project_id' => $project_id,
             'timer_id' => $this->timer_id,
             'user_id' => auth()->id(),
             'description' => $this->description,
@@ -321,8 +328,15 @@ class TimeLogs extends Component
         $start_time = Carbon::parse($this->selected_date)->startOfDay();
         $end_time = $start_time->copy()->addMinutes($durationMinutes);
         
+        // Get project_id, using default project if none is assigned
+        $project_id = $this->project_id;
+        if ($project_id === null) {
+            $defaultProject = Project::findOrCreateDefault(auth()->id());
+            $project_id = $defaultProject->id;
+        }
+        
         $timeLog->update([
-            'project_id' => $this->project_id,
+            'project_id' => $project_id,
             'timer_id' => $this->timer_id,
             'description' => $this->description,
             'start_time' => $start_time,
@@ -958,8 +972,15 @@ class TimeLogs extends Component
         $start_time = Carbon::parse($this->quickTimeDate)->startOfDay();
         $end_time = $start_time->copy()->addMinutes($this->quickTimeDuration);
         
+        // Get project_id, using default project if none is assigned
+        $project_id = $this->quickTimeProjectId;
+        if ($project_id === null) {
+            $defaultProject = Project::findOrCreateDefault(auth()->id());
+            $project_id = $defaultProject->id;
+        }
+        
         $timeLog = TimeLog::create([
-            'project_id' => $this->quickTimeProjectId, // This will correctly handle null values
+            'project_id' => $project_id,
             'timer_id' => $this->quickTimeTimerId, // This will correctly handle null values
             'user_id' => auth()->id(),
             'description' => $this->quickTimeDescription,
