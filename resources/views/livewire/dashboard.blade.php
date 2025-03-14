@@ -314,7 +314,7 @@
                 <div class="space-y-4">
                     @forelse($recentTimeLogs as $timeLog)
                         <div class="border-b dark:border-zinc-700 pb-3">
-                            <a href="{{ route('time-logs', ['filterProject' => $timeLog->project_id]) }}" class="font-medium dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200">{{ $timeLog->project->name }}</a>
+                            <a href="{{ route('time-logs', ['filterProject' => $timeLog->project_id]) }}" class="font-medium dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200">{{ $timeLog->project->name ?? 'No Project' }}</a>
                             @if($timeLog->description)
                                 <a href="{{ route('time-logs', ['editId' => $timeLog->id, 'returnToDashboard' => true]) }}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200">{{ $timeLog->description }}</a>
                             @endif

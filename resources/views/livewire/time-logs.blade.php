@@ -614,10 +614,10 @@
                                 
                                 <div class="col-span-3">
                                     <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                        @if($timeLog->project_id && $timeLog->project->trashed())
+                                        @if($timeLog->project_id && isset($timeLog->project) && $timeLog->project->trashed())
                                             <span class="line-through text-gray-500 dark:text-gray-400">{{ $timeLog->project->name }}</span>
                                             <span class="text-xs text-red-500 dark:text-red-400">(deleted)</span>
-                                        @elseif($timeLog->project_id)
+                                        @elseif($timeLog->project_id && isset($timeLog->project))
                                             <a href="{{ route('time-logs') }}?view=list&filterProject={{ $timeLog->project_id }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
                                                 {{ $timeLog->project->name }}
                                             </a>
