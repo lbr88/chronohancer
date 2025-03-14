@@ -58,7 +58,7 @@ class Projects extends Component
     {
         $this->showCreateProjectModal = false;
         $this->showEditProjectModal = false;
-        
+
         // Ensure a default project exists for the current workspace
         Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
     }

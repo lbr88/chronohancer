@@ -41,7 +41,7 @@ class WorkspaceSelector extends Component
             ->orderBy('name')
             ->get();
     }
-    
+
     #[On('workspace-switched')]
     public function onWorkspaceSwitched($workspaceId)
     {
