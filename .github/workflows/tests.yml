@@ -38,13 +38,6 @@ jobs:
       - name: Install Node Dependencies
         run: npm i
 
-      - name: Add Flux Credentials Loaded From ENV
-        if: ${{ env.FLUX_USERNAME != '' && env.FLUX_LICENSE_KEY != '' }}
-        env:
-          FLUX_USERNAME: ${{ secrets.FLUX_USERNAME }}
-          FLUX_LICENSE_KEY: ${{ secrets.FLUX_LICENSE_KEY }}
-        run: composer config http-basic.composer.fluxui.dev "${{ secrets.FLUX_USERNAME }}" "${{ secrets.FLUX_LICENSE_KEY }}"
-
       - name: Install Dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 

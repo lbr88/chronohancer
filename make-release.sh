@@ -35,67 +35,6 @@ update_helm_chart_version() {
     echo "Helm chart version updated successfully."
 }
 
-# Function to package Helm chart
-package_helm_chart() {
-    version=$1
-    
-    echo "Packaging Helm chart..."
-    
-    # Create directories for chart release
-    mkdir -p .cr-release-packages/ .cr-index
-    
-    # Package the Helm chart
-    helm package helm/chronohancer -d .cr-release-packages/
-    
-    # Create index file
-    helm repo index .cr-release-packages/ --url https://lbr88.github.io/chronohancer/
-    
-    echo "Helm chart packaged successfully."
-}
-
-# Function to update GitHub Pages repository
-update_github_pages() {
-    version=$1
-    
-    echo "Updating GitHub Pages repository..."
-    
-    # Save current branch to return to it later
-    current_branch=$(git rev-parse --abbrev-ref HEAD)
-    
-    # Stash any changes in the working directory
-    git stash
-    
-    # Switch to gh-pages branch
-    git checkout gh-pages
-    
-    # Copy the packaged chart and index to the root directory
-    cp .cr-release-packages/*.tgz .
-    cp .cr-release-packages/index.yaml .
-    
-    # Add, commit, and push the changes
-    git add *.tgz index.yaml
-    git commit -m "Update Helm chart to $version"
-    git push origin gh-pages
-    
-    # Switch back to the original branch
-    git checkout $current_branch
-    
-    # Apply stashed changes if any
-    git stash pop 2>/dev/null || true
-    
-    echo "GitHub Pages repository updated successfully."
-}
-
-# Function to clean up temporary files
-cleanup() {
-    echo "Cleaning up temporary files..."
-    
-    # Remove temporary directories
-    rm -rf .cr-release-packages .cr-index
-    
-    echo "Cleanup completed."
-}
-
 # Function to create and push a new tag
 create_tag() {
     version=$1
@@ -121,22 +60,14 @@ create_tag() {
     git push origin "$version"
     git push origin master
     
-    # Package Helm chart
-    package_helm_chart "$version"
-    
-    # Update GitHub Pages repository
-    update_github_pages "$version"
-    
-    # Clean up temporary files
-    cleanup
-    
     echo "Tag $version created and pushed successfully."
     echo "GitHub Actions will automatically:"
     echo "  - Create a release based on this tag"
     echo "  - Build and tag the Docker image with version $version"
+    echo "  - Package and publish the Helm chart to GitHub Pages"
     
     echo ""
-    echo "Helm chart repository has been updated at https://lbr88.github.io/chronohancer/"
+    echo "Helm chart repository will be updated at https://lbr88.github.io/chronohancer/"
 }
 
 # Main script logic
