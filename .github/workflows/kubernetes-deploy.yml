@@ -3,7 +3,7 @@ name: Deploy to Kubernetes
 on:
   workflow_run:
     workflows: ["Build and Push Docker Image"]
-    branches: [main]
+    branches: [master]
     types:
       - completed
 
