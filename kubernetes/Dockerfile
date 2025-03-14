@@ -31,8 +31,11 @@ COPY . /var/www/html/
 # Install dependencies
 RUN composer install --optimize-autoloader --no-dev
 
+# Create .env file from example
+RUN cp .env.example .env
+
 # Generate application key
-RUN php artisan key:generate
+RUN php artisan key:generate --force
 
 # Cache configuration
 RUN php artisan config:cache
