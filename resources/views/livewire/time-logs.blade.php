@@ -73,13 +73,13 @@
             <div>
                 <label for="filterSearchQuery" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search</label>
                 <input type="text" wire:model.live.debounce.300ms="searchQuery" id="filterSearchQuery"
-                    class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-zinc-700 dark:text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                    class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-zinc-700 dark:text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 px-3 py-2"
                     placeholder="Search description or project...">
             </div>
             
             <div>
                 <label for="filterProject" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Project</label>
-                <select wire:model.live="filterProject" id="filterProject" class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-zinc-700 dark:text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                <select wire:model.live="filterProject" id="filterProject" class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-zinc-700 dark:text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 px-3 py-2">
                     <option value="">All Projects</option>
                     @foreach($projects as $project)
                         <option value="{{ $project->id }}">{{ $project->name }}</option>
@@ -89,7 +89,7 @@
             
             <div>
                 <label for="filterTag" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tag</label>
-                <select wire:model.live="filterTag" id="filterTag" class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-zinc-700 dark:text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                <select wire:model.live="filterTag" id="filterTag" class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-zinc-700 dark:text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 px-3 py-2">
                     <option value="">All Tags</option>
                     @foreach($allTags as $tag)
                         <option value="{{ $tag->id }}">{{ $tag->name }}</option>
@@ -100,11 +100,11 @@
             <div class="grid grid-cols-2 gap-2">
                 <div>
                     <label for="filterDateFrom" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">From Date</label>
-                    <input type="date" wire:model.live="filterDateFrom" id="filterDateFrom" class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-zinc-700 dark:text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <input type="date" wire:model.live="filterDateFrom" id="filterDateFrom" class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-zinc-700 dark:text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 px-3 py-2">
                 </div>
                 <div>
                     <label for="filterDateTo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">To Date</label>
-                    <input type="date" wire:model.live="filterDateTo" id="filterDateTo" class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-zinc-700 dark:text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <input type="date" wire:model.live="filterDateTo" id="filterDateTo" class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-zinc-700 dark:text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 px-3 py-2">
                 </div>
             </div>
         </div>
@@ -650,7 +650,7 @@
                                     @if($timeLog->tags->count() > 0)
                                         <div class="flex flex-wrap gap-1 mt-1">
                                             @foreach($timeLog->tags as $tag)
-                                                <span class="px-2 py-0.5 text-xs rounded-full"
+                                                <span class="px-2.5 py-1 text-xs rounded-full"
                                                     style="background-color: {{ $tag->color }}; color: {{ $this->getContrastColor($tag->color) }}">
                                                     {{ $tag->name }}
                                                 </span>
@@ -716,7 +716,7 @@
             <form wire:submit.prevent="{{ $editingTimeLog ? 'updateTimeLog' : 'save' }}" class="space-y-4">
                 <div>
                     <label for="project_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Project</label>
-                    <select wire:model="project_id" id="project_id" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm">
+                    <select wire:model="project_id" id="project_id" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2">
                         <option value="">Select a project</option>
                         @foreach($projects as $project)
                             <option value="{{ $project->id }}">{{ $project->name }}</option>
@@ -726,7 +726,7 @@
                 </div>
                 <div>
                     <label for="selected_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
-                    <input type="date" wire:model.live="selected_date" id="selected_date" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm">
+                    <input type="date" wire:model.live="selected_date" id="selected_date" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2">
                     @error('selected_date') <span class="text-red-500 dark:text-red-400 text-xs">{{ $message }}</span> @enderror
                     
                     @if($selected_date)
@@ -744,12 +744,12 @@
                 </div>
                 <div>
                     <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description (optional)</label>
-                    <textarea wire:model="description" id="description" rows="2" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm"></textarea>
+                    <textarea wire:model="description" id="description" rows="2" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2"></textarea>
                 </div>
                 <div>
                     <label for="duration_minutes" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Duration</label>
                     <div class="flex items-center space-x-2">
-                        <input type="text" wire:model="duration_minutes" id="duration_minutes" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm">
+                        <input type="text" wire:model="duration_minutes" id="duration_minutes" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2">
                         @if($duration_minutes)
                             <span class="text-sm text-gray-500 dark:text-gray-400">
                                 ({{ $this->formatDuration($this->parseDurationString($duration_minutes)) }})

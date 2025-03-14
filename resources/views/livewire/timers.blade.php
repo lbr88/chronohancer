@@ -70,7 +70,7 @@
                                                 @if($timer->tags->count() > 0)
                                                     <div class="mt-1 flex flex-wrap gap-1">
                                                         @foreach($timer->tags as $tag)
-                                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs"
+                                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs"
                                                                 style="background-color: {{ $tag->color }}; color: {{ $this->getContrastColor($tag->color) }}">
                                                                 {{ $tag->name }}
                                                             </span>
@@ -199,7 +199,7 @@
                                                     @if($timer->tags->count() > 0)
                                                         <div class="mt-1 flex flex-wrap gap-1">
                                                             @foreach($timer->tags as $tag)
-                                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs"
+                                                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs"
                                                                     style="background-color: {{ $tag->color }}; color: {{ $this->getContrastColor($tag->color) }}">
                                                                     {{ $tag->name }}
                                                                 </span>
@@ -286,7 +286,7 @@
                             type="text"
                             wire:model.live.debounce.300ms="savedTimersSearch"
                             placeholder="Search timers..."
-                            class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm pr-10"
+                            class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm pr-10 px-3 py-2"
                         >
                         <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -336,7 +336,7 @@
                                             @if($timer->tags->count() > 0)
                                                 <div class="flex flex-wrap gap-1.5 max-w-xs">
                                                     @foreach($timer->tags as $tag)
-                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs"
+                                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs"
                                                             style="background-color: {{ $tag->color }}; color: {{ $this->getContrastColor($tag->color) }}">
                                                             {{ $tag->name }}
                                                         </span>
