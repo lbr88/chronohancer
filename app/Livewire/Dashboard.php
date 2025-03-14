@@ -73,7 +73,8 @@ class Dashboard extends Component
                 } else {
                     $projectTotals[$projectId] = [
                         'id' => $projectId,
-                        'name' => $log->project->name,
+                        'name' => $log->project->name ?? 'No Project',
+                        'description' => $log->project->description ?? '',
                         'duration' => 0,
                         'percentage' => 0,
                         'color' => $log->project->color ?? $this->getRandomColor($projectId),
