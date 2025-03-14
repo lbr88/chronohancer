@@ -23,6 +23,4 @@ return new class extends Migration
             $table->integer('expiration');
         });
     }
-
-
 };

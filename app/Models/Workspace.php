@@ -59,17 +59,14 @@ class Workspace extends Model
 
     /**
      * Find or create the default workspace for a user
-     *
-     * @param int $userId
-     * @return \App\Models\Workspace
      */
     public static function findOrCreateDefault(int $userId): self
     {
         $defaultWorkspace = self::where('user_id', $userId)
             ->where('is_default', true)
             ->first();
-            
-        if (!$defaultWorkspace) {
+
+        if (! $defaultWorkspace) {
             $defaultWorkspace = self::create([
                 'name' => 'Default Workspace',
                 'description' => 'Your default workspace',
@@ -78,7 +75,7 @@ class Workspace extends Model
                 'is_default' => true,
             ]);
         }
-        
+
         return $defaultWorkspace;
     }
 }

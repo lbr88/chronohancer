@@ -10,6 +10,7 @@ class TagController extends Controller
     public function index()
     {
         $tags = Tag::all();
+
         return view('tags.index', compact('tags'));
     }
 
@@ -19,9 +20,9 @@ class TagController extends Controller
             'name' => 'required|string|max:255',
             'color' => 'nullable|string|max:7',
         ]);
-        
-        if (!isset($validated['color'])) {
-            $validated['color'] = '#' . substr(md5($validated['name']), 0, 6);
+
+        if (! isset($validated['color'])) {
+            $validated['color'] = '#'.substr(md5($validated['name']), 0, 6);
         }
 
         $tag = Tag::create($validated);
@@ -52,7 +53,7 @@ class TagController extends Controller
     public function destroy(Tag $tag)
     {
         $tag->delete();
-        
+
         return redirect()->route('tags.index')->with('success', 'Tag deleted successfully.');
     }
 }

@@ -2,30 +2,32 @@
 
 namespace App\Livewire;
 
-use Livewire\Component;
 use App\Models\Project;
+use App\Models\Tag;
 use App\Models\TimeLog;
 use App\Models\Timer;
-use App\Models\Tag;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB;
+use Livewire\Component;
 
 class Dashboard extends Component
 {
     public $period = 'week'; // week, month, year
+
     public $startDate;
+
     public $endDate;
-    
+
     public function mount()
     {
         $this->setPeriod('week');
     }
-    
+
     public function setPeriod($period)
     {
         $this->period = $period;
-        
+
         switch ($period) {
             case 'day':
                 $this->startDate = now()->startOfDay();
@@ -45,20 +47,20 @@ class Dashboard extends Component
                 break;
         }
     }
-    
+
     public function getTimeDistributionProperty()
     {
         $timeLogs = TimeLog::where('user_id', auth()->id())
             ->whereBetween('start_time', [$this->startDate, $this->endDate])
             ->get();
-        
+
         // Group by project
         $projectTotals = [];
         $totalDuration = 0;
-        
+
         foreach ($timeLogs as $log) {
             $projectId = $log->project_id;
-            if (!isset($projectTotals[$projectId])) {
+            if (! isset($projectTotals[$projectId])) {
                 if ($projectId === null) {
                     // Use a fixed color for "No project"
                     $projectTotals[$projectId] = [
@@ -66,7 +68,7 @@ class Dashboard extends Component
                         'name' => 'No Project',
                         'duration' => 0,
                         'percentage' => 0,
-                        'color' => '#9ca3af' // Gray color for "No project"
+                        'color' => '#9ca3af', // Gray color for "No project"
                     ];
                 } else {
                     $projectTotals[$projectId] = [
@@ -74,43 +76,43 @@ class Dashboard extends Component
                         'name' => $log->project->name,
                         'duration' => 0,
                         'percentage' => 0,
-                        'color' => $log->project->color ?? $this->getRandomColor($projectId)
+                        'color' => $log->project->color ?? $this->getRandomColor($projectId),
                     ];
                 }
             }
-            
+
             $projectTotals[$projectId]['duration'] += $log->duration_minutes;
             $totalDuration += $log->duration_minutes;
         }
-        
+
         // Calculate percentages
         if ($totalDuration > 0) {
             foreach ($projectTotals as &$project) {
                 $project['percentage'] = round(($project['duration'] / $totalDuration) * 100, 1);
             }
         }
-        
+
         return [
             'projects' => array_values($projectTotals),
             'totalDuration' => $totalDuration,
-            'formattedTotal' => $this->formatDuration($totalDuration)
+            'formattedTotal' => $this->formatDuration($totalDuration),
         ];
     }
-    
+
     public function getDailyActivityProperty()
     {
         if ($this->period === 'year') {
             // For year view, group by month
             $months = [];
             $startDate = $this->startDate->copy();
-            
+
             // Create an array of month start dates
             while ($startDate <= $this->endDate) {
                 $monthStart = $startDate->copy()->startOfMonth()->format('Y-m-d');
                 $months[$monthStart] = 0;
                 $startDate->addMonth();
             }
-            
+
             // Group time logs by month
             $monthlyData = TimeLog::where('user_id', auth()->id())
                 ->whereBetween('start_time', [$this->startDate, $this->endDate])
@@ -122,7 +124,7 @@ class Dashboard extends Component
                     return $logs->sum('duration_minutes');
                 })
                 ->toArray();
-            
+
             return array_merge($months, $monthlyData);
         } else {
             // For day, week, and month views, continue to group by day
@@ -135,7 +137,7 @@ class Dashboard extends Component
                     return 0;
                 })
                 ->toArray();
-            
+
             $dailyData = TimeLog::where('user_id', auth()->id())
                 ->whereBetween('start_time', [$this->startDate, $this->endDate])
                 ->get()
@@ -146,11 +148,11 @@ class Dashboard extends Component
                     return $logs->sum('duration_minutes');
                 })
                 ->toArray();
-            
+
             return array_merge($days, $dailyData);
         }
     }
-    
+
     public function getPopularTagsProperty()
     {
         // Get most used tags in the selected period
@@ -165,7 +167,7 @@ class Dashboard extends Component
             ->limit(5)
             ->get();
     }
-    
+
     public function getRunningTimersProperty()
     {
         return Timer::with(['project', 'tags'])
@@ -173,58 +175,58 @@ class Dashboard extends Component
             ->where('is_running', true)
             ->get();
     }
-    
+
     public function formatDuration($minutes)
     {
         $hours = floor($minutes / 60);
         $mins = $minutes % 60;
-        
+
         if ($hours > 0) {
-            return $hours . 'h ' . ($mins > 0 ? $mins . 'm' : '');
+            return $hours.'h '.($mins > 0 ? $mins.'m' : '');
         }
-        
-        return $mins . 'm';
+
+        return $mins.'m';
     }
-    
+
     private function getRandomColor($seed)
     {
         // Generate a deterministic color based on the project ID
         srand($seed);
         $color = sprintf('#%06X', mt_rand(0, 0xFFFFFF));
         srand(); // Reset seed
-        
+
         return $color;
     }
-    
+
     public function getContrastColor($hexColor)
     {
         // Remove # if present
         $hexColor = ltrim($hexColor, '#');
-        
+
         // Convert to RGB
         $r = hexdec(substr($hexColor, 0, 2));
         $g = hexdec(substr($hexColor, 2, 2));
         $b = hexdec(substr($hexColor, 4, 2));
-        
+
         // Calculate luminance - ITU-R BT.709
         $luminance = (0.2126 * $r + 0.7152 * $g + 0.0722 * $b) / 255;
-        
+
         // Return black for bright colors, white for dark colors
         return ($luminance > 0.5) ? '#000000' : '#FFFFFF';
     }
-    
+
     /**
      * Ensure the start time is properly formatted for JavaScript
      *
-     * @param \App\Models\Timer $timer
+     * @param  \App\Models\Timer  $timer
      * @return string
      */
     public function getFormattedStartTimeForJs($timer)
     {
-        if (!$timer->latestTimeLog) {
+        if (! $timer->latestTimeLog) {
             return now()->toIso8601String();
         }
-        
+
         return $timer->latestTimeLog->start_time->toIso8601String();
     }
 

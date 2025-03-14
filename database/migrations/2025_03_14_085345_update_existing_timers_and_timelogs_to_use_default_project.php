@@ -5,7 +5,6 @@ use App\Models\TimeLog;
 use App\Models\Timer;
 use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -16,14 +15,14 @@ return new class extends Migration
     {
         // Process each user separately to ensure they get their own default project
         $users = User::all();
-        
+
         foreach ($users as $user) {
             // Find or create the default project for this user
             $defaultProject = Project::where('user_id', $user->id)
                 ->where('is_default', true)
                 ->first();
-                
-            if (!$defaultProject) {
+
+            if (! $defaultProject) {
                 $defaultProject = Project::create([
                     'name' => 'No Project',
                     'description' => 'Default project for unassigned timers and time logs',
@@ -32,12 +31,12 @@ return new class extends Migration
                     'is_default' => true,
                 ]);
             }
-            
+
             // Update all timers with null project_id to use the default project
             Timer::where('user_id', $user->id)
                 ->whereNull('project_id')
                 ->update(['project_id' => $defaultProject->id]);
-                
+
             // Update all time logs with null project_id to use the default project
             TimeLog::where('user_id', $user->id)
                 ->whereNull('project_id')

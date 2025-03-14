@@ -2,9 +2,9 @@
 
 namespace App\Livewire\Settings;
 
-use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Livewire\Component;
 
 class Appearance extends Component
 {
@@ -37,7 +37,7 @@ class Appearance extends Component
 
         $this->dispatch('appearance-updated');
     }
-    
+
     /**
      * Automatically save time format when it changes.
      */

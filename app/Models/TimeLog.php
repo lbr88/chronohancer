@@ -19,14 +19,14 @@ class TimeLog extends Model
         'description',
         'start_time',
         'end_time',
-        'duration_minutes'
+        'duration_minutes',
     ];
 
     protected $casts = [
         'start_time' => 'datetime',
         'end_time' => 'datetime',
         'project_id' => 'integer',
-        'duration_minutes' => 'integer'
+        'duration_minutes' => 'integer',
     ];
 
     public function timer(): BelongsTo
@@ -38,7 +38,7 @@ class TimeLog extends Model
     {
         return $this->belongsTo(User::class);
     }
-    
+
     public function workspace(): BelongsTo
     {
         return $this->belongsTo(Workspace::class);
@@ -48,7 +48,7 @@ class TimeLog extends Model
     {
         return $this->belongsTo(Project::class);
     }
-    
+
     /**
      * Get the project for this time log, using the default project if none is assigned
      */
@@ -57,7 +57,7 @@ class TimeLog extends Model
         if ($this->project_id) {
             return $this->getRelationValue('project');
         }
-        
+
         // Use the default project if no project is assigned
         return Project::findOrCreateDefault($this->user_id);
     }

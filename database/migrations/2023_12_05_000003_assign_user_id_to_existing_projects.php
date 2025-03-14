@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
 use App\Models\Project;
 use App\Models\User;
+use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
 {
@@ -10,10 +10,10 @@ return new class extends Migration
     {
         // Get first user as fallback
         $user = User::first();
-        
+
         if ($user) {
             Project::whereNull('user_id')->update([
-                'user_id' => $user->id
+                'user_id' => $user->id,
             ]);
         }
     }

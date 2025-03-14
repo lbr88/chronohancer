@@ -16,7 +16,7 @@ class TimerController extends Controller
         $timers = Timer::with(['project', 'tags'])->get();
         $projects = Project::all();
         $tags = Tag::all();
-        
+
         return view('timers.index', compact('timers', 'projects', 'tags'));
     }
 
@@ -33,7 +33,7 @@ class TimerController extends Controller
         ]);
 
         // Create new project if needed
-        if (empty($validated['project_id']) && !empty($validated['project_name'])) {
+        if (empty($validated['project_id']) && ! empty($validated['project_name'])) {
             $project = Project::create(['name' => $validated['project_name']]);
             $validated['project_id'] = $project->id;
         }
@@ -47,17 +47,17 @@ class TimerController extends Controller
         ]);
 
         // Handle tags
-        if (!empty($validated['tags'])) {
+        if (! empty($validated['tags'])) {
             $timer->tags()->attach($validated['tags']);
         }
 
         // Process new tags
-        if (!empty($validated['new_tags'])) {
+        if (! empty($validated['new_tags'])) {
             $tagNames = array_map('trim', explode(',', $validated['new_tags']));
             foreach ($tagNames as $tagName) {
-                if (!empty($tagName)) {
+                if (! empty($tagName)) {
                     $tag = Tag::firstOrCreate(['name' => $tagName]);
-                    if (!$timer->tags->contains($tag->id)) {
+                    if (! $timer->tags->contains($tag->id)) {
                         $timer->tags()->attach($tag->id);
                     }
                 }
@@ -79,15 +79,15 @@ class TimerController extends Controller
 
     public function start(Timer $timer)
     {
-        if (!$timer->is_running) {
+        if (! $timer->is_running) {
             $timer->update(['is_running' => true]);
-            
+
             TimeLog::create([
                 'timer_id' => $timer->id,
                 'start_time' => now(),
             ]);
         }
-        
+
         return redirect()->back()->with('success', 'Timer started.');
     }
 
@@ -95,23 +95,23 @@ class TimerController extends Controller
     {
         if ($timer->is_running) {
             $timer->update(['is_running' => false]);
-            
+
             $timeLog = TimeLog::where('timer_id', $timer->id)
                 ->whereNull('end_time')
                 ->latest()
                 ->first();
-                
+
             if ($timeLog) {
                 $startTime = Carbon::parse($timeLog->start_time);
                 $endTime = now();
-                
+
                 $timeLog->update([
                     'end_time' => $endTime,
                     'duration' => $endTime->diffInSeconds($startTime),
                 ]);
             }
         }
-        
+
         return redirect()->back()->with('success', 'Timer stopped.');
     }
 
@@ -141,19 +141,19 @@ class TimerController extends Controller
     public function destroy(Timer $timer)
     {
         $timer->delete();
-        
+
         return redirect()->route('timers.index')->with('success', 'Timer deleted successfully.');
     }
 
     public function autocomplete(Request $request)
     {
         $query = $request->get('query');
-        
+
         $timers = Timer::where('name', 'like', "%{$query}%")
             ->with(['project', 'tags'])
             ->limit(10)
             ->get();
-            
+
         return response()->json($timers);
     }
 }

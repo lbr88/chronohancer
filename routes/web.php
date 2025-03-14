@@ -1,16 +1,16 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use Illuminate\Support\Facades\Route;
 use App\Livewire\Dashboard;
 use App\Livewire\Projects;
+use App\Livewire\Settings\Appearance;
+use App\Livewire\Settings\Password;
+use App\Livewire\Settings\Profile;
 use App\Livewire\Tags;
 use App\Livewire\TimeLogs;
 use App\Livewire\Timers;
 use App\Livewire\Workspaces;
-use App\Livewire\Settings\Profile;
-use App\Livewire\Settings\Appearance;
-use App\Livewire\Settings\Password;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');

@@ -3,8 +3,6 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Models\Project;
-use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -15,7 +13,7 @@ class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
-    
+
     /**
      * The "booted" method of the model.
      */
@@ -24,7 +22,7 @@ class User extends Authenticatable
         static::created(function (User $user) {
             // Create default workspace for new users
             $workspace = Workspace::findOrCreateDefault($user->id);
-            
+
             // Create default "No Project" project for new users
             Project::findOrCreateDefault($user->id);
         });
@@ -75,7 +73,7 @@ class User extends Authenticatable
             ->map(fn (string $name) => Str::of($name)->substr(0, 1))
             ->implode('');
     }
-    
+
     /**
      * Get the projects for the user.
      */
@@ -83,7 +81,7 @@ class User extends Authenticatable
     {
         return $this->hasMany(Project::class);
     }
-    
+
     /**
      * Get the default project for the user.
      */
@@ -91,7 +89,7 @@ class User extends Authenticatable
     {
         return Project::findOrCreateDefault($this->id);
     }
-    
+
     /**
      * Get the workspaces for the user.
      */
@@ -99,7 +97,7 @@ class User extends Authenticatable
     {
         return $this->hasMany(Workspace::class);
     }
-    
+
     /**
      * Get the default workspace for the user.
      */

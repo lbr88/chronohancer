@@ -17,7 +17,7 @@ class Tag extends Model
     {
         return $this->belongsTo(User::class);
     }
-    
+
     public function workspace(): BelongsTo
     {
         return $this->belongsTo(Workspace::class);
@@ -42,14 +42,14 @@ class Tag extends Model
     public static function findOrCreateForUser(string $name, int $userId, ?int $workspaceId = null, ?string $color = null): self
     {
         // If no workspace ID is provided, get the user's default workspace
-        if (!$workspaceId) {
+        if (! $workspaceId) {
             $workspace = Workspace::findOrCreateDefault($userId);
             $workspaceId = $workspace->id;
         }
-        
+
         return static::firstOrCreate(
             ['name' => $name, 'user_id' => $userId, 'workspace_id' => $workspaceId],
-            ['color' => $color ?? '#' . str_pad(dechex(mt_rand(0, 0xFFFFFF)), 6, '0', STR_PAD_LEFT)]
+            ['color' => $color ?? '#'.str_pad(dechex(mt_rand(0, 0xFFFFFF)), 6, '0', STR_PAD_LEFT)]
         );
     }
 }

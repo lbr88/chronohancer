@@ -14,6 +14,4 @@ return new class extends Migration
             $table->primary(['project_id', 'tag_id']);
         });
     }
-
-
 };

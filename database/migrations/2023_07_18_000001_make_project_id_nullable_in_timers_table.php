@@ -15,6 +15,4 @@ return new class extends Migration
             $table->foreignId('project_id')->nullable()->change();
         });
     }
-
-
 };

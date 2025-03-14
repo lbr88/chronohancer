@@ -14,14 +14,14 @@ return new class extends Migration
     {
         // Get all users
         $users = User::all();
-        
+
         foreach ($users as $user) {
             // Check if the user already has a default project
             $defaultProject = Project::where('user_id', $user->id)
                 ->where('is_default', true)
                 ->first();
-                
-            if (!$defaultProject) {
+
+            if (! $defaultProject) {
                 // Create a default "No Project" project for the user
                 Project::create([
                     'name' => 'No Project',

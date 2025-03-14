@@ -7,7 +7,6 @@ use App\Models\Timer;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -18,7 +17,7 @@ return new class extends Migration
     {
         // Create default workspaces for existing users
         $users = User::all();
-        
+
         foreach ($users as $user) {
             // Create default workspace
             $workspace = Workspace::create([
@@ -28,16 +27,16 @@ return new class extends Migration
                 'color' => '#6366f1', // Indigo color
                 'is_default' => true,
             ]);
-            
+
             // Update existing projects
             Project::where('user_id', $user->id)->update(['workspace_id' => $workspace->id]);
-            
+
             // Update existing tags
             Tag::where('user_id', $user->id)->update(['workspace_id' => $workspace->id]);
-            
+
             // Update existing timers
             Timer::where('user_id', $user->id)->update(['workspace_id' => $workspace->id]);
-            
+
             // Update existing time logs
             TimeLog::where('user_id', $user->id)->update(['workspace_id' => $workspace->id]);
         }

@@ -17,6 +17,4 @@ return new class extends Migration
             $table->primary(['tag_id', 'time_log_id']);
         });
     }
-
-
 };

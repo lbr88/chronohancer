@@ -16,33 +16,34 @@ class WorkspaceServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton('current.workspace', function ($app) {
-            if (!Auth::check()) {
+            if (! Auth::check()) {
                 return null;
             }
-            
+
             $workspaceId = Session::get('current_workspace_id');
-            
+
             if ($workspaceId) {
                 $workspace = Workspace::find($workspaceId);
                 if ($workspace && $workspace->user_id === Auth::id()) {
                     return $workspace;
                 }
             }
-            
+
             // If no valid workspace is found in the session, use the default one
             $defaultWorkspace = Workspace::where('user_id', Auth::id())
                 ->where('is_default', true)
                 ->first();
-                
+
             if ($defaultWorkspace) {
                 Session::put('current_workspace_id', $defaultWorkspace->id);
+
                 return $defaultWorkspace;
             }
-            
+
             // If no default workspace exists, create one
             $workspace = Workspace::findOrCreateDefault(Auth::id());
             Session::put('current_workspace_id', $workspace->id);
-            
+
             return $workspace;
         });
     }
@@ -58,11 +59,11 @@ class WorkspaceServiceProvider extends ServiceProvider
                 $view->with('currentWorkspace', app('current.workspace'));
             }
         });
-        
+
         // Add a global scope to all workspace-related models
         $this->addWorkspaceScopes();
     }
-    
+
     /**
      * Add global scopes to workspace-related models
      */
@@ -74,19 +75,19 @@ class WorkspaceServiceProvider extends ServiceProvider
                 $builder->where('workspace_id', app('current.workspace')->id);
             }
         });
-        
+
         \App\Models\Tag::addGlobalScope('workspace', function ($builder) {
             if (Auth::check() && app('current.workspace')) {
                 $builder->where('workspace_id', app('current.workspace')->id);
             }
         });
-        
+
         \App\Models\Timer::addGlobalScope('workspace', function ($builder) {
             if (Auth::check() && app('current.workspace')) {
                 $builder->where('workspace_id', app('current.workspace')->id);
             }
         });
-        
+
         \App\Models\TimeLog::addGlobalScope('workspace', function ($builder) {
             if (Auth::check() && app('current.workspace')) {
                 $builder->where('workspace_id', app('current.workspace')->id);
