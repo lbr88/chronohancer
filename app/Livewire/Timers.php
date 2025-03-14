@@ -232,6 +232,7 @@ class Timers extends Component
 
         // Find or create project if name is provided
         $project_id = null;
+        $project = null;
         if ($this->project_name) {
             $project = Project::firstOrCreate(
                 ['name' => $this->project_name, 'user_id' => auth()->id(), 'workspace_id' => app('current.workspace')->id],
@@ -240,8 +241,8 @@ class Timers extends Component
             $project_id = $project->id;
         } else {
             // Use the default "No Project" project if no project name is provided
-            $defaultProject = Project::findOrCreateDefault(auth()->id());
-            $project_id = $defaultProject->id;
+            $project = Project::findOrCreateDefault(auth()->id());
+            $project_id = $project->id;
         }
 
         // Create new timer
