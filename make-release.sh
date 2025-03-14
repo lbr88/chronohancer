@@ -38,7 +38,9 @@ create_tag() {
     git push origin "$version"
     
     echo "Tag $version created and pushed successfully."
-    echo "GitHub Actions will automatically create a release based on this tag."
+    echo "GitHub Actions will automatically:"
+    echo "  - Create a release based on this tag"
+    echo "  - Build and tag the Docker image with version $version"
 }
 
 # Main script logic
