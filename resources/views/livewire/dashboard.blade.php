@@ -123,18 +123,31 @@
                 
                 @if($period === 'year')
                     <div class="flex items-center space-x-3 text-xs">
-                        <div class="flex items-center">
-                            <div class="w-3 h-3 rounded-full mr-1 bg-green-500"></div>
-                            <span class="dark:text-gray-300">Met target</span>
-                        </div>
-                        <div class="flex items-center">
-                            <div class="w-3 h-3 rounded-full mr-1 bg-amber-400"></div>
-                            <span class="dark:text-gray-300">Below target</span>
-                        </div>
+                        @php
+                            $workspace = app('current.workspace');
+                            $dailyTarget = $workspace ? $workspace->daily_target_minutes : 0;
+                        @endphp
+                        
+                        @if($dailyTarget > 0)
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full mr-1 bg-green-500"></div>
+                                <span class="dark:text-gray-300">Met target</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full mr-1 bg-amber-400"></div>
+                                <span class="dark:text-gray-300">Below target</span>
+                            </div>
+                        @endif
                         <div class="flex items-center">
                             <div class="w-3 h-3 rounded-full mr-1 bg-indigo-300"></div>
                             <span class="dark:text-gray-300">No data</span>
                         </div>
+                        @if($dailyTarget > 0)
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full mr-1 bg-indigo-400"></div>
+                                <span class="dark:text-gray-300">Has data</span>
+                            </div>
+                        @endif
                     </div>
                 @endif
             </div>
@@ -143,18 +156,22 @@
                 @php
                     $maxHeight = max(array_values($this->dailyActivity));
                     
-                    // Set workday minutes based on period
-                    if ($period !== 'year') {
-                        $workdayMinutes = 444; // 7h 24m in minutes
+                    // Set workday minutes based on workspace settings
+                    $workspace = app('current.workspace');
+                    $workdayMinutes = $workspace ? $workspace->daily_target_minutes : 0;
+                    
+                    if ($period !== 'year' && $workdayMinutes > 0) {
                         $workdayLinePosition = $maxHeight > 0 ? min(100, ($workdayMinutes / $maxHeight) * 100) : 40;
-                        $workdayLabel = '7h 24m workday';
+                        $hours = floor($workdayMinutes / 60);
+                        $minutes = $workdayMinutes % 60;
+                        $workdayLabel = $hours . 'h ' . ($minutes > 0 ? $minutes . 'm' : '') . ' workday';
                     }
                 @endphp
                 <div class="w-full h-60">
                     <div class="flex justify-between h-full relative">
-                        <!-- 7h 24m hour mark line -->
-                        @if($period !== 'year')
-                            <!-- Show reference line only for day, week, and month views -->
+                        <!-- Workday target line -->
+                        @if($period !== 'year' && isset($workdayMinutes) && $workdayMinutes > 0)
+                            <!-- Show reference line only for day, week, and month views when target is set -->
                             <div class="absolute w-full border-t border-dashed border-red-400 z-10"
                                  style="bottom: {{ min(100, $workdayLinePosition) }}%;">
                                 <span class="absolute -top-6 right-0 text-xs text-red-500 font-medium bg-white dark:bg-zinc-800 px-1 rounded shadow-sm">
@@ -195,14 +212,23 @@
                                                 }
                                             }
                                             
-                                            // Calculate threshold: 7.4 hours (444 minutes) per workday
-                                            $threshold = $workdays * 444;
+                                            // Get daily target from workspace settings
+                                            $workspace = app('current.workspace');
+                                            $dailyTarget = $workspace ? $workspace->daily_target_minutes : 0;
                                             
-                                            // Set color based on whether the month meets the threshold
-                                            if ($minutes > 0 && $minutes < $threshold) {
-                                                $barColor = 'bg-amber-400'; // Below threshold
-                                            } elseif ($minutes >= $threshold) {
-                                                $barColor = 'bg-green-500'; // Met or exceeded threshold
+                                            // Calculate threshold based on workdays and daily target
+                                            $threshold = $dailyTarget > 0 ? $workdays * $dailyTarget : 0;
+                                            
+                                            // Set color based on whether the month meets the threshold (only if threshold > 0)
+                                            if ($threshold > 0) {
+                                                if ($minutes > 0 && $minutes < $threshold) {
+                                                    $barColor = 'bg-amber-400'; // Below threshold
+                                                } elseif ($minutes >= $threshold) {
+                                                    $barColor = 'bg-green-500'; // Met or exceeded threshold
+                                                }
+                                            } else {
+                                                // No threshold set, use default color
+                                                $barColor = $minutes > 0 ? 'bg-indigo-400' : 'bg-indigo-300';
                                             }
                                         } elseif ($isToday) {
                                             $barColor = 'bg-indigo-500';
@@ -220,25 +246,31 @@
                                                     <span class="font-bold text-white">
                                                         {{ $this->formatDuration($minutes) }}
                                                     </span>
-                                                    <span class="text-[10px] text-white">
-                                                        / {{ $this->formatDuration($threshold) }}
-                                                    </span>
+                                                    @if($threshold > 0)
+                                                        <span class="text-[10px] text-white">
+                                                            / {{ $this->formatDuration($threshold) }}
+                                                        </span>
+                                                    @endif
                                                     <span class="text-[9px] text-white opacity-80">
                                                         ({{ $workdays }} days)
                                                     </span>
                                                 </div>
                                                 
-                                                <!-- Additional hover tooltip with difference from target -->
+                                                <!-- Additional hover tooltip with difference from target (only if threshold > 0) -->
                                                 <div class="absolute bottom-full mb-2 hidden group-hover:block w-full">
                                                     <div class="bg-gray-800 text-white text-xs rounded py-1 px-2 text-center mx-auto w-max">
                                                         @php
-                                                            $difference = $minutes - $threshold;
-                                                            if ($difference > 0) {
-                                                                echo '<span class="text-green-400">+' . $this->formatDuration(abs($difference)) . ' above target</span>';
-                                                            } elseif ($difference < 0) {
-                                                                echo '<span class="text-red-400">-' . $this->formatDuration(abs($difference)) . ' below target</span>';
+                                                            if ($threshold > 0) {
+                                                                $difference = $minutes - $threshold;
+                                                                if ($difference > 0) {
+                                                                    echo '<span class="text-green-400">+' . $this->formatDuration(abs($difference)) . ' above target</span>';
+                                                                } elseif ($difference < 0) {
+                                                                    echo '<span class="text-red-400">-' . $this->formatDuration(abs($difference)) . ' below target</span>';
+                                                                } else {
+                                                                    echo '<span>Exactly on target</span>';
+                                                                }
                                                             } else {
-                                                                echo '<span>Exactly on target</span>';
+                                                                echo '<span>' . $this->formatDuration($minutes) . ' total</span>';
                                                             }
                                                         @endphp
                                                     </div>

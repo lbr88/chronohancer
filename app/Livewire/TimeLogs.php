@@ -954,14 +954,20 @@ class TimeLogs extends Component
     }
 
     /**
-     * Calculate the remaining time to reach 7h 24m for a specific date
+     * Calculate the remaining time to reach the daily target for a specific date
      *
      * @param  string  $date  Date in Y-m-d format
-     * @return int Remaining minutes to reach 7h 24m (444 minutes)
+     * @return int Remaining minutes to reach the daily target
      */
     public function getRemainingTimeForDate($date)
     {
-        $targetMinutes = 444; // 7h 24m = 444 minutes
+        $workspace = app('current.workspace');
+        $targetMinutes = $workspace ? $workspace->daily_target_minutes : 0;
+
+        // If target minutes is 0, return 0 (no target)
+        if ($targetMinutes === 0) {
+            return 0;
+        }
 
         // Get all time logs for the specified date
         $totalMinutes = TimeLog::where('user_id', auth()->id())

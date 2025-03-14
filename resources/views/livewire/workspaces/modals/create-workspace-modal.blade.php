@@ -66,6 +66,42 @@
                 @error('form.color') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
             </div>
             
+            <!-- Daily Target Time -->
+            <div>
+                <label for="daily_target_time" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Daily Target Time') }}</label>
+                <div class="flex items-center space-x-3 mt-1">
+                    <input
+                        type="text"
+                        id="daily_target_time"
+                        wire:model.debounce.500ms="dailyTargetTime"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2"
+                        placeholder="7h 24m (or 0h 0m for no target)"
+                    >
+                </div>
+                <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {{ __('Format: 7h 24m (hours and minutes)') }}
+                </div>
+                @error('form.daily_target_minutes') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+            </div>
+            
+            <!-- Weekly Target Time -->
+            <div>
+                <label for="weekly_target_time" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Weekly Target Time') }}</label>
+                <div class="flex items-center space-x-3 mt-1">
+                    <input
+                        type="text"
+                        id="weekly_target_time"
+                        wire:model.debounce.500ms="weeklyTargetTime"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2"
+                        placeholder="37h (or 0h for no target)"
+                    >
+                </div>
+                <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {{ __('Format: 37h 30m (hours and minutes)') }}
+                </div>
+                @error('form.weekly_target_minutes') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+            </div>
+            
             <div class="mt-5 flex justify-end space-x-3">
                 <button
                     type="button"

@@ -163,11 +163,19 @@
         </flux:sidebar>
 
         <!-- Daily Progress Bar with absolute positioning -->
-        <div style="position: absolute; top: 56px; left: 0; right: 0; z-index: 10; height: 30px; background-color: #f9fafb; border-bottom: 1px solid #e5e7eb;" class="dark:bg-zinc-900 dark:border-zinc-700">
-            @livewire('daily-progress-bar')
-        </div>
-
-        <div style="padding-top: 30px;">
+        @php
+            $workspace = app('current.workspace');
+            $showProgressBar = $workspace && $workspace->daily_target_minutes > 0;
+        @endphp
+        
+        @if($showProgressBar)
+            <div style="position: absolute; top: 56px; left: 0; right: 0; z-index: 10; height: 30px; background-color: #f9fafb; border-bottom: 1px solid #e5e7eb;" class="dark:bg-zinc-900 dark:border-zinc-700">
+                @livewire('daily-progress-bar')
+            </div>
+            <div style="padding-top: 30px;">
+        @else
+            <div>
+        @endif
             {{ $slot }}
         </div>
 

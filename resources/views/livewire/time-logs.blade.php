@@ -147,15 +147,41 @@
                         
                         @if($remainingMinutes > 0)
                             <div class="absolute z-10 hidden group-hover:block bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg p-2 mt-1 right-0 min-w-[180px] text-xs text-left">
-                                <div class="{{ $remainingMinutes < 60 ? 'text-orange-500 dark:text-orange-400' : 'text-blue-500 dark:text-blue-400' }} font-medium">
-                                    Missing to reach 7h 24m today: {{ $this->formatRemainingTime($remainingMinutes) }}
-                                </div>
+                                @php
+                                    $workspace = app('current.workspace');
+                                    $dailyTarget = $workspace ? $workspace->daily_target_minutes : 0;
+                                    $targetHours = floor($dailyTarget / 60);
+                                    $targetMinutes = $dailyTarget % 60;
+                                    $targetDisplay = $targetHours . 'h' . ($targetMinutes > 0 ? ' ' . $targetMinutes . 'm' : '');
+                                @endphp
+                                @if($dailyTarget > 0)
+                                    <div class="{{ $remainingMinutes < 60 ? 'text-orange-500 dark:text-orange-400' : 'text-blue-500 dark:text-blue-400' }} font-medium">
+                                        Missing to reach {{ $targetDisplay }} today: {{ $this->formatRemainingTime($remainingMinutes) }}
+                                    </div>
+                                @else
+                                    <div class="text-gray-500 dark:text-gray-400 font-medium">
+                                        No daily target set
+                                    </div>
+                                @endif
                             </div>
                         @else
                             <div class="absolute z-10 hidden group-hover:block bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg p-2 mt-1 right-0 min-w-[180px] text-xs text-left">
-                                <div class="text-green-500 dark:text-green-400 font-medium">
-                                    7h 24m target reached for today!
-                                </div>
+                                @php
+                                    $workspace = app('current.workspace');
+                                    $dailyTarget = $workspace ? $workspace->daily_target_minutes : 0;
+                                    $targetHours = floor($dailyTarget / 60);
+                                    $targetMinutes = $dailyTarget % 60;
+                                    $targetDisplay = $targetHours . 'h' . ($targetMinutes > 0 ? ' ' . $targetMinutes . 'm' : '');
+                                @endphp
+                                @if($dailyTarget > 0)
+                                    <div class="text-green-500 dark:text-green-400 font-medium">
+                                        {{ $targetDisplay }} target reached for today!
+                                    </div>
+                                @else
+                                    <div class="text-gray-500 dark:text-gray-400 font-medium">
+                                        No daily target set
+                                    </div>
+                                @endif
                             </div>
                         @endif
                     </div>
@@ -212,27 +238,30 @@
                                         }
                                     }
                                     
-                                    $targetMinutes = 444; // 7h 24m = 444 minutes
-                                    $remainingMinutes = max(0, $targetMinutes - $dayTotal);
+                                    $workspace = app('current.workspace');
+                                    $targetMinutes = $workspace ? $workspace->daily_target_minutes : 0;
+                                    $remainingMinutes = $targetMinutes > 0 ? max(0, $targetMinutes - $dayTotal) : 0;
                                     $isToday = Carbon\Carbon::parse($day['date'])->isToday();
                                     $isPast = Carbon\Carbon::parse($day['date'])->isPast();
-                                    $targetMet = $remainingMinutes == 0;
+                                    $targetMet = $targetMinutes > 0 ? $remainingMinutes == 0 : true;
                                     
                                     // Determine text color class based on requirements
                                     $textColorClass = '';
-                                    if ($targetMet) {
-                                        $textColorClass = 'text-green-600';
-                                    } elseif ($isPast && !$isToday) {
-                                        $textColorClass = 'text-red-600';
+                                    if ($targetMinutes > 0) {
+                                        if ($targetMet) {
+                                            $textColorClass = 'text-green-600';
+                                        } elseif ($isPast && !$isToday) {
+                                            $textColorClass = 'text-red-600';
+                                        }
                                     }
                                 @endphp
                                 <td class="px-6 py-3 whitespace-nowrap text-center text-sm">
                                     <div class="{{ $textColorClass }}">
                                         {{ $this->formatDuration($dayTotal) }}
-                                        @if($dayTotal > $targetMinutes)
+                                        @if($targetMinutes > 0 && $dayTotal > $targetMinutes)
                                             <span class="text-green-600 dark:text-green-400">(+{{ $this->formatRemainingTime($dayTotal - $targetMinutes) }})</span>
                                         @endif
-                                        @if(!$targetMet && ($isPast || $isToday))
+                                        @if($targetMinutes > 0 && !$targetMet && ($isPast || $isToday))
                                             <div class="text-xs font-normal {{ $textColorClass }}">
                                                 Missing: {{ $this->formatRemainingTime($remainingMinutes) }}
                                             </div>
@@ -285,15 +314,41 @@
                                             
                                             @if($remainingMinutes > 0)
                                                 <div class="absolute z-10 hidden group-hover:block bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg p-2 mt-1 right-0 min-w-[150px] text-xs text-left">
-                                                    <div class="{{ $remainingMinutes < 60 ? 'text-orange-500 dark:text-orange-400' : 'text-blue-500 dark:text-blue-400' }} font-medium">
-                                                        Missing to reach 7h 24m today: {{ $this->formatRemainingTime($remainingMinutes) }}
-                                                    </div>
+                                                    @php
+                                                        $workspace = app('current.workspace');
+                                                        $dailyTarget = $workspace ? $workspace->daily_target_minutes : 0;
+                                                        $targetHours = floor($dailyTarget / 60);
+                                                        $targetMinutes = $dailyTarget % 60;
+                                                        $targetDisplay = $targetHours . 'h' . ($targetMinutes > 0 ? ' ' . $targetMinutes . 'm' : '');
+                                                    @endphp
+                                                    @if($dailyTarget > 0)
+                                                        <div class="{{ $remainingMinutes < 60 ? 'text-orange-500 dark:text-orange-400' : 'text-blue-500 dark:text-blue-400' }} font-medium">
+                                                            Missing to reach {{ $targetDisplay }} today: {{ $this->formatRemainingTime($remainingMinutes) }}
+                                                        </div>
+                                                    @else
+                                                        <div class="text-gray-500 dark:text-gray-400 font-medium">
+                                                            No daily target set
+                                                        </div>
+                                                    @endif
                                                 </div>
                                             @else
                                                 <div class="absolute z-10 hidden group-hover:block bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg p-2 mt-1 right-0 min-w-[150px] text-xs text-left">
-                                                    <div class="text-green-500 dark:text-green-400 font-medium">
-                                                        7h 24m target reached for today!
-                                                    </div>
+                                                    @php
+                                                        $workspace = app('current.workspace');
+                                                        $dailyTarget = $workspace ? $workspace->daily_target_minutes : 0;
+                                                        $targetHours = floor($dailyTarget / 60);
+                                                        $targetMinutes = $dailyTarget % 60;
+                                                        $targetDisplay = $targetHours . 'h' . ($targetMinutes > 0 ? ' ' . $targetMinutes . 'm' : '');
+                                                    @endphp
+                                                    @if($dailyTarget > 0)
+                                                        <div class="text-green-500 dark:text-green-400 font-medium">
+                                                            {{ $targetDisplay }} target reached for today!
+                                                        </div>
+                                                    @else
+                                                        <div class="text-gray-500 dark:text-gray-400 font-medium">
+                                                            No daily target set
+                                                        </div>
+                                                    @endif
                                                 </div>
                                             @endif
                                         </div>
@@ -437,15 +492,41 @@
                                                         
                                                         @if($remainingMinutes > 0)
                                                             <div class="absolute z-10 hidden group-hover:block bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg p-2 mt-1 min-w-[150px] text-xs text-left">
-                                                                <div class="{{ $remainingMinutes < 60 ? 'text-orange-500 dark:text-orange-400' : 'text-blue-500 dark:text-blue-400' }} font-medium">
-                                                                    Missing to reach 7h 24m: {{ $this->formatRemainingTime($remainingMinutes) }}
-                                                                </div>
+                                                                @php
+                                                                    $workspace = app('current.workspace');
+                                                                    $dailyTarget = $workspace ? $workspace->daily_target_minutes : 0;
+                                                                    $targetHours = floor($dailyTarget / 60);
+                                                                    $targetMinutes = $dailyTarget % 60;
+                                                                    $targetDisplay = $targetHours . 'h' . ($targetMinutes > 0 ? ' ' . $targetMinutes . 'm' : '');
+                                                                @endphp
+                                                                @if($dailyTarget > 0)
+                                                                    <div class="{{ $remainingMinutes < 60 ? 'text-orange-500 dark:text-orange-400' : 'text-blue-500 dark:text-blue-400' }} font-medium">
+                                                                        Missing to reach {{ $targetDisplay }}: {{ $this->formatRemainingTime($remainingMinutes) }}
+                                                                    </div>
+                                                                @else
+                                                                    <div class="text-gray-500 dark:text-gray-400 font-medium">
+                                                                        No daily target set
+                                                                    </div>
+                                                                @endif
                                                             </div>
                                                         @else
                                                             <div class="absolute z-10 hidden group-hover:block bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg p-2 mt-1 min-w-[150px] text-xs text-left">
-                                                                <div class="text-green-500 dark:text-green-400 font-medium">
-                                                                    7h 24m target reached for this day!
-                                                                </div>
+                                                                @php
+                                                                    $workspace = app('current.workspace');
+                                                                    $dailyTarget = $workspace ? $workspace->daily_target_minutes : 0;
+                                                                    $targetHours = floor($dailyTarget / 60);
+                                                                    $targetMinutes = $dailyTarget % 60;
+                                                                    $targetDisplay = $targetHours . 'h' . ($targetMinutes > 0 ? ' ' . $targetMinutes . 'm' : '');
+                                                                @endphp
+                                                                @if($dailyTarget > 0)
+                                                                    <div class="text-green-500 dark:text-green-400 font-medium">
+                                                                        {{ $targetDisplay }} target reached for this day!
+                                                                    </div>
+                                                                @else
+                                                                    <div class="text-gray-500 dark:text-gray-400 font-medium">
+                                                                        No daily target set
+                                                                    </div>
+                                                                @endif
                                                             </div>
                                                         @endif
                                                     </div>
@@ -506,15 +587,41 @@
                                     
                                     @if($remainingMinutes > 0)
                                         <div class="absolute z-10 hidden group-hover:block bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg p-2 mt-1 right-0 min-w-[180px] text-xs text-left">
-                                            <div class="{{ $remainingMinutes < 60 ? 'text-orange-500 dark:text-orange-400' : 'text-blue-500 dark:text-blue-400' }} font-medium">
-                                                Missing to reach 7h 24m today: {{ $this->formatRemainingTime($remainingMinutes) }}
-                                            </div>
+                                            @php
+                                                $workspace = app('current.workspace');
+                                                $dailyTarget = $workspace ? $workspace->daily_target_minutes : 0;
+                                                $targetHours = floor($dailyTarget / 60);
+                                                $targetMinutes = $dailyTarget % 60;
+                                                $targetDisplay = $targetHours . 'h' . ($targetMinutes > 0 ? ' ' . $targetMinutes . 'm' : '');
+                                            @endphp
+                                            @if($dailyTarget > 0)
+                                                <div class="{{ $remainingMinutes < 60 ? 'text-orange-500 dark:text-orange-400' : 'text-blue-500 dark:text-blue-400' }} font-medium">
+                                                    Missing to reach {{ $targetDisplay }} today: {{ $this->formatRemainingTime($remainingMinutes) }}
+                                                </div>
+                                            @else
+                                                <div class="text-gray-500 dark:text-gray-400 font-medium">
+                                                    No daily target set
+                                                </div>
+                                            @endif
                                         </div>
                                     @else
                                         <div class="absolute z-10 hidden group-hover:block bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg p-2 mt-1 right-0 min-w-[180px] text-xs text-left">
-                                            <div class="text-green-500 dark:text-green-400 font-medium">
-                                                7h 24m target reached for today!
-                                            </div>
+                                            @php
+                                                $workspace = app('current.workspace');
+                                                $dailyTarget = $workspace ? $workspace->daily_target_minutes : 0;
+                                                $targetHours = floor($dailyTarget / 60);
+                                                $targetMinutes = $dailyTarget % 60;
+                                                $targetDisplay = $targetHours . 'h' . ($targetMinutes > 0 ? ' ' . $targetMinutes . 'm' : '');
+                                            @endphp
+                                            @if($dailyTarget > 0)
+                                                <div class="text-green-500 dark:text-green-400 font-medium">
+                                                    {{ $targetDisplay }} target reached for today!
+                                                </div>
+                                            @else
+                                                <div class="text-gray-500 dark:text-gray-400 font-medium">
+                                                    No daily target set
+                                                </div>
+                                            @endif
                                         </div>
                                     @endif
                                 </div>
@@ -738,13 +845,26 @@
                         @php
                             $remainingMinutes = $this->getRemainingTimeForDate($selected_date);
                         @endphp
-                        <div class="mt-1 text-xs {{ $remainingMinutes > 0 ? ($remainingMinutes < 60 ? 'text-orange-500 dark:text-orange-400' : 'text-blue-500 dark:text-blue-400') : 'text-green-500 dark:text-green-400' }}">
-                            @if($remainingMinutes > 0)
-                                <span class="font-medium">Missing to reach 7h 24m:</span> {{ $this->formatRemainingTime($remainingMinutes) }}
-                            @else
-                                <span class="font-medium">7h 24m target reached for this day!</span>
-                            @endif
-                        </div>
+                        @php
+                            $workspace = app('current.workspace');
+                            $dailyTarget = $workspace ? $workspace->daily_target_minutes : 0;
+                            $targetHours = floor($dailyTarget / 60);
+                            $targetMinutes = $dailyTarget % 60;
+                            $targetDisplay = $targetHours . 'h' . ($targetMinutes > 0 ? ' ' . $targetMinutes . 'm' : '');
+                        @endphp
+                        @if($dailyTarget > 0)
+                            <div class="mt-1 text-xs {{ $remainingMinutes > 0 ? ($remainingMinutes < 60 ? 'text-orange-500 dark:text-orange-400' : 'text-blue-500 dark:text-blue-400') : 'text-green-500 dark:text-green-400' }}">
+                                @if($remainingMinutes > 0)
+                                    <span class="font-medium">Missing to reach {{ $targetDisplay }}:</span> {{ $this->formatRemainingTime($remainingMinutes) }}
+                                @else
+                                    <span class="font-medium">{{ $targetDisplay }} target reached for this day!</span>
+                                @endif
+                            </div>
+                        @else
+                            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                <span class="font-medium">No daily target set</span>
+                            </div>
+                        @endif
                     @endif
                 </div>
                 <div>

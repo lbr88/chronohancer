@@ -1103,14 +1103,20 @@ class Timers extends Component
     }
 
     /**
-     * Get the percentage of the required daily hours (7.4 hours = 444 minutes)
+     * Get the percentage of the required daily hours based on workspace settings
      *
      * @return int
      */
     public function getDailyProgressPercentage()
     {
         $totalMinutes = $this->getTotalDailyMinutes();
-        $requiredMinutes = 444; // 7.4 hours = 444 minutes
+        $workspace = app('current.workspace');
+        $requiredMinutes = $workspace ? $workspace->daily_target_minutes : 0;
+
+        // If required minutes is 0, return 0 to avoid division by zero
+        if ($requiredMinutes === 0) {
+            return 0;
+        }
 
         $percentage = min(100, round(($totalMinutes / $requiredMinutes) * 100));
 
@@ -1118,14 +1124,20 @@ class Timers extends Component
     }
 
     /**
-     * Get the remaining time to reach the daily goal of 7.4 hours
+     * Get the remaining time to reach the daily goal based on workspace settings
      *
      * @return string
      */
     public function getRemainingDailyTime()
     {
         $totalMinutes = $this->getTotalDailyMinutes();
-        $requiredMinutes = 444; // 7.4 hours = 444 minutes
+        $workspace = app('current.workspace');
+        $requiredMinutes = $workspace ? $workspace->daily_target_minutes : 0;
+
+        // If required minutes is 0, return 0m
+        if ($requiredMinutes === 0) {
+            return '0m';
+        }
 
         $remainingMinutes = max(0, $requiredMinutes - $totalMinutes);
 

@@ -34,19 +34,125 @@ class Workspaces extends Component
         'description' => '',
         'color' => '#6366f1', // Default indigo color
         'is_default' => false,
+        'daily_target_minutes' => 444, // Default: 7.4 hours = 444 minutes
+        'weekly_target_minutes' => 2220, // Default: 37 hours = 2220 minutes
     ];
+
+    // Human-readable time strings
+    public $dailyTargetTime = '7h 24m';
+
+    public $weeklyTargetTime = '37h';
 
     protected $rules = [
         'form.name' => 'required|string|max:255',
         'form.description' => 'nullable|string',
         'form.color' => 'required|string|max:7',
         'form.is_default' => 'boolean',
+        'form.daily_target_minutes' => 'required|integer|min:0',
+        'form.weekly_target_minutes' => 'required|integer|min:0',
+    ];
+
+    // Listen for changes to the human-readable time inputs
+    protected $listeners = [
+        'workspace-created' => '$refresh',
+        'workspace-updated' => '$refresh',
+        'workspace-deleted' => '$refresh',
     ];
 
     public function mount()
     {
         // Ensure the user has a default workspace
         Workspace::findOrCreateDefault(Auth::id());
+
+        // Initialize human-readable time strings
+        $this->updateHumanReadableTimes();
+    }
+
+    /**
+     * Format minutes to a human-readable string (e.g., "7h 24m")
+     */
+    private function formatMinutesToHumanReadable(int $minutes): string
+    {
+        $hours = floor($minutes / 60);
+        $remainingMinutes = $minutes % 60;
+
+        if ($hours > 0 && $remainingMinutes > 0) {
+            return "{$hours}h {$remainingMinutes}m";
+        } elseif ($hours > 0) {
+            return "{$hours}h";
+        } else {
+            return "{$remainingMinutes}m";
+        }
+    }
+
+    /**
+     * Parse a human-readable string (e.g., "7h 24m") to minutes
+     */
+    private function parseHumanReadableToMinutes(string $timeString): int
+    {
+        $timeString = trim($timeString);
+        $minutes = 0;
+
+        // Match hours (e.g., "7h")
+        if (preg_match('/(\d+)h/i', $timeString, $matches)) {
+            $minutes += (int) $matches[1] * 60;
+        }
+
+        // Match minutes (e.g., "24m")
+        if (preg_match('/(\d+)m/i', $timeString, $matches)) {
+            $minutes += (int) $matches[1];
+        }
+
+        return $minutes;
+    }
+
+    /**
+     * Update human-readable time strings based on minute values
+     */
+    private function updateHumanReadableTimes()
+    {
+        $this->dailyTargetTime = $this->formatMinutesToHumanReadable($this->form['daily_target_minutes']);
+        $this->weeklyTargetTime = $this->formatMinutesToHumanReadable($this->form['weekly_target_minutes']);
+    }
+
+    /**
+     * Update daily target minutes when the human-readable daily target time changes
+     */
+    public function updatedDailyTargetTime()
+    {
+        $minutes = $this->parseHumanReadableToMinutes($this->dailyTargetTime);
+
+        // Allow 0 as a valid value
+        $this->form['daily_target_minutes'] = $minutes;
+
+        // If daily target is 0, set weekly target to 0 as well
+        if ($minutes === 0) {
+            $this->form['weekly_target_minutes'] = 0;
+            $this->weeklyTargetTime = '0h';
+        } else {
+            $this->form['weekly_target_minutes'] = $minutes * 5; // Assuming 5-day work week
+            $this->weeklyTargetTime = $this->formatMinutesToHumanReadable($this->form['weekly_target_minutes']);
+        }
+    }
+
+    /**
+     * Update weekly target minutes when the human-readable weekly target time changes
+     */
+    public function updatedWeeklyTargetTime()
+    {
+        $minutes = $this->parseHumanReadableToMinutes($this->weeklyTargetTime);
+
+        // Allow 0 as a valid value
+        $this->form['weekly_target_minutes'] = $minutes;
+
+        // If weekly target is 0, set daily target to 0 as well
+        if ($minutes === 0) {
+            $this->form['daily_target_minutes'] = 0;
+            $this->dailyTargetTime = '0h';
+        } else {
+            $this->form['daily_target_minutes'] = (int) round($minutes / 5); // Assuming 5-day work week
+            $this->dailyTargetTime = $this->formatMinutesToHumanReadable($this->form['daily_target_minutes']);
+        }
     }
 
     public function openCreateModal()
@@ -64,7 +170,13 @@ class Workspaces extends Component
             'description' => $workspace->description,
             'color' => $workspace->color,
             'is_default' => $workspace->is_default,
+            'daily_target_minutes' => $workspace->daily_target_minutes,
+            'weekly_target_minutes' => $workspace->weekly_target_minutes,
         ];
+
+        // Update human-readable time strings
+        $this->updateHumanReadableTimes();
+
         $this->showEditModal = true;
     }
 
@@ -92,6 +204,8 @@ class Workspaces extends Component
                 'description' => $this->form['description'],
                 'color' => $this->form['color'],
                 'is_default' => $this->form['is_default'],
+                'daily_target_minutes' => $this->form['daily_target_minutes'],
+                'weekly_target_minutes' => $this->form['weekly_target_minutes'],
                 'user_id' => Auth::id(),
             ]);
 
@@ -126,6 +240,8 @@ class Workspaces extends Component
                 'description' => $this->form['description'],
                 'color' => $this->form['color'],
                 'is_default' => $this->form['is_default'],
+                'daily_target_minutes' => $this->form['daily_target_minutes'],
+                'weekly_target_minutes' => $this->form['weekly_target_minutes'],
             ]);
 
             // If this is set as default, set it as the current workspace
@@ -196,7 +312,13 @@ class Workspaces extends Component
             'description' => '',
             'color' => '#6366f1', // Default indigo color
             'is_default' => false,
+            'daily_target_minutes' => 444, // Default: 7.4 hours = 444 minutes
+            'weekly_target_minutes' => 2220, // Default: 37 hours = 2220 minutes
         ];
+
+        // Update human-readable time strings
+        $this->updateHumanReadableTimes();
+
         $this->workspaceToEdit = null;
         $this->workspaceToDelete = null;
         $this->isDefaultWorkspace = false;

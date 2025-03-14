@@ -25,6 +25,12 @@
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                     {{ __('Default') }}
                                 </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    {{ __('Daily Target') }}
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    {{ __('Weekly Target') }}
+                                </th>
                                 <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                     {{ __('Actions') }}
                                 </th>
@@ -62,6 +68,32 @@
                                             </flux:button>
                                         @endif
                                     </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                                            @php
+                                                $hours = floor($workspace->daily_target_minutes / 60);
+                                                $minutes = $workspace->daily_target_minutes % 60;
+                                                $formattedTime = $hours . 'h';
+                                                if ($minutes > 0) {
+                                                    $formattedTime .= ' ' . $minutes . 'm';
+                                                }
+                                            @endphp
+                                            {{ $formattedTime }} ({{ $workspace->daily_target_minutes }} min)
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                                            @php
+                                                $hours = floor($workspace->weekly_target_minutes / 60);
+                                                $minutes = $workspace->weekly_target_minutes % 60;
+                                                $formattedTime = $hours . 'h';
+                                                if ($minutes > 0) {
+                                                    $formattedTime .= ' ' . $minutes . 'm';
+                                                }
+                                            @endphp
+                                            {{ $formattedTime }} ({{ $workspace->weekly_target_minutes }} min)
+                                        </div>
+                                    </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <flux:button size="xs" wire:click="openEditModal({{ $workspace->id }})">
                                             {{ __('Edit') }}
@@ -73,7 +105,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
+                                    <td colspan="7" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
                                         {{ __('No workspaces found') }}
                                     </td>
                                 </tr>

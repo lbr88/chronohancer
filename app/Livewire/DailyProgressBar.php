@@ -13,9 +13,11 @@ class DailyProgressBar extends Component
 
     public $dailyProgressPercentage = 0;
 
-    public $remainingDailyTime = '7h 24m';
+    public $remainingDailyTime = '0m';
 
-    public $requiredMinutes = 444; // 7.4 hours = 444 minutes
+    public $requiredMinutes = 0; // Will be set from workspace settings
+
+    protected $workspace;
 
     public $dailyTimeLogs;
 
@@ -32,6 +34,12 @@ class DailyProgressBar extends Component
 
     public function mount()
     {
+        $this->workspace = app('current.workspace');
+
+        if ($this->workspace) {
+            $this->requiredMinutes = $this->workspace->daily_target_minutes;
+        }
+
         $this->loadData();
         $this->currentTime = now()->format('H:i:s');
     }
@@ -39,6 +47,13 @@ class DailyProgressBar extends Component
     #[Polling('30s')]
     public function loadData()
     {
+        // Refresh workspace in case it changed
+        $this->workspace = app('current.workspace');
+
+        if ($this->workspace) {
+            $this->requiredMinutes = $this->workspace->daily_target_minutes;
+        }
+
         $this->dailyTimeLogs = $this->getDailyTimeLogs();
         $this->activeTimers = $this->getActiveTimers();
         $this->totalDailyMinutes = $this->getTotalDailyMinutes();
@@ -126,12 +141,17 @@ class DailyProgressBar extends Component
     }
 
     /**
-     * Get the percentage of the required daily hours (7.4 hours = 444 minutes)
+     * Get the percentage of the required daily hours based on workspace settings
      *
      * @return int
      */
     public function getDailyProgressPercentage()
     {
+        // If required minutes is 0, return 0 to avoid division by zero
+        if ($this->requiredMinutes === 0) {
+            return 0;
+        }
+
         $totalMinutes = $this->totalDailyMinutes;
         $percentage = min(100, round(($totalMinutes / $this->requiredMinutes) * 100));
 
@@ -139,12 +159,17 @@ class DailyProgressBar extends Component
     }
 
     /**
-     * Get the remaining time to reach the daily goal of 7.4 hours
+     * Get the remaining time to reach the daily goal based on workspace settings
      *
      * @return string
      */
     public function getRemainingDailyTime()
     {
+        // If required minutes is 0, return 0m
+        if ($this->requiredMinutes === 0) {
+            return '0m';
+        }
+
         $remainingMinutes = max(0, $this->requiredMinutes - $this->totalDailyMinutes);
 
         $hours = floor($remainingMinutes / 60);
@@ -208,6 +233,11 @@ class DailyProgressBar extends Component
 
     public function render()
     {
+        // Don't render the progress bar if the daily target is 0
+        if ($this->requiredMinutes === 0) {
+            return;
+        }
+
         return view('livewire.daily-progress-bar');
     }
 }
