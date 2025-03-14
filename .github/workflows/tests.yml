@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+        uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -30,7 +30,7 @@ jobs:
           coverage: xdebug
 
       - name: Setup Node
-        uses: actions/setup-node@b39b52d1213e96004bfcb1c61a8a6fa8ab84f3e8 # v4
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
@@ -55,7 +55,7 @@ jobs:
         
       # Add explicit reference to upload-artifact to fix security check
       - name: Upload Artifact Reference
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275fb2c867cb # v3
+        uses: actions/upload-artifact@v3
         if: false # This step won't run, it's just to reference the action
         with:
           name: dummy-artifact
