@@ -1,15 +1,118 @@
-<div class="max-w-7xl mx-auto px-4 py-2">
+<div class="max-w-7xl mx-auto px-4 py-2"
+    x-data="{
+        totalMinutes: {{ $totalDailyMinutes }},
+        percentage: {{ $dailyProgressPercentage }},
+        remainingTime: '{{ $remainingDailyTime }}',
+        activeTimers: {{ json_encode($activeTimers) }},
+        startTimes: {},
+        showTooltip: false,
+        tooltipContent: '',
+        tooltipPosition: 0,
+        
+        init() {
+            // Initialize start times for active timers
+            this.activeTimers.forEach(timer => {
+                this.startTimes[timer.id] = new Date(timer.start_time);
+            });
+            
+            // Start the timer update interval
+            if (this.activeTimers.length > 0) {
+                this.startTimerUpdates();
+            }
+            
+            // Listen for Livewire events
+            window.addEventListener('dailyProgressUpdated', (event) => {
+                this.totalMinutes = event.detail.totalMinutes;
+                this.percentage = event.detail.percentage;
+                this.remainingTime = event.detail.remainingTime;
+                
+                // Update active timers
+                const newActiveTimers = event.detail.activeTimers;
+                
+                // Reset start times for new timers
+                newActiveTimers.forEach(timer => {
+                    if (!this.startTimes[timer.id]) {
+                        this.startTimes[timer.id] = new Date(timer.start_time);
+                    }
+                });
+                
+                this.activeTimers = newActiveTimers;
+                
+                // Start or stop timer updates based on whether we have active timers
+                if (this.activeTimers.length > 0 && !this.updateInterval) {
+                    this.startTimerUpdates();
+                } else if (this.activeTimers.length === 0 && this.updateInterval) {
+                    this.stopTimerUpdates();
+                }
+            });
+        },
+        
+        startTimerUpdates() {
+            this.updateInterval = setInterval(() => {
+                let additionalMinutes = 0;
+                
+                // Calculate current duration for each active timer
+                this.activeTimers.forEach(timer => {
+                    const startTime = this.startTimes[timer.id];
+                    if (startTime) {
+                        const now = new Date();
+                        const diffMs = now - startTime;
+                        const diffMinutes = Math.floor(diffMs / 60000);
+                        additionalMinutes += diffMinutes;
+                    }
+                });
+                
+                // Calculate completed minutes (from server) + active minutes (calculated live)
+                const completedMinutes = {{ $totalDailyMinutes - collect($activeTimers)->sum('current_duration') }};
+                const totalMinutes = completedMinutes + additionalMinutes;
+                
+                // Update the display
+                this.totalMinutes = totalMinutes;
+                this.percentage = Math.min(100, Math.round((totalMinutes / {{ $requiredMinutes }}) * 100));
+                
+                // Update remaining time
+                const remainingMinutes = Math.max(0, {{ $requiredMinutes }} - totalMinutes);
+                const hours = Math.floor(remainingMinutes / 60);
+                const minutes = remainingMinutes % 60;
+                
+                if (hours > 0 && minutes > 0) {
+                    this.remainingTime = `${hours}h ${minutes}m`;
+                } else if (hours > 0) {
+                    this.remainingTime = `${hours}h`;
+                } else {
+                    this.remainingTime = `${minutes}m`;
+                }
+            }, 1000); // Update every second
+        },
+        
+        stopTimerUpdates() {
+            if (this.updateInterval) {
+                clearInterval(this.updateInterval);
+                this.updateInterval = null;
+            }
+        },
+        
+        formatTime(minutes) {
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            return `${hours}h ${mins}m`;
+        }
+    }"
+    x-init="init()"
+    @disconnect="stopTimerUpdates()"
+>
     <div class="flex items-center">
         <div class="text-xs font-medium text-gray-700 dark:text-gray-300 mr-3 whitespace-nowrap">
-            {{ floor($totalDailyMinutes / 60) }}h {{ $totalDailyMinutes % 60 }}m / 7h24m
+            <span x-text="Math.floor(totalMinutes / 60) + 'h ' + (totalMinutes % 60) + 'm'"></span> / 7h24m
         </div>
         
-        <div class="flex-grow relative h-2.5" x-data="{ showTooltip: false, tooltipContent: '', tooltipPosition: 0 }">
+        <div class="flex-grow relative h-2.5">
             <!-- Background -->
             <div class="absolute inset-0 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
             
             <!-- Progress -->
-            <div class="absolute inset-y-0 left-0 bg-indigo-500 dark:bg-indigo-600 rounded-full" style="width: {{ $dailyProgressPercentage }}%"></div>
+            <div class="absolute inset-y-0 left-0 bg-indigo-500 dark:bg-indigo-600 rounded-full transition-all duration-1000 ease-linear"
+                 :style="'width: ' + percentage + '%'"></div>
             
             <!-- Time log segments -->
             @php
@@ -45,6 +148,21 @@
                 ></div>
             @endforeach
             
+            <!-- Active timer segment (pulsing) -->
+            @if(count($activeTimers) > 0)
+                @php
+                    $activeTimerWidth = (collect($activeTimers)->sum('current_duration') / $requiredMinutes) * 100;
+                    $activeTimerLeft = $totalWidth;
+                @endphp
+                <div
+                    class="absolute inset-y-0 bg-red-500 opacity-90 transition-opacity cursor-pointer rounded-full animate-pulse"
+                    style="left: {{ $activeTimerLeft }}%; width: {{ $activeTimerWidth }}%;"
+                    @mouseenter="showTooltip = true; tooltipContent = 'Active timer(s)'; tooltipPosition = $event.target.getBoundingClientRect().left + ($event.target.getBoundingClientRect().width / 2);"
+                    @mouseleave="showTooltip = false"
+                    x-bind:style="'left: {{ $activeTimerLeft }}%; width: ' + ((totalMinutes - {{ $totalDailyMinutes - collect($activeTimers)->sum('current_duration') }}) / {{ $requiredMinutes }} * 100) + '%'"
+                ></div>
+            @endif
+            
             <!-- Tooltip -->
             <div
                 x-show="showTooltip"
@@ -61,11 +179,12 @@
         </div>
         
         <div class="text-xs font-medium text-gray-700 dark:text-gray-300 ml-3 whitespace-nowrap">
-            @if($dailyProgressPercentage < 100)
-                {{ $remainingDailyTime }} remaining
-            @else
-                Completed!
-            @endif
+            <template x-if="percentage < 100">
+                <span x-text="remainingTime + ' remaining'"></span>
+            </template>
+            <template x-if="percentage >= 100">
+                <span>Completed!</span>
+            </template>
         </div>
     </div>
 </div>

@@ -192,6 +192,9 @@ class TimeLogs extends Component
             $timeLog->tags()->attach($this->selectedTags);
         }
         
+        // Dispatch event to update the daily progress bar
+        $this->dispatch('timeLogSaved');
+        
         $this->reset(['project_id', 'timer_id', 'description', 'duration_minutes', 'selectedTags']);
         $this->selected_date = now()->format('Y-m-d'); // Reset to today
         session()->flash('message', 'Time log created successfully.');
@@ -346,6 +349,9 @@ class TimeLogs extends Component
 
         $timeLog->tags()->sync($this->selectedTags);
         
+        // Dispatch event to update the daily progress bar
+        $this->dispatch('timeLogSaved');
+        
         // Store the return to dashboard flag before resetting
         $returnToDashboard = $this->returnToDashboard;
         
@@ -368,6 +374,10 @@ class TimeLogs extends Component
         $timeLog->delete();
         $this->confirmingDelete = null;
         $this->editingTimeLog = null; // Reset editing state to close the modal
+        
+        // Dispatch event to update the daily progress bar
+        $this->dispatch('timeLogSaved');
+        
         session()->flash('message', 'Time log deleted successfully.');
         
         // Redirect back to dashboard if requested
@@ -865,6 +875,9 @@ class TimeLogs extends Component
             $this->selectAll = false;
             $this->confirmingBulkDelete = false;
             
+            // Dispatch event to update the daily progress bar
+            $this->dispatch('timeLogSaved');
+            
             session()->flash('message', $count . ' time ' . ($count === 1 ? 'log' : 'logs') . ' deleted successfully.');
         }
     }
@@ -988,6 +1001,9 @@ class TimeLogs extends Component
             'end_time' => $end_time,
             'duration_minutes' => $this->quickTimeDuration,
         ]);
+        
+        // Dispatch event to update the daily progress bar
+        $this->dispatch('timeLogSaved');
         
         $this->closeQuickTimeModal();
         session()->flash('message', 'Time log created successfully.');

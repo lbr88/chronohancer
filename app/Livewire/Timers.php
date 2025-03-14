@@ -495,6 +495,9 @@ class Timers extends Component
                         'project_id' => $project_id,
                         'description' => $this->editingTimerDescription ?: null,
                     ]);
+                    
+                    // Dispatch event to update the daily progress bar
+                    $this->dispatch('timeLogSaved');
                 } else {
                     // If duration is 0 minutes, delete the time log
                     $timeLog->delete();
@@ -555,6 +558,9 @@ class Timers extends Component
                 $latestLog->end_time = $endTime;
                 $latestLog->duration_minutes = $durationMinutes;
                 $latestLog->save();
+                
+                // Dispatch event to update the daily progress bar
+                $this->dispatch('timeLogSaved');
             } else {
                 // If duration is 0 minutes, delete the time log instead of saving it
                 $latestLog->delete();
@@ -629,6 +635,9 @@ class Timers extends Component
                 $latestLog->end_time = $now;
                 $latestLog->duration_minutes = $durationMinutes;
                 $latestLog->save();
+                
+                // Dispatch event to update the daily progress bar
+                $this->dispatch('timeLogSaved');
             } else {
                 // If duration is 0 minutes, delete the time log instead of saving it
                 $latestLog->delete();

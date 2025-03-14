@@ -5,6 +5,7 @@ namespace App\Livewire;
 use Livewire\Component;
 use Livewire\Attributes\Polling;
 use App\Models\TimeLog;
+use App\Models\Timer;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -16,6 +17,14 @@ class DailyProgressBar extends Component
     public $requiredMinutes = 444; // 7.4 hours = 444 minutes
     public $dailyTimeLogs;
     public $currentTime;
+    public $activeTimers = [];
+
+    protected $listeners = [
+        'timerStarted' => 'handleTimerStarted',
+        'timerStopped' => 'handleTimerStopped',
+        'timerPaused' => 'handleTimerPaused',
+        'timeLogSaved' => 'loadData',
+    ];
 
     public function mount()
     {
@@ -24,13 +33,21 @@ class DailyProgressBar extends Component
     }
 
     #[Polling('30s')]
-
     public function loadData()
     {
         $this->dailyTimeLogs = $this->getDailyTimeLogs();
+        $this->activeTimers = $this->getActiveTimers();
         $this->totalDailyMinutes = $this->getTotalDailyMinutes();
         $this->dailyProgressPercentage = $this->getDailyProgressPercentage();
         $this->remainingDailyTime = $this->getRemainingDailyTime();
+        
+        // Dispatch an event to update the JavaScript timer
+        $this->dispatch('dailyProgressUpdated', [
+            'totalMinutes' => $this->totalDailyMinutes,
+            'percentage' => $this->dailyProgressPercentage,
+            'remainingTime' => $this->remainingDailyTime,
+            'activeTimers' => $this->activeTimers
+        ]);
     }
 
     /**
@@ -53,13 +70,55 @@ class DailyProgressBar extends Component
     }
     
     /**
+     * Get all active timers for the current day
+     *
+     * @return array
+     */
+    public function getActiveTimers()
+    {
+        $today = now()->startOfDay();
+        
+        $activeTimers = Timer::with('latestTimeLog')
+            ->where('user_id', auth()->id())
+            ->where('is_running', true)
+            ->get()
+            ->filter(function($timer) use ($today) {
+                // Only include timers that were started today
+                return $timer->latestTimeLog &&
+                       $timer->latestTimeLog->start_time >= $today &&
+                       $timer->latestTimeLog->end_time === null;
+            })
+            ->map(function($timer) {
+                $startTime = $timer->latestTimeLog->start_time;
+                $currentDuration = $startTime->diffInMinutes(now());
+                
+                return [
+                    'id' => $timer->id,
+                    'start_time' => $startTime->toIso8601String(),
+                    'current_duration' => $currentDuration
+                ];
+            })
+            ->values()
+            ->toArray();
+            
+        return $activeTimers;
+    }
+    
+    /**
      * Get the total minutes logged for the current day
+     * including active timers
      *
      * @return int
      */
     public function getTotalDailyMinutes()
     {
-        return $this->getDailyTimeLogs()->sum('duration_minutes');
+        // Sum of completed time logs
+        $completedMinutes = $this->getDailyTimeLogs()->sum('duration_minutes');
+        
+        // Add minutes from active timers
+        $activeMinutes = collect($this->activeTimers)->sum('current_duration');
+        
+        return $completedMinutes + $activeMinutes;
     }
     
     /**
@@ -94,6 +153,30 @@ class DailyProgressBar extends Component
         } else {
             return "{$minutes}m";
         }
+    }
+    
+    /**
+     * Handle timer started event
+     */
+    public function handleTimerStarted($data)
+    {
+        $this->loadData();
+    }
+    
+    /**
+     * Handle timer stopped event
+     */
+    public function handleTimerStopped($data)
+    {
+        $this->loadData();
+    }
+    
+    /**
+     * Handle timer paused event
+     */
+    public function handleTimerPaused($data)
+    {
+        $this->loadData();
     }
     
     /**
