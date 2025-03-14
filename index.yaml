@@ -1,0 +1,22 @@
+apiVersion: v1
+entries:
+  chronohancer:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2025-03-14T15:05:51.041391569+01:00"
+    description: A Helm chart for Chronohancer Laravel application
+    digest: 179377c84428b64647185f5c43a0253ddb825ba2ab8ffad105e0abd2d83dcb05
+    keywords:
+    - laravel
+    - php
+    - web
+    - mysql
+    - redis
+    maintainers:
+    - name: Chronohancer Team
+    name: chronohancer
+    type: application
+    urls:
+    - https://lbr88.github.io/chronohancer/chronohancer-0.1.0.tgz
+    version: 0.1.0
+generated: "2025-03-14T15:05:51.040662146+01:00"
