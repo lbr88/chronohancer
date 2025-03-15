@@ -1,25 +1,25 @@
 # Stage 1: Build assets
-FROM debian AS builder
-
-# Install Node.js and build tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    nodejs \
-    npm \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+FROM node:18 AS frontend-builder
 
 # Set working directory
 WORKDIR /var/www
 
-# Copy Laravel application code
-COPY . /var/www
-
-# Install Node.js dependencies and build assets
+# Copy the package.json and install dependencies
+COPY package*.json ./
 RUN npm install && \
-   chmod +x node_modules/.bin/vite && \
-   npm run build
-#RUN npm install && \
-#    npm run build
+    chmod +x node_modules/.bin/vite
+
+# Copy the frontend source code
+COPY vite.config.js ./
+COPY resources /var/www/resources
+COPY public /var/www/public
+
+# Copy vendor directory (comes from build args)
+ARG VENDOR_DIR=./vendor
+COPY ${VENDOR_DIR} /var/www/vendor
+
+# Build frontend assets
+RUN npm run build
 
 # Stage 2: Nginx production image
 FROM nginx:alpine
