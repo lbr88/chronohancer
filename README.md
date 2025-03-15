@@ -74,30 +74,43 @@ Chronohancer follows the Laravel MVC architecture with Livewire components for r
 ```
 chronohancer/
 ├── app/                      # Application code
-│   ├── Http/                 # HTTP layer (controllers, middleware)
-│   ├── Livewire/             # Livewire components
-│   │   ├── Actions/          # Reusable actions
-│   │   ├── Auth/             # Authentication components
-│   │   └── Settings/         # User settings components
-│   ├── Models/               # Eloquent models
-│   └── Providers/            # Service providers
-├── bootstrap/                # Application bootstrap files
-├── config/                   # Configuration files
-├── database/                 # Database migrations and seeders
-│   ├── factories/            # Model factories for testing
-│   ├── migrations/           # Database migrations
-│   └── seeders/              # Database seeders
-├── public/                   # Publicly accessible files
-├── resources/                # Frontend resources
-│   ├── css/                  # CSS files
-│   ├── js/                   # JavaScript files
-│   └── views/                # Blade templates
-│       ├── components/       # Reusable view components
-│       ├── layouts/          # Layout templates
-│       └── livewire/         # Livewire component views
-├── routes/                   # Route definitions
-├── storage/                  # Application storage
-└── tests/                    # Test files
+│   ├── Console/             # Console commands
+│   │   └── Commands/        # Custom Artisan commands
+│   ├── Http/                # HTTP layer (controllers, middleware)
+│   ├── Livewire/           # Livewire components
+│   │   ├── Actions/        # Reusable actions
+│   │   ├── Auth/          # Authentication components
+│   │   └── Settings/      # User settings components
+│   ├── Models/             # Eloquent models
+│   ├── Providers/          # Service providers
+│   ├── Services/          # Application services
+│   └── View/              # View components
+├── bootstrap/              # Application bootstrap files
+├── config/                 # Configuration files
+├── database/               # Database migrations and seeders
+│   ├── factories/         # Model factories for testing
+│   ├── migrations/        # Database migrations
+│   └── seeders/          # Database seeders
+├── docker/                # Docker configuration files
+├── helm/                  # Helm chart for Kubernetes
+│   └── chronohancer/     # Main chart directory
+│       └── templates/    # Chart templates
+├── kubernetes/            # Kubernetes manifests
+├── public/                # Publicly accessible files
+├── resources/             # Frontend resources
+│   ├── css/              # CSS files
+│   ├── js/               # JavaScript files
+│   └── views/            # Blade templates
+│       ├── components/   # Reusable view components
+│       ├── flux/         # Flux components
+│       ├── layouts/      # Layout templates
+│       ├── livewire/     # Livewire component views
+│       └── partials/     # Partial views
+├── routes/                # Route definitions
+├── storage/               # Application storage
+└── tests/                # Test files
+    ├── Feature/          # Feature tests
+    └── Unit/            # Unit tests
 ```
 
 ## 🔧 Setup and Installation
@@ -163,6 +176,10 @@ chronohancer/
    ```
 
 10. Visit `http://localhost:8000` in your browser
+
+### Social Login Setup
+
+For setting up social login with GitHub, Google, and Microsoft, follow the instructions in [SOCIALITE_SETUP.md](SOCIALITE_SETUP.md).
 
 ### Using Laravel Sail (Docker)
 
