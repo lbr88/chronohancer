@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\JiraAuthController;
+use App\Http\Controllers\JiraController;
 use App\Http\Controllers\TempoAuthController;
 use App\Livewire\Dashboard;
 use App\Livewire\Projects;
@@ -44,6 +45,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/settings/integrations/tempo', TempoIntegration::class)->name('settings.integrations.tempo');
     Route::get('/settings/integrations/jira', JiraIntegration::class)->name('settings.integrations.jira');
     Route::get('/auth/jira/callback', [JiraAuthController::class, 'callback'])->name('auth.jira.callback');
+    Route::get('/api/jira/issue/{key}', [JiraController::class, 'getIssue'])->name('jira.issue');
 
     // Tempo OAuth routes
     Route::get('/auth/tempo/redirect', [TempoAuthController::class, 'redirect'])->name('auth.tempo.redirect');

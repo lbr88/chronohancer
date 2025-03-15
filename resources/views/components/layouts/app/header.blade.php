@@ -180,5 +180,6 @@
         </div>
 
         @fluxScripts
+        <x-notification />
     </body>
 </html>

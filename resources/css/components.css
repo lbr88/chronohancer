@@ -208,3 +208,8 @@
 .daily-progress-info {
     @apply flex justify-between mt-1 text-xs text-gray-500 dark:text-gray-400;
 }
+
+/* Pagination Components */
+.ch-pagination-btn {
+    @apply relative inline-flex items-center px-2 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 focus:z-10 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500;
+}

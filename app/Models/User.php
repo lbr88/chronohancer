@@ -168,6 +168,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the favorite Jira issues for the user.
+     */
+    public function favoriteJiraIssues(): HasMany
+    {
+        return $this->hasMany(FavoriteJiraIssue::class);
+    }
+
+    /**
      * Find or create a user based on OAuth provider data
      *
      * @param  string  $provider

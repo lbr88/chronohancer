@@ -53,4 +53,13 @@ class Timer extends Model
     {
         return $this->belongsToMany(Tag::class);
     }
+
+    public function getJiraKeyAttribute(): ?string
+    {
+        if (preg_match('/^([A-Z]+-\d+):/', $this->name, $matches)) {
+            return $matches[1];
+        }
+
+        return null;
+    }
 }

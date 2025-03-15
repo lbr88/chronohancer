@@ -84,6 +84,7 @@ class Timers extends Component
         'timerStarted' => 'handleTimerStarted',
         'timerStopped' => 'handleTimerStopped',
         'timerPaused' => 'handleTimerPaused',
+        'refresh-timers' => '$refresh',
     ];
 
     public function mount()

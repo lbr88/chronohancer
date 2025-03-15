@@ -318,7 +318,21 @@
                                         <td class="ch-table-cell">
                                             <div class="flex items-center">
                                                 <div class="ml-4">
-                                                    <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $timer->name }}</div>
+                                                    <div class="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                                        {{ $timer->name }}
+                                                        @if($timer->jira_key)
+                                                            <x-jira-issue-tooltip :issueKey="$timer->jira_key">
+                                                                <a href="{{ auth()->user()->jira_site_url }}/browse/{{ $timer->jira_key }}"
+                                                                   target="_blank"
+                                                                   class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 inline-flex items-center"
+                                                                   title="View in Jira">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                                    </svg>
+                                                                </a>
+                                                            </x-jira-issue-tooltip>
+                                                        @endif
+                                                    </div>
                                                     @if($timer->description)
                                                         <div class="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs">{{ $timer->description }}</div>
                                                     @endif
@@ -415,6 +429,11 @@
                 </div>
             @endif
         </div>
+
+        <!-- Jira Issues List -->
+        @if(auth()->user()->hasJiraEnabled())
+            <livewire:jira-issues-list />
+        @endif
     </div>
     
     <!-- Include Modals -->

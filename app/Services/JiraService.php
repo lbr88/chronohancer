@@ -182,10 +182,15 @@ class JiraService
                 return $response->json();
             }
 
+            $errorResponse = $response->json();
             Log::error('Failed Jira API request', [
                 'endpoint' => $endpoint,
+                'method' => $method,
+                'data' => $data,
                 'status' => $response->status(),
-                'response' => $response->json(),
+                'response' => $errorResponse,
+                'error_messages' => $errorResponse['errorMessages'] ?? null,
+                'errors' => $errorResponse['errors'] ?? null,
             ]);
 
             return null;
@@ -201,21 +206,66 @@ class JiraService
      */
     public function getIssue(string $issueIdOrKey): ?array
     {
-        return $this->request('get', "/rest/api/3/issue/{$issueIdOrKey}");
+        $cacheKey = "jira_issue:{$this->user->id}:{$issueIdOrKey}";
+
+        // Try to get from cache first
+        if ($cached = cache()->get($cacheKey)) {
+            return $cached;
+        }
+
+        // If not in cache, fetch from API
+        $issue = $this->request('get', "/rest/api/3/issue/{$issueIdOrKey}");
+
+        if ($issue) {
+            // Cache for 5 minutes
+            cache()->put($cacheKey, $issue, now()->addMinutes(5));
+        }
+
+        return $issue;
     }
 
     /**
      * Search for issues.
      */
-    public function searchIssues(string $searchTerm): ?array
+    public function searchIssues(string $jql = '', int $maxResults = 10, int $startAt = 0): array
     {
+        $cacheKey = "jira_search:{$this->user->id}:".md5($jql.$maxResults.$startAt);
+
+        // Try to get from cache first
+        if ($cached = cache()->get($cacheKey)) {
+            return $cached;
+        }
+
         $response = $this->request('post', '/rest/api/3/search', [
-            'jql' => "(summary ~ \"$searchTerm\" OR key = \"$searchTerm\")",
-            'maxResults' => 10,
-            'fields' => ['summary', 'status'],
+            'jql' => $jql ?: 'order by updated DESC',
+            'maxResults' => $maxResults,
+            'startAt' => $startAt,
+            'fields' => [
+                'summary',
+                'status',
+                'assignee',
+                'reporter',
+                'updated',
+                'created',
+                'priority',
+                'issuetype',
+                'labels',
+                'customfield_10014', // Epic link
+                'parent', // Parent issue for subtasks
+                'project',
+            ],
         ]);
 
-        return $response['issues'] ?? null;
+        $result = [
+            'issues' => collect($response['issues'] ?? []),
+            'total' => $response['total'] ?? 0,
+            'startAt' => $response['startAt'] ?? 0,
+        ];
+
+        // Cache for 2 minutes since search results change more frequently
+        cache()->put($cacheKey, $result, now()->addMinutes(2));
+
+        return $result;
     }
 
     /**
