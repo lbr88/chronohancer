@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/lrasmussen/chronohancer:latest
+    image: ghcr.io/lbr88/chronohancer:latest
     # Uncomment below and comment out image above to build locally
     # build:
     #   context: .
