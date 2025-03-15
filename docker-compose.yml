@@ -33,7 +33,7 @@ services:
     container_name: chronohancer-nginx
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8000:80"
     volumes:
       - ./:/var/www/html
       - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf
@@ -71,6 +71,16 @@ services:
 networks:
   chronohancer:
     driver: bridge
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: chronohancer-watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 30 --cleanup --monitor-only chronohancer-app
+    networks:
+      - chronohancer
 
 volumes:
   mysql-data:
