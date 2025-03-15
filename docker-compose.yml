@@ -2,10 +2,10 @@ services:
   app:
     image: ghcr.io/lbr88/chronohancer:latest
     # Uncomment below and comment out image above to build locally
-    # build:
-    #   context: .
-    #   dockerfile: docker/Dockerfile
-    # image: chronohancer-app
+    #build:
+    #  context: .
+    #  dockerfile: docker/Dockerfile
+    image: chronohancer-app
     container_name: chronohancer-app
     restart: unless-stopped
     volumes:
@@ -15,7 +15,7 @@ services:
     networks:
       - chronohancer
     ports:
-      - "9000"
+      - "9000:9000"
     env_file:
       - .env
     environment:
