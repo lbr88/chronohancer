@@ -174,7 +174,7 @@ class JiraIssuesList extends Component
 
         logger()->info('Active timers found:', [
             'count' => $timers->count(),
-            'names' => $timers->pluck('name')->toArray(),
+            'names' => $timers->pluck('jirakey')->toArray(),
             'jira_keys' => $timers->map->jiraKey->filter()->toArray(),
         ]);
 
