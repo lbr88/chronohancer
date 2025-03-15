@@ -31,22 +31,17 @@ COPY . /var/www/html/
 # Install dependencies
 RUN composer install --optimize-autoloader --no-dev
 
-# Create .env file from example
-RUN cp .env.example .env
-
-# Generate application key
-RUN php artisan key:generate --force
-
-# Cache configuration
-RUN php artisan config:cache
-RUN php artisan route:cache
+# Cache views
 RUN php artisan view:cache
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage
 RUN chmod -R 775 /var/www/html/storage
 
+# Copy start script
+COPY docker/start.sh /usr/local/bin/start.sh
+
 # Expose port 9000 for PHP-FPM
 EXPOSE 9000
 
-CMD ["php-fpm"]
+CMD ["/usr/local/bin/start.sh"]
