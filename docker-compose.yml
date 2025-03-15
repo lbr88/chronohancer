@@ -3,7 +3,7 @@ services:
     #build:
     #  context: .
     #  dockerfile: ./docker/production/nginx/Dockerfile
-    image: ghcr.io/lbr88/chronohancer:latest
+    image: ghcr.io/lbr88/chronohancer/nginx:latest
     restart: unless-stopped # Automatically restart unless the service is explicitly stopped
     volumes:
       # Mount the 'laravel-storage-production' volume to '/var/www/storage' inside the container.
@@ -28,10 +28,11 @@ services:
 
   php-fpm:
     # For the php-fpm service, we will create a custom image to install the necessary PHP extensions and setup proper permissions.
-    build:
-      context: .
-      dockerfile: ./docker/common/php-fpm/Dockerfile
-      target: production
+    #build:
+    #  context: .
+    #  dockerfile: ./docker/common/php-fpm/Dockerfile
+    #  target: production
+    image: ghcr.io/lbr88/chronohancer/php-fpm:latest
     restart: unless-stopped
     volumes:
       - laravel-storage-production:/var/www/storage  # Mount the storage volume
