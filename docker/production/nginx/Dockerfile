@@ -16,8 +16,10 @@ COPY . /var/www
 
 # Install Node.js dependencies and build assets
 RUN npm install && \
-    chmod +x node_modules/.bin/vite && \
-    npm run build
+   chmod +x node_modules/.bin/vite && \
+   npm run build
+#RUN npm install && \
+#    npm run build
 
 # Stage 2: Nginx production image
 FROM nginx:alpine
