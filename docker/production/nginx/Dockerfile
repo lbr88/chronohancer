@@ -21,9 +21,6 @@ COPY ${VENDOR_DIR} /var/www/vendor
 # Build frontend assets
 RUN npm run build
 
-# copy the built assets to the public directory
-COPY ./public/build /var/www/public/build
-
 # Stage 2: Nginx production image
 FROM nginx:alpine
 
