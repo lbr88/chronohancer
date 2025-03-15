@@ -72,6 +72,52 @@
                             </div>
                         @endif
                     </div>
+
+                    <!-- Jira Issues Search -->
+                    @if(auth()->user()->hasJiraEnabled())
+                        <div class="mt-2">
+                            <div class="ch-search-input-wrapper">
+                                <input
+                                    type="text"
+                                    wire:model.live="jiraSearch"
+                                    placeholder="Search Jira issues..."
+                                    class="ch-search-input"
+                                >
+                                <div class="ch-search-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </div>
+                            </div>
+                            
+                            @if($jiraIssues->isNotEmpty())
+                                <div class="ch-dropdown">
+                                    <ul class="ch-dropdown-list">
+                                        @foreach($jiraIssues as $issue)
+                                            <li wire:click="useJiraIssue('{{ $issue['key'] }}', '{{ addslashes($issue['fields']['summary']) }}')" class="ch-dropdown-item">
+                                                <div class="flex items-center">
+                                                    <span class="block font-medium text-gray-900 dark:text-white">{{ $issue['key'] }}: {{ $issue['fields']['summary'] }}</span>
+                                                </div>
+                                                <div class="flex items-center mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                    <span class="mr-2">{{ $issue['fields']['status']['name'] }}</span>
+                                                    @if(!empty($issue['fields']['labels']))
+                                                        <div class="ch-tag-list">
+                                                            @foreach(array_slice($issue['fields']['labels'], 0, 3) as $label)
+                                                                <span class="ch-tag">{{ $label }}</span>
+                                                            @endforeach
+                                                            @if(count($issue['fields']['labels']) > 3)
+                                                                <span class="text-xs text-gray-500 dark:text-gray-400">+{{ count($issue['fields']['labels']) - 3 }} more</span>
+                                                            @endif
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+                        </div>
+                    @endif
                 </div>
             </div>
 
