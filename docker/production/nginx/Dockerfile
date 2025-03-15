@@ -21,6 +21,8 @@ COPY ${VENDOR_DIR} /var/www/vendor
 # Build frontend assets
 RUN npm run build
 
+RUN ls -lash . && ls -lash public
+
 # Stage 2: Nginx production image
 FROM nginx:alpine
 
