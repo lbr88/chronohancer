@@ -445,56 +445,42 @@
     <script>
         // Use the improved timer manager
         document.addEventListener('DOMContentLoaded', () => {
-            // Ensure TimerManager class is available
-            if (typeof window.TimerManager === 'undefined') {
-                console.error('TimerManager not loaded yet, waiting...');
-                const checkTimer = setInterval(() => {
-                    if (typeof window.TimerManager !== 'undefined') {
-                        clearInterval(checkTimer);
-                        initializeTimerManager();
-                    }
-                }, 100);
-            } else {
-                initializeTimerManager();
-            }
+            initializeTimerManager();
+        });
+
+        // Also initialize when Livewire updates occur
+        document.addEventListener('livewire:navigated', () => {
+            initializeTimerManager();
         });
 
         function initializeTimerManager() {
-            // Force reload any existing timer manager
+            // Wait for TimerManager to be available
+            if (typeof window.TimerManager === 'undefined') {
+                console.log('Waiting for TimerManager to load...');
+                setTimeout(initializeTimerManager, 100);
+                return;
+            }
+
+            // Stop any existing timer manager
             if (window.globalTimerManager) {
                 window.globalTimerManager.stop();
-                window.globalTimerManager.initialized = false;
             }
-            
-            // Create a page-specific timer manager
-            const pageTimerManager = new window.TimerManager('timers-page');
-            pageTimerManager.initialize();
-            
-            // Log all timer elements for debugging
+
+            // Create and initialize the timer manager
+            window.globalTimerManager = new window.TimerManager('timers-page');
+            window.globalTimerManager.initialize();
+
+            // Log timer elements for debugging
             const timerElements = document.querySelectorAll('.timer-display');
-            console.log(`Found ${timerElements.length} timer elements on timers page`);
-            
+            console.log(`Found ${timerElements.length} timer elements`);
+
             timerElements.forEach(element => {
-                console.log(`Timer element: ${element.id || 'unnamed'}`, {
+                console.log(`Timer element: ${element.id}`, {
                     'data-start': element.dataset.start,
-                    'parsed-date': new Date(element.dataset.start).toString()
+                    'time-format': element.dataset.timeFormat
                 });
             });
-            
-            // Force refresh of stop buttons
-            document.querySelectorAll('.stop-button').forEach(button => {
-                // Add a subtle animation to draw attention to the fixed button
-                button.classList.add('animate-pulse');
-                setTimeout(() => {
-                    button.classList.remove('animate-pulse');
-                }, 1000);
-            });
-            
-            // Listen for new timer modal events
-            document.addEventListener('new-timer-modal-opened', (event) => {
-                console.log('New timer modal opened, start time captured:', event.detail?.startTime);
-            });
-        });
+        }
         
         // Add animations for timer actions
         document.addEventListener('timerStarted', (event) => {
@@ -518,10 +504,16 @@
                         const totalDurationElement = parentContainer.querySelector('.text-gray-500');
                         if (totalDurationElement && totalDurationElement.textContent.includes('Today:')) {
                             // Update the total duration text
-                            totalDurationElement.textContent = `(Today: ${detail.totalDuration})`;
+                            totalDurationElement.textContent = `Today: ${detail.totalDuration}`;
                         }
                     }
                 }
+            }
+
+            // Ensure the timer manager is reinitialized
+            if (window.globalTimerManager) {
+                window.globalTimerManager.initialized = false;
+                window.globalTimerManager.initialize();
             }
             
             setTimeout(() => {

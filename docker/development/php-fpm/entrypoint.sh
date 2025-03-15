@@ -15,5 +15,9 @@ php artisan config:clear
 php artisan route:clear
 php artisan view:clear
 
+# Build Vite assets
+echo "Building Vite assets..."
+npm run build
+
 # Run the default command (e.g., php-fpm or bash)
 exec "$@"
