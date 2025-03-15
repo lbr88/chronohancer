@@ -253,6 +253,8 @@ class JiraService
                 'customfield_10014', // Epic link
                 'parent', // Parent issue for subtasks
                 'project',
+                'description',
+                'comment',
             ],
         ]);
 

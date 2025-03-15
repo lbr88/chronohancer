@@ -20,9 +20,14 @@ class JiraIssuesList extends Component
     #[Url]
     public string $search = '';
 
-    public function updatedSearch(): void
+    public function updatedSearch($value): void
     {
-        if (empty($this->search)) {
+        $this->resetPage();
+    }
+
+    public function updating($name, $value): void
+    {
+        if ($name === 'search') {
             $this->resetPage();
         }
     }
@@ -74,33 +79,45 @@ class JiraIssuesList extends Component
                 $searchTerm = $this->search;
                 $searchConditions = [];
 
-                // Split search term into words
-                $words = preg_split('/\s+/', trim($searchTerm));
+                // Split search term into words and clean them
+                $words = array_filter(preg_split('/\s+/', trim($searchTerm)));
+                $searchConditions = [];
 
-                // Check each word for Jira key pattern
+                // Handle exact Jira key matches first
                 foreach ($words as $word) {
                     if (preg_match('/^[A-Z]+-\d+$/i', $word)) {
-                        $searchConditions[] = sprintf('key = "%s"', strtoupper($word));
+                        return $jql[] = sprintf('key = "%s"', strtoupper($word));
                     }
                 }
 
-                // Add text-based search only
-                if (! empty($searchTerm)) {
-                    $term = strtoupper($searchTerm);
-                    // If it looks like a complete key (e.g., PROJ-123)
-                    if (preg_match('/^[A-Z]+-\d+$/', $term)) {
-                        $searchConditions[] = sprintf('key = "%s"', $term);
+                // Create text search condition
+                $searchText = implode(' ', array_map(function ($word) {
+                    return strtolower($word).'*';
+                }, $words));
+
+                if (! empty($searchText)) {
+                    // Search in text fields
+                    $searchConditions[] = sprintf('text ~ "%s"', $searchText);
+
+                    // Also search specifically in summary for better matching
+                    $searchConditions[] = sprintf('summary ~ "%s"', $searchText);
+                }
+
+                // Add priority and type conditions if any word matches
+                foreach ($words as $word) {
+                    $lowerWord = strtolower($word);
+                    if (preg_match('/^(highest|high|medium|low|lowest)$/i', $word)) {
+                        $searchConditions[] = sprintf('priority = "%s"', ucfirst($lowerWord));
+                    }
+                    if (preg_match('/^(bug|task|story|epic|feature)$/i', $word)) {
+                        $searchConditions[] = sprintf('type = "%s"', ucfirst($lowerWord));
                     }
                 }
 
-                // Create fuzzy search term
-                $fuzzyTerm = implode('*', $words).'*';
-
-                // Add text-based search
-                $searchConditions[] = sprintf('text ~ "%s"', $fuzzyTerm);
-                $jql[] = sprintf('(%s)',
-                    implode(' OR ', $searchConditions)
-                );
+                // Combine all conditions
+                if (! empty($searchConditions)) {
+                    $jql[] = '('.implode(' OR ', $searchConditions).')';
+                }
             }
 
             // Add my issues filter
