@@ -51,19 +51,16 @@ jobs:
             type=ref,event=branch
             type=sha,format=short
 
-      # Build the base PHP image first (but don't push)
-      - name: Build php-fpm base image
+      # First extract vendor files from the PHP build
+      - name: Extract vendor files
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./docker/common/php-fpm/Dockerfile
           target: builder
-          load: true
-          tags: php-builder:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          outputs: type=local,dest=./vendor-output
 
-      # Push the final PHP-FPM image
+      # Push the PHP-FPM image
       - name: Build and push php-fpm image
         uses: docker/build-push-action@v5
         with:
@@ -76,16 +73,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Use builder stage to build frontend assets that will have vendor dependencies
-      - name: Create temp container from builder
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./docker/common/php-fpm/Dockerfile
-          target: builder
-          outputs: type=local,dest=./build-output
-
-      # Build and push Nginx image with frontend assets
+      # Build and push Nginx image using vendor files
       - name: Build and push nginx image
         uses: docker/build-push-action@v5
         with:
@@ -97,4 +85,4 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            VENDOR_DIR=./build-output/var/www/vendor
+            VENDOR_DIR=./vendor-output/var/www/vendor
