@@ -445,6 +445,21 @@
     <script>
         // Use the improved timer manager
         document.addEventListener('DOMContentLoaded', () => {
+            // Ensure TimerManager class is available
+            if (typeof window.TimerManager === 'undefined') {
+                console.error('TimerManager not loaded yet, waiting...');
+                const checkTimer = setInterval(() => {
+                    if (typeof window.TimerManager !== 'undefined') {
+                        clearInterval(checkTimer);
+                        initializeTimerManager();
+                    }
+                }, 100);
+            } else {
+                initializeTimerManager();
+            }
+        });
+
+        function initializeTimerManager() {
             // Force reload any existing timer manager
             if (window.globalTimerManager) {
                 window.globalTimerManager.stop();

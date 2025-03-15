@@ -199,7 +199,7 @@ export class TimerManager {
                             totalDurationElement.dataset.lastUpdated = now;
                             
                             // Get the time format from the main timer element's data attribute
-                            let timeFormat = timerElement.dataset.timeFormat || 'hms';
+                            let timeFormat = element.dataset.timeFormat || 'hms';
                             
                             // Update the display with the format
                             totalDurationElement.textContent = `Today: ${this.formatTime(newTotalSeconds, timeFormat)}`;
