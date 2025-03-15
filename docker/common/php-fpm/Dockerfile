@@ -53,9 +53,9 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
     && composer install --no-dev --optimize-autoloader --no-interaction --no-progress --prefer-dist
 
 # Install Node.js and npm
-#RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-#    && apt-get install -y nodejs \
-#    && npm install -g npm
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g npm
 
 # Install npm dependencies
 #RUN npm ci && \
