@@ -50,13 +50,14 @@ jobs:
 
       - name: Build and push images
         uses: docker/bake-action@v6
+        env:
+          NGINX_TAGS: ${{ steps.meta-nginx.outputs.tags }}
+          NGINX_LABELS: ${{ steps.meta-nginx.outputs.labels }}
+          PHP_FPM_TAGS: ${{ steps.meta-php-fpm.outputs.tags }}
+          PHP_FPM_LABELS: ${{ steps.meta-php-fpm.outputs.labels }}
         with:
           push: ${{ github.event_name != 'pull_request' }}
           files: ./docker/bake.hcl
           set: |
             *.cache-from=type=gha
             *.cache-to=type=gha,mode=max
-            php-fpm.tags=${{ steps.meta-php-fpm.outputs.tags }}
-            php-fpm.labels=${{ steps.meta-php-fpm.outputs.labels }}
-            nginx.tags=${{ steps.meta-nginx.outputs.tags }}
-            nginx.labels=${{ steps.meta-nginx.outputs.labels }}
