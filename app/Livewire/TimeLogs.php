@@ -81,6 +81,12 @@ class TimeLogs extends Component
 
     public $confirmingBulkDelete = false;
 
+    public $showTempoWorklogDetailsModal = false;
+
+    public $tempoWorklogDetails = null;
+
+    public $selectedTempoWorklogId = null;
+
     protected $queryString = [
         'sortField' => ['except' => 'start_time'],
         'sortDirection' => ['except' => 'desc'],
@@ -1071,6 +1077,32 @@ class TimeLogs extends Component
 
         $this->closeQuickTimeModal();
         session()->flash('message', 'Time log created successfully.');
+    }
+
+    /**
+     * View Tempo worklog details
+     */
+    public function viewTempoWorklogDetails($timeLogId)
+    {
+        $timeLog = TimeLog::findOrFail($timeLogId);
+
+        if (! $timeLog->tempo_worklog_id) {
+            return;
+        }
+
+        $this->selectedTempoWorklogId = $timeLog->tempo_worklog_id;
+        $this->tempoWorklogDetails = $timeLog->getTempoWorklogDetails();
+        $this->showTempoWorklogDetailsModal = true;
+    }
+
+    /**
+     * Close Tempo worklog details modal
+     */
+    public function closeTempoWorklogDetailsModal()
+    {
+        $this->showTempoWorklogDetailsModal = false;
+        $this->tempoWorklogDetails = null;
+        $this->selectedTempoWorklogId = null;
     }
 
     public function render()

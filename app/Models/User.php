@@ -41,6 +41,16 @@ class User extends Authenticatable
         'provider',
         'provider_id',
         'avatar',
+        'jira_access_token',
+        'jira_refresh_token',
+        'jira_token_expires_at',
+        'jira_cloud_id',
+        'jira_site_url',
+        'jira_enabled',
+        'tempo_access_token',
+        'tempo_refresh_token',
+        'tempo_token_expires_at',
+        'tempo_enabled',
     ];
 
     /**
@@ -63,7 +73,55 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'jira_enabled' => 'boolean',
+            'jira_token_expires_at' => 'datetime',
+            'tempo_enabled' => 'boolean',
+            'tempo_token_expires_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Check if Jira integration is enabled and configured.
+     */
+    public function hasJiraEnabled(): bool
+    {
+        return $this->jira_enabled &&
+               $this->jira_access_token &&
+               $this->jira_cloud_id &&
+               $this->jira_site_url;
+    }
+
+    /**
+     * Check if Tempo integration is enabled and configured.
+     */
+    public function hasTempoEnabled(): bool
+    {
+        return $this->tempo_enabled &&
+               $this->tempo_access_token &&
+               $this->tempo_refresh_token;
+    }
+
+    /**
+     * Get a configured instance of JiraService for this user.
+     */
+    public function jira(): JiraService
+    {
+        return app(JiraService::class)->setUser($this);
+    }
+
+    /**
+     * Disconnect Jira integration.
+     */
+    public function disconnectJira(): void
+    {
+        $this->update([
+            'jira_enabled' => false,
+            'jira_access_token' => null,
+            'jira_refresh_token' => null,
+            'jira_token_expires_at' => null,
+            'jira_cloud_id' => null,
+            'jira_site_url' => null,
+        ]);
     }
 
     /**

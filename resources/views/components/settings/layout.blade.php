@@ -5,6 +5,11 @@
             <flux:navlist.item :href="route('settings.password')" wire:navigate>{{ __('Password') }}</flux:navlist.item>
             <flux:navlist.item :href="route('settings.appearance')" wire:navigate>{{ __('Appearance') }}</flux:navlist.item>
         </flux:navlist>
+        
+        <flux:navlist.group :heading="__('Integrations')" class="mt-4">
+            <flux:navlist.item :href="route('settings.integrations.tempo')" :current="request()->routeIs('settings.integrations.tempo')" wire:navigate>{{ __('Tempo') }}</flux:navlist.item>
+            <flux:navlist.item :href="route('settings.integrations.jira')" :current="request()->routeIs('settings.integrations.jira')" wire:navigate>{{ __('Jira') }}</flux:navlist.item>
+        </flux:navlist.group>
     </div>
 
     <flux:separator class="md:hidden" />

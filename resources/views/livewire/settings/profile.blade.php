@@ -1,27 +1,30 @@
 <section class="w-full">
     @include('partials.settings-heading')
+    <x-settings.navigation />
 
     <x-settings.layout :heading="__('Profile')" :subheading="__('Update your name and email address')">
         <form wire:submit="updateProfileInformation" class="my-6 w-full space-y-6">
-            <flux:input wire:model="name" :label="__('Name')" type="text" required autofocus autocomplete="name" />
+            <div class="ch-form-group">
+                <label for="name" class="ch-label">{{ __('Name') }}</label>
+                <input type="text" id="name" wire:model="name" class="ch-input" required autofocus autocomplete="name">
+            </div>
 
-            <div>
-                <flux:input wire:model="email" :label="__('Email')" type="email" required autocomplete="email" />
+            <div class="ch-form-group">
+                <label for="email" class="ch-label">{{ __('Email') }}</label>
+                <input type="email" id="email" wire:model="email" class="ch-input" required autocomplete="email">
 
                 @if (auth()->user() instanceof \Illuminate\Contracts\Auth\MustVerifyEmail &&! auth()->user()->hasVerifiedEmail())
-                    <div>
-                        <flux:text class="mt-4">
-                            {{ __('Your email address is unverified.') }}
+                    <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                        {{ __('Your email address is unverified.') }}
 
-                            <flux:link class="text-sm cursor-pointer" wire:click.prevent="resendVerificationNotification">
-                                {{ __('Click here to re-send the verification email.') }}
-                            </flux:link>
-                        </flux:text>
+                        <button type="button" wire:click.prevent="resendVerificationNotification" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300">
+                            {{ __('Click here to re-send the verification email.') }}
+                        </button>
 
                         @if (session('status') === 'verification-link-sent')
-                            <flux:text class="mt-2 font-medium !dark:text-green-400 !text-green-600">
+                            <p class="mt-2 font-medium text-green-600 dark:text-green-400">
                                 {{ __('A new verification link has been sent to your email address.') }}
-                            </flux:text>
+                            </p>
                         @endif
                     </div>
                 @endif
@@ -29,7 +32,7 @@
 
             <div class="flex items-center gap-4">
                 <div class="flex items-center justify-end">
-                    <flux:button variant="primary" type="submit" class="w-full">{{ __('Save') }}</flux:button>
+                    <button type="submit" class="ch-btn-primary w-full">{{ __('Save') }}</button>
                 </div>
 
                 <x-action-message class="me-3" on="profile-updated">

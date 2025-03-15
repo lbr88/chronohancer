@@ -40,6 +40,11 @@
         </div>
         
         <div class="flex flex-wrap items-center space-x-2">
+            @if(config('tempo.enabled') && auth()->user()->hasTempoEnabled())
+                <!-- Tempo Sync Component -->
+                <livewire:tempo-sync />
+            @endif
+            
             <!-- Time Format Selector -->
             <div class="inline-flex rounded-md shadow-sm" role="group">
                 <button wire:click="setTimeFormat('human')" type="button" class="px-3 py-1 text-xs font-medium {{ $timeFormat === 'human' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-300' }} border border-gray-200 dark:border-gray-700 rounded-l-lg hover:bg-gray-100 dark:hover:bg-zinc-700">
@@ -773,9 +778,24 @@
                                 </div>
                                 
                                 <div class="col-span-2">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $this->getDurationClass($timeLog->duration_minutes) }}">
-                                        {{ $this->formatDuration($timeLog->duration_minutes) }}
-                                    </span>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $this->getDurationClass($timeLog->duration_minutes) }}">
+                                            {{ $this->formatDuration($timeLog->duration_minutes) }}
+                                        </span>
+                                        
+                                        @if(config('tempo.enabled') && auth()->user()->hasTempoEnabled() && $timeLog->isSyncedToTempo())
+                                            <button
+                                                wire:click="viewTempoWorklogDetails({{ $timeLog->id }})"
+                                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800 cursor-pointer"
+                                                title="Synced to Tempo at {{ $timeLog->synced_to_tempo_at ? $timeLog->synced_to_tempo_at->format('M d, Y H:i') : 'Unknown' }}. Click to view details."
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                                                </svg>
+                                                Tempo
+                                            </button>
+                                        @endif
+                                    </div>
                                 </div>
                                 
                                 <div class="col-span-1 text-right">
@@ -924,4 +944,7 @@
     @include('livewire.time-logs.modals.bulk-delete-confirmation-modal')
     @include('livewire.time-logs.modals.time-log-selection-modal')
     @include('livewire.time-logs.modals.quick-time-modal')
+    @if(config('tempo.enabled') && auth()->user()->hasTempoEnabled())
+        @include('livewire.time-logs.modals.tempo-worklog-details-modal')
+    @endif
 </div>
