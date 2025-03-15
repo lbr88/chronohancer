@@ -5,7 +5,7 @@ namespace App\Livewire;
 use App\Models\FavoriteJiraIssue;
 use App\Models\Project;
 use App\Models\Tag;
-use App\Models\Timer;
+use App\Models\Timer as TimerModel;
 use App\Services\JiraService;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
@@ -20,19 +20,11 @@ class JiraIssuesList extends Component
     #[Url]
     public string $search = '';
 
-    public function updatedSearch($value): void
+    public function updatedSearch(): void
     {
         $this->resetPage();
     }
 
-    public function updating($name, $value): void
-    {
-        if ($name === 'search') {
-            $this->resetPage();
-        }
-    }
-
-    #[Url]
     public int $page = 1;
 
     public int $perPage = 10;
@@ -173,6 +165,22 @@ class JiraIssuesList extends Component
             ->pluck('jira_issue_id');
     }
 
+    #[Computed]
+    public function existingTimerIssueKeys(): Collection
+    {
+        $timers = TimerModel::where('user_id', auth()->id())
+            ->where('workspace_id', app('current.workspace')->id)
+            ->get();
+
+        logger()->info('Active timers found:', [
+            'count' => $timers->count(),
+            'names' => $timers->pluck('name')->toArray(),
+            'jira_keys' => $timers->map->jiraKey->filter()->toArray(),
+        ]);
+
+        return collect($timers->map->jiraKey->filter()->values());
+    }
+
     public function toggleFavorite(string $issueId, string $key, string $title, ?string $status): void
     {
         $user = auth()->user();
@@ -219,7 +227,7 @@ class JiraIssuesList extends Component
                 'project_id' => $defaultProject->id,
             ]);
 
-            $timer = Timer::create([
+            $timer = TimerModel::create([
                 'user_id' => auth()->id(),
                 'workspace_id' => $workspace->id,
                 'project_id' => $defaultProject->id,
@@ -263,6 +271,8 @@ class JiraIssuesList extends Component
     {
         if (($this->page * $this->perPage) < $this->total) {
             $this->page++;
+        } else {
+            $this->page = 1;
         }
     }
 
@@ -270,6 +280,8 @@ class JiraIssuesList extends Component
     {
         if ($this->page > 1) {
             $this->page--;
+        } else {
+            $this->page = (int) ceil($this->total / $this->perPage);
         }
     }
 
@@ -296,6 +308,7 @@ class JiraIssuesList extends Component
         return view('livewire.jira-issues-list', [
             'issues' => $this->issues,
             'favoriteIds' => $this->favoriteIssueIds,
+            'existingTimerIssueKeys' => $this->existingTimerIssueKeys,
             'isConfigured' => auth()->user()->hasJiraEnabled(),
         ]);
     }

@@ -143,16 +143,26 @@
                                             </svg>
                                         </button>
                                         
-                                        <!-- Create Timer -->
-                                        <button
-                                            wire:click="createTimer('{{ $issue['key'] }}', '{{ addslashes($issue['fields']['summary']) }}', {{ json_encode($issue['fields']['labels'] ?? []) }})"
-                                            class="ch-btn-icon-primary"
-                                            title="Create timer for this issue"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                        </button>
+                                        <!-- Create Timer (only show if no timer exists for this issue) -->
+                                        @php
+                                            $hasTimer = $existingTimerIssueKeys->contains($issue['key']);
+                                            logger()->info('Checking timer for issue', [
+                                                'issue_key' => $issue['key'],
+                                                'has_timer' => $hasTimer,
+                                                'existing_keys' => $existingTimerIssueKeys->toArray()
+                                            ]);
+                                        @endphp
+                                        @unless($hasTimer)
+                                            <button
+                                                wire:click="createTimer('{{ $issue['key'] }}', '{{ addslashes($issue['fields']['summary']) }}', {{ json_encode($issue['fields']['labels'] ?? []) }})"
+                                                class="ch-btn-icon-primary"
+                                                title="Create timer for this issue"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </button>
+                                        @endunless
                                     </div>
                                 </td>
                             </tr>

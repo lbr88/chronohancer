@@ -495,7 +495,14 @@ $projectTotals = $timeLogs->groupBy('project_id')
 - Advanced timer controls (scheduled timers, reminders)
 - Custom dashboard widgets and layouts
 
-## 👥 Contributing
+## 🐛 Known Issues
+
+- Jira issues list pagination does not properly reset to page 1 when performing a new search
+- No offline support
+- Limited reporting and export options
+- No mobile app (web responsive only)
+
+## � Contributing
 
 Contributions are welcome! Please follow these steps:
 
