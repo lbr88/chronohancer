@@ -30,6 +30,7 @@ php artisan route:cache
 
 # Build Vite assets
 echo "Building Vite assets..."
+npm install && npm run build
 
 # Run the default command
 exec "$@"
