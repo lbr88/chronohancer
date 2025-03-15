@@ -38,8 +38,9 @@ RUN php artisan view:cache
 RUN chown -R www-data:www-data /var/www/html/storage
 RUN chmod -R 775 /var/www/html/storage
 
-# Copy start script
+# Copy start script and make it executable
 COPY docker/start.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
 
 # Expose port 9000 for PHP-FPM
 EXPOSE 9000
