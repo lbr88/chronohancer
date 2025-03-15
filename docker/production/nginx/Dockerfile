@@ -22,7 +22,7 @@ COPY ${VENDOR_DIR} /var/www/vendor
 RUN npm run build
 
 # copy the built assets to the public directory
-COPY public/build /var/www/public/build
+COPY ./public/build /var/www/public/build
 
 # Stage 2: Nginx production image
 FROM nginx:alpine
