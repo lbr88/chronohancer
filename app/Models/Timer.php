@@ -13,7 +13,7 @@ class Timer extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'description', 'project_id', 'workspace_id', 'is_running', 'is_paused', 'user_id'];
+    protected $fillable = ['name', 'description', 'project_id', 'workspace_id', 'is_running', 'is_paused', 'user_id', 'jira_key'];
 
     protected $casts = [
         'is_running' => 'boolean',
@@ -56,6 +56,10 @@ class Timer extends Model
 
     public function getJiraKeyAttribute(): ?string
     {
+        if ($this->attributes['jira_key'] ?? null) {
+            return $this->attributes['jira_key'];
+        }
+
         if (preg_match('/^([A-Z]+-\d+):/', $this->name, $matches)) {
             return $matches[1];
         }

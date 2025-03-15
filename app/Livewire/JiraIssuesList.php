@@ -232,6 +232,7 @@ class JiraIssuesList extends Component
                 'workspace_id' => $workspace->id,
                 'project_id' => $defaultProject->id,
                 'name' => "$issueKey: $summary",
+                'jira_key' => $issueKey,
                 'start_time' => now(),
             ]);
 
