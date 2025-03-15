@@ -48,26 +48,15 @@ jobs:
             type=ref,event=branch
             type=sha,format=short
 
-      - name: Build and push php-fpm image
+      - name: Build and push images
         uses: docker/bake-action@v6
         with:
           push: ${{ github.event_name != 'pull_request' }}
-          files: ./docker/common/php-fpm/Dockerfile
-          targets: production
+          files: ./docker/bake.hcl
           set: |
             *.cache-from=type=gha
             *.cache-to=type=gha,mode=max
-            *.tags=${{ steps.meta-php-fpm.outputs.tags }}
-            *.labels=${{ steps.meta-php-fpm.outputs.labels }}
-
-      - name: Build and push nginx image
-        uses: docker/bake-action@v6
-        with:
-          push: ${{ github.event_name != 'pull_request' }}
-          files: ./docker/production/nginx/Dockerfile
-          targets: nginx:alpine
-          set: |
-            *.cache-from=type=gha
-            *.cache-to=type=gha,mode=max
-            *.tags=${{ steps.meta-nginx.outputs.tags }}
-            *.labels=${{ steps.meta-nginx.outputs.labels }}
+            php-fpm.tags=${{ steps.meta-php-fpm.outputs.tags }}
+            php-fpm.labels=${{ steps.meta-php-fpm.outputs.labels }}
+            nginx.tags=${{ steps.meta-nginx.outputs.tags }}
+            nginx.labels=${{ steps.meta-nginx.outputs.labels }}
