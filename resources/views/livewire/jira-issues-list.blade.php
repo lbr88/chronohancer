@@ -96,13 +96,25 @@
                         @foreach($issues as $issue)
                             <tr class="ch-table-row">
                                 <td class="ch-table-cell">
-                                    <x-jira-issue-tooltip :issueKey="$issue['key']">
-                                        <a href="{{ auth()->user()->jira_site_url }}/browse/{{ $issue['key'] }}"
-                                           target="_blank"
-                                           class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
-                                            {{ $issue['key'] }}
-                                        </a>
-                                    </x-jira-issue-tooltip>
+                                    <div class="flex items-center gap-1">
+                                        @if(isset($issue['fields']['parent']))
+                                            <x-jira-issue-tooltip :issueKey="$issue['fields']['parent']['key']">
+                                                <a href="{{ auth()->user()->jira_site_url }}/browse/{{ $issue['fields']['parent']['key'] }}"
+                                                   target="_blank"
+                                                   class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                                                    {{ $issue['fields']['parent']['key'] }}
+                                                </a>
+                                            </x-jira-issue-tooltip>
+                                            <span class="text-gray-400 dark:text-gray-500">→</span>
+                                        @endif
+                                        <x-jira-issue-tooltip :issueKey="$issue['key']">
+                                            <a href="{{ auth()->user()->jira_site_url }}/browse/{{ $issue['key'] }}"
+                                               target="_blank"
+                                               class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
+                                                {{ $issue['key'] }}
+                                            </a>
+                                        </x-jira-issue-tooltip>
+                                    </div>
                                 </td>
                                 <td class="ch-table-cell">
                                     <div class="text-sm text-gray-900 dark:text-white" title="{{ $issue['fields']['summary'] }}">

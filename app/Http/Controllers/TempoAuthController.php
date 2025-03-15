@@ -33,7 +33,7 @@ class TempoAuthController extends Controller
         }
 
         try {
-            $authUrl = $this->tempoService->getAuthorizationUrl($user);
+            $authUrl = $this->tempoService->getAuthorizationUrl(user: $user);
             \Log::info('Redirecting to Tempo auth URL', [
                 'url' => $authUrl,
                 'user_id' => $user->id,
