@@ -21,6 +21,14 @@ COPY ${VENDOR_DIR} /var/www/vendor
 # Build frontend assets
 RUN npm run build
 
+# Verify that the build directory and manifest.json exist
+RUN ls -lash public/build && \
+    if [ ! -f public/build/manifest.json ]; then \
+    echo "Error: Vite manifest.json not found!" && exit 1; \
+    else \
+    echo "Vite manifest.json found successfully"; \
+    fi
+
 RUN ls -lash . && ls -lash public
 
 # Stage 2: Nginx production image

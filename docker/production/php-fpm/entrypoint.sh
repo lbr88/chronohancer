@@ -28,9 +28,8 @@ php artisan migrate --force
 php artisan config:cache
 php artisan route:cache
 
-# Build Vite assets
-echo "Building Vite assets..."
-npm install && npm run build
+# Assets are already built in the Nginx container
+# No need to build them again here
 
 # Run the default command
 exec "$@"
