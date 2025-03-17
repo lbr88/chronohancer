@@ -239,10 +239,14 @@ docker run -p 9000:9000 chronohancer
 
 ### Using Docker Compose
 
-For local development and testing, you can use the included Docker Compose configuration:
+Chronohancer includes three Docker Compose files for different environments and use cases:
+
+#### 1. `docker-compose.yml` (Base Configuration)
+
+This is the base configuration that uses pre-built images from GitHub Container Registry:
 
 ```bash
-# Start all services (app, nginx, mysql, redis)
+# Start all services using pre-built images
 docker-compose up -d
 
 # View logs
@@ -252,13 +256,62 @@ docker-compose logs -f
 docker-compose down
 ```
 
-The Docker Compose setup includes:
-- The Laravel application using the Dockerfile
-- Nginx web server
-- MySQL database
-- Redis for caching and sessions
+Use this configuration when you want to quickly run the application without building images locally.
 
-All necessary environment variables are pre-configured in the docker-compose.yml file.
+#### 2. `docker-compose.dev.yml` (Development Environment)
+
+This configuration is optimized for local development:
+
+```bash
+# Start the development environment
+docker-compose -f docker-compose.dev.yml up -d
+
+# Access the workspace container for development tasks
+docker-compose -f docker-compose.dev.yml exec workspace bash
+
+# Run artisan commands in the workspace container
+docker-compose -f docker-compose.dev.yml exec workspace php artisan migrate
+
+# Stop the development environment
+docker-compose -f docker-compose.dev.yml down
+```
+
+Key development features:
+- Mounts local codebase directly into containers for live code updates
+- Includes a dedicated workspace container for development tasks
+- Configures Xdebug for debugging and profiling
+- Uses development-specific volume and network names
+
+#### 3. `docker-compose.prod.yml` (Production Environment)
+
+This configuration is designed for production deployments:
+
+```bash
+# Build and start the production environment
+docker-compose -f docker-compose.prod.yml up -d --build
+
+# View production logs
+docker-compose -f docker-compose.prod.yml logs -f
+
+# Stop the production environment
+docker-compose -f docker-compose.prod.yml down
+```
+
+Key production features:
+- Builds optimized Docker images from Dockerfiles
+- Implements robust health checks for all services
+- Uses persistent volumes for data storage
+- Configures Watchtower for automatic container updates
+- Uses production-grade Redis (Valkey) for caching and sessions
+
+All Docker Compose configurations include:
+- The Laravel application (PHP-FPM)
+- Nginx web server
+- PostgreSQL database
+- Redis/Valkey for caching and sessions
+- Watchtower for automatic updates
+
+Environment variables can be configured in `.env.docker` for production or `.env` for development.
 
 ### GitHub Container Registry
 

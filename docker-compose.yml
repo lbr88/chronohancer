@@ -97,6 +97,20 @@ services:
       timeout: 5s
       retries: 3
 
+  watchtower:
+    image: containrrr/watchtower:latest
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_CLEANUP=true  # Remove old images after updating
+      - WATCHTOWER_POLL_INTERVAL=3600  # Check for updates every hour (in seconds)
+      - WATCHTOWER_INCLUDE_STOPPED=false  # Only update running containers
+      - WATCHTOWER_ROLLING_RESTART=true  # Restart one container at a time
+    networks:
+      - laravel-production
+    # By default, Watchtower will monitor all containers. No need to specify container names.
+
 networks:
   # Attach the service to the 'laravel' network.
   # -----------------------------------------------------------
