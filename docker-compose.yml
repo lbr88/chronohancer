@@ -13,6 +13,7 @@ services:
       # The 'php-fpm' service mounts the same volume without ':ro' to allow write operations.
       # -----------------------------------------------------------
       - laravel-storage-production:/var/www/storage:ro
+      - laravel-build-production:/var/www/public/build  # Share the build directory with PHP-FPM
     networks:
       - laravel-production
     ports:
@@ -36,6 +37,7 @@ services:
     restart: unless-stopped
     volumes:
       - laravel-storage-production:/var/www/storage  # Mount the storage volume
+      - laravel-build-production:/var/www/public/build  # Share the build directory with Nginx
     env_file:
       - .env.docker
     networks:
@@ -106,3 +108,4 @@ networks:
 volumes:
   postgres-data-production:
   laravel-storage-production:
+  laravel-build-production:  # Shared volume for Vite build assets

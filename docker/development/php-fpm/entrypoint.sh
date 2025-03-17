@@ -15,9 +15,8 @@ php artisan config:clear
 php artisan route:clear
 php artisan view:clear
 
-# Build Vite assets
-echo "Building Vite assets..."
-npm install && npm run build
+# Assets are built by the npm run dev command in the workspace container
+# No need to build them here
 
 # Run the default command (e.g., php-fpm or bash)
 exec "$@"
