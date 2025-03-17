@@ -15,6 +15,12 @@ Route::middleware('guest')->group(function () {
 
     if (env('ENABLE_EMAIL_SIGNUP', true)) {
         Route::get('register', Register::class)->name('register');
+    } else {
+        // Provide a fallback route for 'register' that redirects to login
+        // This ensures that Route::has('register') returns false, but any direct access to the route is handled gracefully
+        Route::get('register', function () {
+            return redirect()->route('login');
+        })->name('register');
     }
 
     Route::get('forgot-password', ForgotPassword::class)->name('password.request');

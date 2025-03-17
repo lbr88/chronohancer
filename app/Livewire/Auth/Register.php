@@ -13,13 +13,6 @@ use Livewire\Component;
 #[Layout('components.layouts.auth')]
 class Register extends Component
 {
-    public function mount()
-    {
-        if (! env('ENABLE_EMAIL_SIGNUP', true)) {
-            $this->redirect(route('login', absolute: false), navigate: true);
-        }
-    }
-
     public string $name = '';
 
     public string $email = '';
@@ -33,15 +26,9 @@ class Register extends Component
      */
     public function register(): void
     {
-        if (! env('ENABLE_EMAIL_SIGNUP', true)) {
-            $this->redirect(route('login', absolute: false), navigate: true);
-
-            return;
-        }
-
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
         ]);
 

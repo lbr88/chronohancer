@@ -13,8 +13,7 @@
             required
             autofocus
             autocomplete="email"
-            placeholder="email@example.com"
-        />
+            placeholder="email@example.com" />
 
         <!-- Password -->
         <div class="relative">
@@ -24,13 +23,12 @@
                 type="password"
                 required
                 autocomplete="current-password"
-                :placeholder="__('Password')"
-            />
+                :placeholder="__('Password')" />
 
             @if (Route::has('password.request'))
-                <flux:link class="absolute right-0 top-0 text-sm" :href="route('password.request')" wire:navigate>
-                    {{ __('Forgot your password?') }}
-                </flux:link>
+            <flux:link class="absolute right-0 top-0 text-sm" :href="route('password.request')" wire:navigate>
+                {{ __('Forgot your password?') }}
+            </flux:link>
             @endif
         </div>
 
@@ -44,10 +42,10 @@
 
     <x-social-login-buttons />
 
-    @if (Route::has('register'))
-        <div class="space-x-1 text-center text-sm text-zinc-600 dark:text-zinc-400">
-            {{ __('Don\'t have an account?') }}
-            <flux:link :href="route('register')" wire:navigate>{{ __('Sign up') }}</flux:link>
-        </div>
+    @if (Route::has('register') && env('ENABLE_EMAIL_SIGNUP', true))
+    <div class="space-x-1 text-center text-sm text-zinc-600 dark:text-zinc-400">
+        {{ __('Don\'t have an account?') }}
+        <flux:link :href="route('register')" wire:navigate>{{ __('Sign up') }}</flux:link>
+    </div>
     @endif
 </div>
