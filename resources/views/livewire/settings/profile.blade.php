@@ -11,22 +11,27 @@
 
             <div class="ch-form-group">
                 <label for="email" class="ch-label">{{ __('Email') }}</label>
-                <input type="email" id="email" wire:model="email" class="ch-input" required autocomplete="email">
+                <input type="email" id="email" wire:model="email" class="ch-input" required autocomplete="email" @if(auth()->user()->provider) readonly @endif>
+                @if(auth()->user()->provider)
+                <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                    {{ __('Your email is managed by your ') }} {{ ucfirst(auth()->user()->provider) }} {{ __(' account and cannot be changed here.') }}
+                </p>
+                @endif
 
                 @if (auth()->user() instanceof \Illuminate\Contracts\Auth\MustVerifyEmail &&! auth()->user()->hasVerifiedEmail())
-                    <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                        {{ __('Your email address is unverified.') }}
+                <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                    {{ __('Your email address is unverified.') }}
 
-                        <button type="button" wire:click.prevent="resendVerificationNotification" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300">
-                            {{ __('Click here to re-send the verification email.') }}
-                        </button>
+                    <button type="button" wire:click.prevent="resendVerificationNotification" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300">
+                        {{ __('Click here to re-send the verification email.') }}
+                    </button>
 
-                        @if (session('status') === 'verification-link-sent')
-                            <p class="mt-2 font-medium text-green-600 dark:text-green-400">
-                                {{ __('A new verification link has been sent to your email address.') }}
-                            </p>
-                        @endif
-                    </div>
+                    @if (session('status') === 'verification-link-sent')
+                    <p class="mt-2 font-medium text-green-600 dark:text-green-400">
+                        {{ __('A new verification link has been sent to your email address.') }}
+                    </p>
+                    @endif
+                </div>
                 @endif
             </div>
 

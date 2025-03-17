@@ -19,8 +19,10 @@ class Profile extends Component
      */
     public function mount(): void
     {
-        $this->name = Auth::user()->name;
-        $this->email = Auth::user()->email;
+        /** @var User $user */
+        $user = Auth::user();
+        $this->name = $user->name;
+        $this->email = $user->email;
     }
 
     /**
@@ -28,28 +30,41 @@ class Profile extends Component
      */
     public function updateProfileInformation(): void
     {
+        /** @var User $user */
         $user = Auth::user();
 
-        $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255'],
+        // If user signed up with a social provider, only validate and update the name
+        if ($user->provider) {
+            $validated = $this->validate([
+                'name' => ['required', 'string', 'max:255'],
+            ]);
 
-            'email' => [
-                'required',
-                'string',
-                'lowercase',
-                'email',
-                'max:255',
-                Rule::unique(User::class)->ignore($user->id),
-            ],
-        ]);
+            $user->name = $validated['name'];
+            $user->save();
+        } else {
+            // For regular email users, validate and update both name and email
+            $validated = $this->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'email' => [
+                    'required',
+                    'string',
+                    'lowercase',
+                    'email',
+                    'max:255',
+                    Rule::unique(User::class)->ignore($user->id),
+                ],
+            ]);
 
-        $user->fill($validated);
+            // Update user properties
+            $user->name = $validated['name'];
+            $user->email = $validated['email'];
 
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
+            if ($user->email !== $this->email) {
+                $user->email_verified_at = null;
+            }
+
+            $user->save();
         }
-
-        $user->save();
 
         $this->dispatch('profile-updated', name: $user->name);
     }
@@ -59,11 +74,11 @@ class Profile extends Component
      */
     public function resendVerificationNotification(): void
     {
+        /** @var User $user */
         $user = Auth::user();
 
-        if ($user->hasVerifiedEmail()) {
+        if ($user->email_verified_at !== null) {
             $this->redirectIntended(default: route('dashboard', absolute: false));
-
             return;
         }
 
