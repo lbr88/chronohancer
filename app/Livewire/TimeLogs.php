@@ -59,6 +59,8 @@ class TimeLogs extends Component
 
     public $showQuickTimeModal = false;
 
+    public $showManualTimeLogModal = false;
+
     public $showTimeLogSelectionModal = false;
 
     public $timeLogSelectionOptions = [];
@@ -1105,6 +1107,18 @@ class TimeLogs extends Component
     public function closeQuickTimeModal()
     {
         $this->showQuickTimeModal = false;
+    }
+
+    public function openManualTimeLogModal($date = null)
+    {
+        $this->selected_date = $date ?? now()->format('Y-m-d');
+        $this->reset(['project_id', 'timer_id', 'description', 'duration_minutes', 'selectedTags']);
+        $this->showManualTimeLogModal = true;
+    }
+
+    public function closeManualTimeLogModal()
+    {
+        $this->showManualTimeLogModal = false;
     }
 
     public function updatedQuickTimeProjectId($value)

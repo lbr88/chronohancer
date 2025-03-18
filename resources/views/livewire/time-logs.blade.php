@@ -147,14 +147,25 @@ use App\Models\TimeLog;
                 $remainingMinutes = $this->getRemainingTimeForDate($todayDate);
                 @endphp
                 <div class="group relative">
-                    <button
-                        wire:click="openQuickTimeModal"
-                        class="inline-flex items-center px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        Quick Time
-                    </button>
+                    <div class="flex space-x-2">
+                        <button
+                            wire:click="openQuickTimeModal"
+                            class="inline-flex items-center px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            Quick Time
+                        </button>
+
+                        <button
+                            wire:click="openManualTimeLogModal"
+                            class="inline-flex items-center px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Manual Log
+                        </button>
+                    </div>
 
                     @if($remainingMinutes > 0)
                     <div class="absolute z-10 hidden group-hover:block bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg p-2 mt-1 right-0 min-w-[180px] text-xs text-left">
@@ -559,10 +570,10 @@ use App\Models\TimeLog;
     </div>
     @endif
 
-    <!-- List View & Manual Time Log Entry -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- List View -->
+    <div class="grid grid-cols-1 gap-6">
         @if($view === 'list')
-        <div class="lg:col-span-2">
+        <div>
             <div class="bg-white dark:bg-zinc-900 shadow-md rounded-lg p-6">
                 <div class="mb-4">
                     <div class="flex justify-between items-center mb-4">
@@ -580,14 +591,25 @@ use App\Models\TimeLog;
                             $remainingMinutes = $this->getRemainingTimeForDate($todayDate);
                             @endphp
                             <div class="group relative">
-                                <button
-                                    wire:click="openQuickTimeModal"
-                                    class="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                    </svg>
-                                    Quick Time
-                                </button>
+                                <div class="flex space-x-2">
+                                    <button
+                                        wire:click="openQuickTimeModal"
+                                        class="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                        </svg>
+                                        Quick Time
+                                    </button>
+
+                                    <button
+                                        wire:click="openManualTimeLogModal"
+                                        class="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                        Manual Log
+                                    </button>
+                                </div>
 
                                 @if($remainingMinutes > 0)
                                 <div class="absolute z-10 hidden group-hover:block bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg p-2 mt-1 right-0 min-w-[180px] text-xs text-left">
@@ -828,108 +850,6 @@ use App\Models\TimeLog;
             </div>
         </div>
         @endif
-
-        <div id="time-log-form" class="{{ $view === 'list' ? '' : 'lg:col-span-3' }} bg-white dark:bg-zinc-900 shadow-md rounded-lg p-6 transition-colors duration-300">
-            <h2 class="text-xl font-semibold mb-4 dark:text-white">
-                @if($editingTimeLog)
-                Edit Time Log
-                @else
-                Create Manual Time Log
-                @if($selected_date && $selected_date != now()->format('Y-m-d'))
-                <span class="text-sm font-normal text-indigo-600 dark:text-indigo-400">
-                    for {{ Carbon\Carbon::parse($selected_date)->format('M d, Y') }}
-                </span>
-                @endif
-                @endif
-            </h2>
-            <form wire:submit.prevent="{{ $editingTimeLog ? 'updateTimeLog' : 'save' }}" class="space-y-4">
-                <div>
-                    <label for="project_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Project</label>
-                    <select wire:model="project_id" id="project_id" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2">
-                        @foreach($projects as $project)
-                        <option value="{{ $project->id }}">{{ $project->name }}</option>
-                        @endforeach
-                    </select>
-                    @error('project_id') <span class="text-red-500 dark:text-red-400 text-xs">{{ $message }}</span> @enderror
-                </div>
-                <div>
-                    <label for="selected_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
-                    <input type="date" wire:model.live="selected_date" id="selected_date" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2">
-                    @error('selected_date') <span class="text-red-500 dark:text-red-400 text-xs">{{ $message }}</span> @enderror
-
-                    @if($selected_date)
-                    @php
-                    $remainingMinutes = $this->getRemainingTimeForDate($selected_date);
-                    @endphp
-                    @php
-                    $workspace = app('current.workspace');
-                    $dailyTarget = $workspace ? $workspace->daily_target_minutes : 0;
-                    $targetHours = floor($dailyTarget / 60);
-                    $targetMinutes = $dailyTarget % 60;
-                    $targetDisplay = $targetHours . 'h' . ($targetMinutes > 0 ? ' ' . $targetMinutes . 'm' : '');
-                    @endphp
-                    @if($dailyTarget > 0)
-                    <div class="mt-1 text-xs {{ $remainingMinutes > 0 ? ($remainingMinutes < 60 ? 'text-orange-500 dark:text-orange-400' : 'text-blue-500 dark:text-blue-400') : 'text-green-500 dark:text-green-400' }}">
-                        @if($remainingMinutes > 0)
-                        <span class="font-medium">Missing to reach {{ $targetDisplay }}:</span> {{ $this->formatRemainingTime($remainingMinutes) }}
-                        @else
-                        <span class="font-medium">{{ $targetDisplay }} target reached for this day!</span>
-                        @endif
-                    </div>
-                    @else
-                    <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        <span class="font-medium">No daily target set</span>
-                    </div>
-                    @endif
-                    @endif
-                </div>
-                <div>
-                    <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description (optional)</label>
-                    <textarea wire:model="description" id="description" rows="2" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2"></textarea>
-                </div>
-                <div>
-                    <label for="duration_minutes" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Duration</label>
-                    <div class="flex items-center space-x-2">
-                        <input type="text" wire:model="duration_minutes" id="duration_minutes" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2">
-                        @if($duration_minutes)
-                        <span class="text-sm text-gray-500 dark:text-gray-400">
-                            ({{ $this->formatDuration($this->parseDurationString($duration_minutes)) }})
-                        </span>
-                        @endif
-                    </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Enter duration in minutes or format like "3h5m"</p>
-                    @error('duration_minutes') <span class="text-red-500 dark:text-red-400 text-xs">{{ $message }}</span> @enderror
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Tags</label>
-                    <div class="mt-1 flex flex-wrap gap-2">
-                        @foreach($tags as $tag)
-                        <label
-                            class="inline-flex items-center px-3 py-1 rounded-full cursor-pointer 
-                                    {{ in_array($tag->id, $selectedTags) ? 'bg-opacity-100' : 'bg-opacity-30' }}"
-                            style="background-color: {{ $tag->color }}; color: {{ $this->getContrastColor($tag->color) }}">
-                            <input
-                                type="checkbox"
-                                wire:model="selectedTags"
-                                value="{{ $tag->id }}"
-                                class="form-checkbox h-4 w-4 mr-1 opacity-0 absolute">
-                            <span>{{ $tag->name }}</span>
-                        </label>
-                        @endforeach
-                    </div>
-                </div>
-                <div class="flex justify-between">
-                    @if($editingTimeLog)
-                    <button type="button" wire:click="cancelEdit" class="px-4 py-2 border dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 dark:text-gray-300">
-                        Cancel
-                    </button>
-                    @endif
-                    <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                        {{ $editingTimeLog ? 'Update Time Log' : 'Create Time Log' }}
-                    </button>
-                </div>
-            </form>
-        </div>
     </div>
 
     <!-- Include Modals -->
@@ -938,6 +858,7 @@ use App\Models\TimeLog;
     @include('livewire.time-logs.modals.bulk-delete-confirmation-modal')
     @include('livewire.time-logs.modals.time-log-selection-modal')
     @include('livewire.time-logs.modals.quick-time-modal')
+    @include('livewire.time-logs.modals.manual-time-log-modal')
     @if(config('tempo.enabled') && auth()->user()->hasTempoEnabled())
     @include('livewire.time-logs.modals.tempo-worklog-details-modal')
     @endif
