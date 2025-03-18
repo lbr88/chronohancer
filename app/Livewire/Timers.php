@@ -17,6 +17,8 @@ class Timers extends Component
 {
     public $project_name = '';
 
+    public $project_id = null;
+
     public $name;
 
     public $description;
@@ -93,6 +95,7 @@ class Timers extends Component
         'timerStopped' => 'handleTimerStopped',
         'timerPaused' => 'handleTimerPaused',
         'refresh-timers' => '$refresh',
+        'project-selected' => 'handleProjectSelected',
     ];
 
     public function boot(JiraService $jiraService)
@@ -199,7 +202,7 @@ class Timers extends Component
      */
     public function closeNewTimerModal()
     {
-        $this->reset(['name', 'description', 'project_name', 'tag_input', 'search', 'jiraSearch', 'jiraKey']);
+        $this->reset(['name', 'description', 'project_name', 'project_id', 'tag_input', 'search', 'jiraSearch', 'jiraKey']);
         $this->existingTimers = collect();
         $this->suggestions = ['projects' => [], 'tags' => []];
         $this->showNewTimerModal = false;
@@ -217,6 +220,28 @@ class Timers extends Component
                 ->get();
         } else {
             $this->existingTimers = collect();
+        }
+    }
+
+    /**
+     * Handle project selection from the project selector component
+     */
+    public function handleProjectSelected($data)
+    {
+        if (isset($data['id'])) {
+            $this->project_id = $data['id'];
+            $project = Project::find($data['id']);
+            if ($project) {
+                $this->project_name = $project->name;
+
+                // If the project has tags, add them to the tag input
+                if ($project->tags->isNotEmpty()) {
+                    $projectTags = $project->tags->pluck('name')->implode(', ');
+                    $this->tag_input = $this->tag_input
+                        ? $this->tag_input.', '.$projectTags
+                        : $projectTags;
+                }
+            }
         }
     }
 
@@ -310,15 +335,19 @@ class Timers extends Component
     {
         $this->validate();
 
-        // Find or create project if name is provided, or use default project
+        // Find or create project if project_id or name is provided, or use default project
         $project = null;
-        if ($this->project_name) {
+        if ($this->project_id) {
+            $project = Project::find($this->project_id);
+        } elseif ($this->project_name) {
             $project = Project::firstOrCreate(
                 ['name' => $this->project_name, 'user_id' => auth()->id(), 'workspace_id' => app('current.workspace')->id],
                 ['description' => 'Project created from timer']
             );
-        } else {
-            // Always use the default project if no project name is provided
+        }
+
+        if (! $project) {
+            // Always use the default project if no project is found
             $project = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
         }
         $project_id = $project->id;

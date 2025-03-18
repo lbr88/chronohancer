@@ -7,6 +7,7 @@ use App\Models\Tag;
 use App\Models\TimeLog;
 use App\Models\Timer;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
 class TimeLogs extends Component
@@ -96,6 +97,7 @@ class TimeLogs extends Component
         'timeLogSaved' => '$refresh',
         'createTimeLogFromEvent' => 'handleCreateTimeLogFromEvent',
         'weekChanged' => 'updateWeekForCalendar',
+        'project-selected' => 'handleProjectSelected',
     ];
 
     protected $queryString = [
@@ -273,6 +275,16 @@ class TimeLogs extends Component
         $this->quickTimeDuration = $data['duration_minutes'];
     }
 
+    /**
+     * Handle project selection from the project selector component
+     */
+    public function handleProjectSelected($data)
+    {
+        if (isset($data['id'])) {
+            $this->project_id = $data['id'];
+        }
+    }
+
     public function save()
     {
         $this->validate();
@@ -287,14 +299,14 @@ class TimeLogs extends Component
         // Always use the selected project_id if it exists, otherwise use default project
         $project_id = $this->project_id;
         if ($project_id === null) {
-            $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+            $defaultProject = Project::findOrCreateDefault(Auth::id(), app('current.workspace')->id);
             $project_id = $defaultProject->id;
         }
 
         $timeLog = TimeLog::create([
             'project_id' => $project_id,
             'timer_id' => $this->timer_id,
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'description' => $this->description,
             'start_time' => $start_time,
             'end_time' => $end_time,
@@ -342,14 +354,14 @@ class TimeLogs extends Component
     public function findAndEditTimeLog($date, $projectId, $timerId = null, $description = null)
     {
         // Find time logs for the specific date, project and timer
-        $query = TimeLog::where('user_id', auth()->id())
+        $query = TimeLog::where('user_id', Auth::id())
             ->where('workspace_id', app('current.workspace')->id)
             ->whereDate('start_time', $date);
 
         // Handle project_id
         if ($projectId === 'null' || $projectId === null) {
             // Get the default project ID
-            $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+            $defaultProject = Project::findOrCreateDefault(Auth::id(), app('current.workspace')->id);
             $query->where('project_id', $defaultProject->id);
         } else {
             $query->where('project_id', $projectId);
@@ -455,7 +467,7 @@ class TimeLogs extends Component
         // Always use the selected project_id if it exists, otherwise use default project
         $project_id = $this->project_id;
         if ($project_id === null) {
-            $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+            $defaultProject = Project::findOrCreateDefault(Auth::id(), app('current.workspace')->id);
             $project_id = $defaultProject->id;
         }
 
@@ -515,7 +527,7 @@ class TimeLogs extends Component
     public function getWeeklyDataProperty()
     {
         // Get time logs for the selected week
-        $timeLogs = TimeLog::where('user_id', auth()->id())
+        $timeLogs = TimeLog::where('user_id', Auth::id())
             ->where('workspace_id', app('current.workspace')->id)
             ->whereNotNull('end_time') // Only show logs that have an end time (completed logs)
             ->whereBetween('start_time', [
@@ -542,10 +554,10 @@ class TimeLogs extends Component
         }
 
         // Get all active projects (including those without time logs)
-        $allProjects = Project::where('user_id', auth()->id())->get();
+        $allProjects = Project::where('user_id', Auth::id())->get();
 
         // Make sure the default project is included
-        $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+        $defaultProject = Project::findOrCreateDefault(Auth::id(), app('current.workspace')->id);
         $projectsWithDefaultProject = $allProjects->toArray();
 
         // Check if the default project is already in the list
@@ -567,7 +579,7 @@ class TimeLogs extends Component
         }
 
         // Get all active timers
-        $allTimers = Timer::where('user_id', auth()->id())->get();
+        $allTimers = Timer::where('user_id', Auth::id())->get();
 
         // Create a map of project IDs to their timers
         $projectTimersMap = [];
@@ -868,10 +880,9 @@ class TimeLogs extends Component
     public function toggleSelectAll()
     {
         $this->selectAll = ! $this->selectAll;
-
         if ($this->selectAll) {
             // Get all visible time log IDs based on current filters
-            $query = TimeLog::where('user_id', auth()->id())
+            $query = TimeLog::where('user_id', Auth::id())
                 ->where('workspace_id', app('current.workspace')->id)
                 ->whereNotNull('end_time'); // Only include logs that have an end time
 
@@ -905,6 +916,7 @@ class TimeLogs extends Component
                     str_contains($searchTermLower, 'project');
 
                 // Get the default project
+                $defaultProject = Project::findOrCreateDefault(Auth::id(), app('current.workspace')->id);
                 $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
 
                 // Apply all search conditions
@@ -934,7 +946,7 @@ class TimeLogs extends Component
     public function updatedSelectedTimeLogs()
     {
         // Get the count of all visible time logs based on current filters
-        $query = TimeLog::where('user_id', auth()->id())
+        $query = TimeLog::where('user_id', Auth::id())
             ->where('workspace_id', app('current.workspace')->id)
             ->whereNotNull('end_time'); // Only include logs that have an end time
 
@@ -968,7 +980,7 @@ class TimeLogs extends Component
                 str_contains($searchTermLower, 'project');
 
             // Get the default project
-            $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+            $defaultProject = Project::findOrCreateDefault(Auth::id(), app('current.workspace')->id);
 
             // Apply all search conditions
             $query->where(function ($q) use ($searchTerm, $defaultProject, $matchesDefaultProject) {
@@ -1008,7 +1020,7 @@ class TimeLogs extends Component
     {
         if (count($this->selectedTimeLogs) > 0) {
             TimeLog::whereIn('id', $this->selectedTimeLogs)
-                ->where('user_id', auth()->id()) // Security check
+                ->where('user_id', Auth::id()) // Security check
                 ->delete();
 
             $count = count($this->selectedTimeLogs);
@@ -1057,7 +1069,7 @@ class TimeLogs extends Component
         }
 
         // Get all time logs for the specified date
-        $totalMinutes = TimeLog::where('user_id', auth()->id())
+        $totalMinutes = TimeLog::where('user_id', Auth::id())
             ->where('workspace_id', app('current.workspace')->id)
             ->whereNotNull('end_time') // Only include logs that have an end time
             ->whereDate('start_time', $date)
@@ -1090,7 +1102,7 @@ class TimeLogs extends Component
 
     public function loadProjectTimers($projectId = null)
     {
-        $query = Timer::where('user_id', auth()->id())
+        $query = Timer::where('user_id', Auth::id())
             ->where('workspace_id', app('current.workspace')->id);
 
         if ($projectId !== null) {
@@ -1127,6 +1139,18 @@ class TimeLogs extends Component
         $this->quickTimeTimerId = null; // Reset timer selection when project changes
     }
 
+    /**
+     * Handle project selection from the project selector component for quick time modal
+     */
+    public function handleQuickTimeProjectSelected($data)
+    {
+        if (isset($data['id'])) {
+            $this->quickTimeProjectId = $data['id'];
+            $this->loadProjectTimers($data['id']);
+            $this->quickTimeTimerId = null; // Reset timer selection when project changes
+        }
+    }
+
     public function addQuickTime($minutes)
     {
         $this->quickTimeDuration += $minutes;
@@ -1150,14 +1174,14 @@ class TimeLogs extends Component
         // Always use the selected project_id if it exists, otherwise use default project
         $project_id = $this->quickTimeProjectId;
         if ($project_id === null) {
-            $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+            $defaultProject = Project::findOrCreateDefault(Auth::id(), app('current.workspace')->id);
             $project_id = $defaultProject->id;
         }
 
         $timeLog = TimeLog::create([
             'project_id' => $project_id,
             'timer_id' => $this->quickTimeTimerId, // This will correctly handle null values
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'description' => $this->quickTimeDescription,
             'start_time' => $start_time,
             'end_time' => $end_time,
@@ -1200,7 +1224,7 @@ class TimeLogs extends Component
 
     public function render()
     {
-        $query = TimeLog::where('user_id', auth()->id())
+        $query = TimeLog::where('user_id', Auth::id())
             ->where('workspace_id', app('current.workspace')->id)
             ->whereNotNull('end_time'); // Only show logs that have an end time (completed logs)
 
@@ -1234,7 +1258,7 @@ class TimeLogs extends Component
                 str_contains($searchTermLower, 'project');
 
             // Get the default project
-            $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+            $defaultProject = Project::findOrCreateDefault(Auth::id(), app('current.workspace')->id);
 
             // Apply all search conditions
             $query->where(function ($q) use ($searchTerm, $defaultProject, $matchesDefaultProject) {
@@ -1273,13 +1297,15 @@ class TimeLogs extends Component
         // Use a public property for Microsoft Calendar status to persist between requests
         if (! isset($this->showMicrosoftCalendar)) {
             try {
-                $this->showMicrosoftCalendar = auth()->user()->hasMicrosoftEnabled();
+                // Check if user has Microsoft Graph integration enabled
+                $user = Auth::user();
+                $this->showMicrosoftCalendar = ! empty($user->microsoft_access_token) && ! empty($user->microsoft_refresh_token);
 
                 // Log the Microsoft Calendar status for debugging
                 \Illuminate\Support\Facades\Log::info('TimeLogs Microsoft Calendar Status', [
                     'showMicrosoftCalendar' => $this->showMicrosoftCalendar,
                     'weekRange' => $this->startOfWeek.'-'.$this->endOfWeek,
-                    'user_id' => auth()->id(),
+                    'user_id' => Auth::id(),
                     'last_dispatched_week_range' => $this->lastDispatchedWeekRange,
                 ]);
             } catch (\Exception $e) {
@@ -1295,9 +1321,9 @@ class TimeLogs extends Component
         return view('livewire.time-logs', [
             'timeLogs' => $timeLogs,
             'totalFilteredDuration' => $totalFilteredDuration,
-            'projects' => Project::where('user_id', auth()->id())->get(),
-            'tags' => Tag::where('user_id', auth()->id())->get(),
-            'allTags' => Tag::where('user_id', auth()->id())->get(),
+            'projects' => Project::where('user_id', Auth::id())->get(),
+            'tags' => Tag::where('user_id', Auth::id())->get(),
+            'allTags' => Tag::where('user_id', Auth::id())->get(),
             'showMicrosoftCalendar' => $this->showMicrosoftCalendar,
         ]);
     }

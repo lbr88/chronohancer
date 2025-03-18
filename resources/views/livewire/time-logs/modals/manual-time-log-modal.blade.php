@@ -16,11 +16,7 @@
     <form wire:submit.prevent="{{ $editingTimeLog ? 'updateTimeLog' : 'save' }}" class="space-y-4">
       <div>
         <label for="project_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Project</label>
-        <select wire:model="project_id" id="project_id" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2">
-          @foreach($projects as $project)
-          <option value="{{ $project->id }}">{{ $project->name }}</option>
-          @endforeach
-        </select>
+        @livewire('components.project-selector', ['projectId' => $project_id], key('manual-time-log-project-selector'))
         @error('project_id') <span class="text-red-500 dark:text-red-400 text-xs">{{ $message }}</span> @enderror
       </div>
       <div>
