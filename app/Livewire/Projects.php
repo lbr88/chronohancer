@@ -311,8 +311,9 @@ class Projects extends Component
         // Set project_id to null for associated timers
         $project->timers()->update(['project_id' => null]);
 
-        // Set project_id to null for associated time logs
-        $project->timeLogs()->update(['project_id' => null]);
+        // Update timers associated with this project to use the default project
+        $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+        $project->timers()->update(['project_id' => $defaultProject->id]);
 
         session()->flash('message', 'Project deleted successfully.');
     }

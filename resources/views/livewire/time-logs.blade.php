@@ -390,7 +390,7 @@ use App\Models\TimeLog;
                                     <div class="text-sm font-medium text-gray-900 dark:text-white">
                                         @if($timer['id'])
                                         <a href="{{ route('time-logs') }}?view=list&searchQuery={{ urlencode($timer['originalName']) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
-                                            {{ $timer['name'] }}
+                                            {{ $timer['originalName'] }}
                                         </a>
                                         @else
                                         <a href="{{ route('time-logs') }}?view=list&searchQuery=Manual Entry" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
@@ -401,6 +401,11 @@ use App\Models\TimeLog;
                                         <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">(No logs)</span>
                                         @endif
                                     </div>
+                                    @if(!empty($timer['description']))
+                                    <div class="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                                        {{ $timer['description'] }}
+                                    </div>
+                                    @endif
                                     @if(count($timer['tags']) > 0)
                                     <div class="flex flex-wrap gap-1 mt-1">
                                         @foreach($timer['tags'] as $tag)

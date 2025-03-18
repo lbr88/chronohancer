@@ -6,9 +6,9 @@ use App\Models\Project;
 use App\Models\Tag;
 use App\Models\TimeLog;
 use App\Models\Timer;
+use App\Models\TimerDescription;
 use App\Services\JiraService;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Computed;
@@ -24,13 +24,15 @@ class Timers extends Component
 
     public $description;
 
+    public $timerDescriptionId;
+
     public $tag_input = '';
+
+    public $editingTimerDescriptionId;
 
     public $search = '';
 
     public $savedTimersSearch = '';
-
-    public Collection $existingTimers;
 
     public $suggestions = [];
 
@@ -45,6 +47,14 @@ class Timers extends Component
     public $showEditTimerModal = false;
 
     public $showNewTimerModal = false;
+
+    public $showRestartTimerModal = false;
+
+    public $restartTimerId = null;
+
+    public $restartTimerName = null;
+
+    public $restartTimerDescriptionId = null;
 
     public $timerStartTime = null;
 
@@ -99,6 +109,9 @@ class Timers extends Component
         'project-selected' => 'handleProjectSelected',
         'tags-updated' => 'handleTagsUpdated',
         'time-input-changed' => 'handleTimeInputChanged',
+        'description-selected' => 'handleDescriptionSelected',
+        'timer-selected' => 'handleTimerSelected',
+        'unified-timer-selected' => 'handleUnifiedTimerSelected',
     ];
 
     public function boot(JiraService $jiraService)
@@ -109,7 +122,6 @@ class Timers extends Component
     public function mount()
     {
         // Initialize collections
-        $this->existingTimers = collect();
         $this->suggestions = [
             'projects' => [],
             'tags' => [],
@@ -122,7 +134,8 @@ class Timers extends Component
     #[Computed]
     public function jiraIssues()
     {
-        if (! Auth::user()->hasJiraEnabled() || empty($this->jiraSearch)) {
+        $user = Auth::user();
+        if (! ($user->jira_enabled && $user->jira_access_token && $user->jira_cloud_id && $user->jira_site_url) || empty($this->jiraSearch)) {
             return collect();
         }
 
@@ -182,7 +195,12 @@ class Timers extends Component
         $this->jiraKey = $key;
         $this->search = '';
         $this->jiraSearch = '';
-        $this->existingTimers = collect();
+
+        // Dispatch an event to update the timer name in the UnifiedTimerSelector component
+        $this->dispatch('jira-issue-selected', [
+            'name' => "$key: $summary",
+            'jiraKey' => $key,
+        ]);
     }
 
     /**
@@ -205,26 +223,12 @@ class Timers extends Component
      */
     public function closeNewTimerModal()
     {
-        $this->reset(['name', 'description', 'project_name', 'project_id', 'tag_input', 'search', 'jiraSearch', 'jiraKey']);
-        $this->existingTimers = collect();
+        $this->reset(['name', 'description', 'timerDescriptionId', 'project_name', 'project_id', 'tag_input', 'search', 'jiraSearch', 'jiraKey']);
         $this->suggestions = ['projects' => [], 'tags' => []];
         $this->showNewTimerModal = false;
     }
 
-    public function updatedSearch()
-    {
-        if (strlen($this->search) >= 2) {
-            $this->existingTimers = Timer::with(['project', 'tags'])
-                ->where('user_id', Auth::id())
-                ->where('workspace_id', app('current.workspace')->id)
-                ->where('name', 'like', '%'.$this->search.'%')
-                ->orderBy('updated_at', 'desc')
-                ->limit(5)
-                ->get();
-        } else {
-            $this->existingTimers = collect();
-        }
-    }
+    // Search functionality is now handled by the UnifiedTimerSelector component
 
     /**
      * Handle project selection from the project selector component
@@ -318,21 +322,7 @@ class Timers extends Component
         $this->suggestions['tags'] = [];
     }
 
-    public function useExistingTimer($timerId)
-    {
-        $timer = Timer::with(['tags', 'project'])->findOrFail($timerId);
-        $this->name = $timer->name;
-        $this->description = $timer->description;
-        $this->project_name = $timer->project?->name ?? '';
-        $this->tag_input = $timer->tags->pluck('name')->implode(', ');
-        $this->search = '';
-        $this->existingTimers = collect();
-
-        // Keep the modal open so the user can start the timer with the stored start time
-        // The start time was already captured when the modal was opened
-
-        $this->showNotification('Timer loaded successfully', 'info');
-    }
+    // This method is no longer needed as timer selection is handled by the UnifiedTimerSelector component
 
     public function startTimer()
     {
@@ -360,11 +350,25 @@ class Timers extends Component
             'user_id' => Auth::id(),
             'project_id' => $project_id,
             'name' => $this->name,
-            'description' => $this->description,
             'is_running' => true,
             'workspace_id' => app('current.workspace')->id,
             'jira_key' => $this->jiraKey ?: null,
         ]);
+
+        // Create a timer description if provided
+        $timerDescriptionId = null;
+        if (! empty($this->description)) {
+            $timerDescription = TimerDescription::create([
+                'description' => $this->description,
+                'timer_id' => $timer->id,
+                'user_id' => Auth::id(),
+                'workspace_id' => app('current.workspace')->id,
+            ]);
+            $timerDescriptionId = $timerDescription->id;
+        } elseif ($this->timerDescriptionId) {
+            // Use existing timer description
+            $timerDescriptionId = $this->timerDescriptionId;
+        }
 
         // Process tags
         if ($this->tag_input) {
@@ -391,10 +395,10 @@ class Timers extends Component
         // Create time log
         $timeLog = TimeLog::create([
             'timer_id' => $timer->id,
+            'timer_description_id' => $timerDescriptionId,
             'user_id' => Auth::id(),
-            'project_id' => $project_id,
             'start_time' => $startTime,
-            'description' => $this->description ?: null,
+            'description' => $this->description ?: null, // Keep for backward compatibility
             'workspace_id' => app('current.workspace')->id,
         ]);
 
@@ -560,7 +564,16 @@ class Timers extends Component
         // Set up editing properties
         $this->editingTimerId = $timer->id;
         $this->editingTimerName = $timer->name;
-        $this->editingTimerDescription = $timer->description;
+
+        // Get the latest description if available
+        if ($timer->latestDescription) {
+            $this->editingTimerDescription = $timer->latestDescription->description;
+            $this->editingTimerDescriptionId = $timer->latestDescription->id;
+        } else {
+            $this->editingTimerDescription = '';
+            $this->editingTimerDescriptionId = null;
+        }
+
         $this->editingTimerProjectName = $timer->project ? $timer->project->name : '';
         $this->editingTimerTagInput = $timer->tags->pluck('name')->implode(', ');
 
@@ -594,10 +607,31 @@ class Timers extends Component
         // Update timer details
         $timer->update([
             'name' => $this->editingTimerName,
-            'description' => $this->editingTimerDescription,
             'project_id' => $project_id,
             'workspace_id' => app('current.workspace')->id,
         ]);
+
+        // Create or update timer description
+        if (! empty($this->editingTimerDescription)) {
+            if ($this->editingTimerDescriptionId) {
+                // Update existing description
+                $timerDescription = TimerDescription::find($this->editingTimerDescriptionId);
+                if ($timerDescription) {
+                    $timerDescription->update([
+                        'description' => $this->editingTimerDescription,
+                    ]);
+                }
+            } else {
+                // Create new description
+                $timerDescription = TimerDescription::create([
+                    'description' => $this->editingTimerDescription,
+                    'timer_id' => $timer->id,
+                    'user_id' => Auth::id(),
+                    'workspace_id' => app('current.workspace')->id,
+                ]);
+                $this->editingTimerDescriptionId = $timerDescription->id;
+            }
+        }
 
         // Process tags
         if ($this->editingTimerTagInput) {
@@ -642,8 +676,8 @@ class Timers extends Component
                     $timeLog->update([
                         'end_time' => $endTime,
                         'duration_minutes' => (int) $totalMinutes, // Cast to integer to avoid decimal values
-                        'project_id' => $project_id,
-                        'description' => $this->editingTimerDescription ?: null,
+                        'timer_description_id' => $this->editingTimerDescriptionId,
+                        'description' => $this->editingTimerDescription ?: null, // Keep for backward compatibility
                         'workspace_id' => app('current.workspace')->id,
                     ]);
 
@@ -661,8 +695,8 @@ class Timers extends Component
             $latestLog = $timer->timeLogs()->latest()->first();
             if ($latestLog && ! $latestLog->end_time) {
                 $latestLog->update([
-                    'project_id' => $project_id,
-                    'description' => $this->editingTimerDescription ?: null,
+                    'timer_description_id' => $this->editingTimerDescriptionId,
+                    'description' => $this->editingTimerDescription ?: null, // Keep for backward compatibility
                     'workspace_id' => app('current.workspace')->id,
                 ]);
             }
@@ -683,6 +717,7 @@ class Timers extends Component
         $this->editingTimerId = null;
         $this->editingTimerName = null;
         $this->editingTimerDescription = null;
+        $this->editingTimerDescriptionId = null;
         $this->editingTimerProjectName = null;
         $this->editingTimerTagInput = null;
         $this->editingTimeLogId = null;
@@ -775,6 +810,69 @@ class Timers extends Component
         // Convert the selected tags to a comma-separated string for the tag_input field
         $tags = Tag::whereIn('id', $selectedTags)->get();
         $this->tag_input = $tags->pluck('name')->implode(', ');
+    }
+
+    /**
+     * Handle description selection from the timer description selector component
+     */
+    public function handleDescriptionSelected($data)
+    {
+        if (isset($data['id'])) {
+            $this->timerDescriptionId = $data['id'];
+            $this->description = $data['description'];
+        }
+    }
+
+    /**
+     * Handle timer selection from a timer selector component
+     */
+    public function handleTimerSelected($data)
+    {
+        if (isset($data['id'])) {
+            $timer = Timer::find($data['id']);
+            if ($timer) {
+                $this->name = $timer->name;
+                // Don't set description here, as we want to select or create a new one
+                $this->project_id = $timer->project_id;
+                $this->project_name = $timer->project ? $timer->project->name : '';
+
+                // Load tags
+                if ($timer->tags->isNotEmpty()) {
+                    $this->tag_input = $timer->tags->pluck('name')->implode(', ');
+                }
+            }
+        }
+    }
+
+    /**
+     * Handle unified timer selection from the UnifiedTimerSelector component
+     */
+    public function handleUnifiedTimerSelected($data)
+    {
+        // Set timer data
+        if (isset($data['timerId'])) {
+            $this->name = $data['timerName'] ?? '';
+        }
+
+        // Set project data
+        if (isset($data['projectId'])) {
+            $this->project_id = $data['projectId'];
+            $this->project_name = $data['projectName'] ?? '';
+        }
+
+        // Set description data
+        if (isset($data['timerDescriptionId'])) {
+            $this->timerDescriptionId = $data['timerDescriptionId'];
+            $this->description = $data['description'] ?? '';
+        }
+
+        // If we have a timer ID, load the tags
+        if (isset($data['timerId']) && $data['timerId']) {
+            $timer = Timer::with('tags')->find($data['timerId']);
+            if ($timer && $timer->tags->isNotEmpty()) {
+                $this->tag_input = $timer->tags->pluck('name')->implode(', ');
+            }
+        }
     }
 
     /**
@@ -992,10 +1090,10 @@ class Timers extends Component
         // Update the local property
         $this->timeFormat = $format;
 
-        // Save to user preferences
-        $user = Auth::user();
-        $user->time_format = $format;
-        $user->save();
+        // Save to user preferences using DB facade
+        \Illuminate\Support\Facades\DB::table('users')
+            ->where('id', Auth::id())
+            ->update(['time_format' => $format]);
 
         $this->showNotification('Time format preference saved', 'success');
     }
@@ -1077,12 +1175,21 @@ class Timers extends Component
      */
     public function editTimer($timerId)
     {
-        $timer = Timer::with(['tags', 'project'])->findOrFail($timerId);
+        $timer = Timer::with(['tags', 'project', 'latestDescription'])->findOrFail($timerId);
 
         // Set up editing properties
         $this->editingTimerId = $timer->id;
         $this->editingTimerName = $timer->name;
-        $this->editingTimerDescription = $timer->description;
+
+        // Get the latest description if available
+        if ($timer->latestDescription) {
+            $this->editingTimerDescription = $timer->latestDescription->description;
+            $this->editingTimerDescriptionId = $timer->latestDescription->id;
+        } else {
+            $this->editingTimerDescription = '';
+            $this->editingTimerDescriptionId = null;
+        }
+
         $this->editingTimerProjectName = $timer->project ? $timer->project->name : '';
         $this->editingTimerTagInput = $timer->tags->pluck('name')->implode(', ');
 
@@ -1095,12 +1202,21 @@ class Timers extends Component
      */
     public function editRunningTimer($timerId)
     {
-        $timer = Timer::with(['tags', 'project'])->findOrFail($timerId);
+        $timer = Timer::with(['tags', 'project', 'latestDescription'])->findOrFail($timerId);
 
         // Set up editing properties
         $this->editingTimerId = $timer->id;
         $this->editingTimerName = $timer->name;
-        $this->editingTimerDescription = $timer->description;
+
+        // Get the latest description if available
+        if ($timer->latestDescription) {
+            $this->editingTimerDescription = $timer->latestDescription->description;
+            $this->editingTimerDescriptionId = $timer->latestDescription->id;
+        } else {
+            $this->editingTimerDescription = '';
+            $this->editingTimerDescriptionId = null;
+        }
+
         $this->editingTimerProjectName = $timer->project ? $timer->project->name : '';
         $this->editingTimerTagInput = $timer->tags->pluck('name')->implode(', ');
 
@@ -1109,11 +1225,44 @@ class Timers extends Component
     }
 
     /**
-     * Restart a timer that is not currently running
+     * Open the restart timer modal
      */
     public function restartTimer($timerId)
     {
-        $timer = Timer::findOrFail($timerId);
+        $timer = Timer::with(['latestDescription'])->findOrFail($timerId);
+
+        // Set up restart properties
+        $this->restartTimerId = $timer->id;
+        $this->restartTimerName = $timer->name;
+
+        // Get the latest description if available
+        if ($timer->latestDescription) {
+            $this->restartTimerDescriptionId = $timer->latestDescription->id;
+        } else {
+            $this->restartTimerDescriptionId = null;
+        }
+
+        // Show the restart modal
+        $this->showRestartTimerModal = true;
+    }
+
+    /**
+     * Close the restart timer modal
+     */
+    public function closeRestartTimerModal()
+    {
+        $this->showRestartTimerModal = false;
+        $this->restartTimerId = null;
+        $this->restartTimerName = null;
+        $this->restartTimerDescriptionId = null;
+    }
+
+    /**
+     * Confirm and actually restart the timer
+     */
+    public function confirmRestartTimer()
+    {
+        $timer = Timer::findOrFail($this->restartTimerId);
         $wasPaused = $timer->is_paused;
 
         // Mark timer as running and not paused
@@ -1132,13 +1281,24 @@ class Timers extends Component
             $timer->save();
         }
 
+        // Get the description from the selector
+        $timerDescriptionId = $this->restartTimerDescriptionId;
+        $description = null;
+
+        if ($timerDescriptionId) {
+            $timerDescription = TimerDescription::find($timerDescriptionId);
+            if ($timerDescription) {
+                $description = $timerDescription->description;
+            }
+        }
+
         // Create a new time log with current time
         $timeLog = TimeLog::create([
             'timer_id' => $timer->id,
+            'timer_description_id' => $timerDescriptionId,
             'user_id' => Auth::id(),
-            'project_id' => $project_id,
             'start_time' => now(),
-            'description' => $timer->description ?: null,
+            'description' => $description, // Keep for backward compatibility
             'workspace_id' => app('current.workspace')->id,
         ]);
 
@@ -1151,9 +1311,12 @@ class Timers extends Component
         // Get the total duration for today to include in the event
         $totalDuration = $this->getTimerTotalDurationForToday($timer);
 
+        // Close the modal
+        $this->closeRestartTimerModal();
+
         // Dispatch event with timer ID to ensure frontend updates correctly
         $this->dispatch('timerStarted', [
-            'timerId' => $timerId,
+            'timerId' => $timer->id,
             'startTime' => $timeLog->start_time->toIso8601String(),
             'totalDuration' => $totalDuration,
             'wasPaused' => $wasPaused,
@@ -1228,7 +1391,7 @@ class Timers extends Component
             ->whereNotNull('end_time') // Only completed logs
             ->where('start_time', '>=', $today)
             ->where('start_time', '<', $tomorrow)
-            ->with(['project', 'tags'])
+            ->with(['timer.project', 'tags'])
             ->orderBy('start_time')
             ->get();
     }
@@ -1306,7 +1469,7 @@ class Timers extends Component
         });
 
         // Get all timers for the user
-        $allTimers = Timer::with(['project', 'tags', 'latestTimeLog'])
+        $allTimers = Timer::with(['project', 'tags', 'latestTimeLog', 'latestTimeLog.timerDescription', 'latestDescription'])
             ->where('user_id', Auth::id())
             ->where('workspace_id', app('current.workspace')->id)
             ->orderBy('updated_at', 'desc')

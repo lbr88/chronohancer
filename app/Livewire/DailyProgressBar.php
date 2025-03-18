@@ -83,7 +83,7 @@ class DailyProgressBar extends Component
             ->whereNotNull('end_time') // Only completed logs
             ->where('start_time', '>=', $today)
             ->where('start_time', '<', $tomorrow)
-            ->with(['project', 'tags', 'timer'])
+            ->with(['timer.project', 'tags', 'timer'])
             ->orderBy('start_time')
             ->get();
     }
@@ -104,8 +104,8 @@ class DailyProgressBar extends Component
             ->filter(function ($timer) use ($today) {
                 // Only include timers that were started today
                 return $timer->latestTimeLog &&
-                       $timer->latestTimeLog->start_time >= $today &&
-                       $timer->latestTimeLog->end_time === null;
+                    $timer->latestTimeLog->start_time >= $today &&
+                    $timer->latestTimeLog->end_time === null;
             })
             ->map(function ($timer) {
                 $startTime = $timer->latestTimeLog->start_time;

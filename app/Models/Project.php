@@ -49,9 +49,14 @@ class Project extends Model
         return $this->hasMany(Timer::class);
     }
 
-    public function timeLogs(): HasMany
+    /**
+     * Get time logs associated with this project through timers.
+     */
+    public function timeLogs()
     {
-        return $this->hasMany(TimeLog::class);
+        return TimeLog::whereHas('timer', function ($query) {
+            $query->where('project_id', $this->id);
+        });
     }
 
     public function tags(): BelongsToMany

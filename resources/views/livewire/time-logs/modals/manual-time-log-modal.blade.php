@@ -15,8 +15,12 @@
     </h2>
     <form wire:submit.prevent="{{ $editingTimeLog ? 'updateTimeLog' : 'save' }}" class="space-y-4">
       <div>
-        <label for="project_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Project</label>
-        @livewire('components.project-selector', ['projectId' => $project_id], key('manual-time-log-project-selector'))
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Timer Selection</label>
+        @livewire('components.unified-timer-selector', [
+        'timerId' => $timer_id,
+        'timerDescriptionId' => $timerDescriptionId,
+        'projectId' => $project_id
+        ], key('manual-time-log-unified-selector'))
         @error('project_id') <span class="text-red-500 dark:text-red-400 text-xs">{{ $message }}</span> @enderror
       </div>
       <div>
@@ -49,10 +53,6 @@
         </div>
         @endif
         @endif
-      </div>
-      <div>
-        <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description (optional)</label>
-        <textarea wire:model="description" id="description" rows="2" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2"></textarea>
       </div>
       <div>
         @livewire('components.time-input', [

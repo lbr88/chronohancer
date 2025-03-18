@@ -150,10 +150,10 @@ class TempoService
     public function isConfigured(): bool
     {
         return $this->enabled &&
-               ! empty($this->clientId) &&
-               ! empty($this->clientSecret) &&
-               ! empty($this->baseUrl) &&
-               ! empty($this->redirectUri);
+            ! empty($this->clientId) &&
+            ! empty($this->clientSecret) &&
+            ! empty($this->baseUrl) &&
+            ! empty($this->redirectUri);
     }
 
     /**
@@ -306,8 +306,8 @@ class TempoService
         // Format the description with project and tags
         $description = $timeLog->description ?? '';
 
-        if ($timeLog->project) {
-            $description = "[{$timeLog->project->name}] ".$description;
+        if ($timeLog->timer && $timeLog->timer->project) {
+            $description = "[{$timeLog->timer->project->name}] ".$description;
         }
 
         if ($timeLog->tags && $timeLog->tags->count() > 0) {

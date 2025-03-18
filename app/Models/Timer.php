@@ -13,7 +13,7 @@ class Timer extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'description', 'project_id', 'workspace_id', 'is_running', 'is_paused', 'user_id', 'jira_key'];
+    protected $fillable = ['name', 'project_id', 'workspace_id', 'is_running', 'is_paused', 'user_id', 'jira_key'];
 
     protected $casts = [
         'is_running' => 'boolean',
@@ -52,6 +52,30 @@ class Timer extends Model
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class);
+    }
+
+    /**
+     * Get all descriptions for this timer.
+     */
+    public function descriptions(): HasMany
+    {
+        return $this->hasMany(TimerDescription::class);
+    }
+
+    /**
+     * Get the latest description for this timer.
+     */
+    public function latestDescription(): HasOne
+    {
+        return $this->hasOne(TimerDescription::class)->latestOfMany();
+    }
+
+    /**
+     * Get the description attribute from the latest description.
+     */
+    public function getDescriptionAttribute(): ?string
+    {
+        return $this->latestDescription?->description;
     }
 
     public function getJiraKeyAttribute(): ?string

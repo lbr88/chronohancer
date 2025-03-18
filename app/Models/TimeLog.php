@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Services\JiraService;
+use App\Services\TempoService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +16,7 @@ class TimeLog extends Model
 
     protected $fillable = [
         'timer_id',
+        'timer_description_id',
         'user_id',
         'project_id',
         'workspace_id',
@@ -54,9 +57,9 @@ class TimeLog extends Model
             return null;
         }
 
-        $tempoService = app(App\Services\TempoService::class);
+        $tempoService = app(TempoService::class);
 
-        return $tempoService->getWorklogDetails($this->tempo_worklog_id);
+        return $tempoService->getWorklogDetails($this->tempo_worklog_id, $this->user);
     }
 
     /**
@@ -72,6 +75,22 @@ class TimeLog extends Model
         return $this->belongsTo(Timer::class);
     }
 
+    /**
+     * Get the timer description associated with this time log.
+     */
+    public function timerDescription(): BelongsTo
+    {
+        return $this->belongsTo(TimerDescription::class);
+    }
+
+    /**
+     * Get the description attribute from the timer description or the local description.
+     */
+    public function getDescriptionTextAttribute(): ?string
+    {
+        return $this->timerDescription?->description ?? $this->description;
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -82,12 +101,13 @@ class TimeLog extends Model
         return $this->belongsTo(Workspace::class);
     }
 
-    public function project(): BelongsTo
+    /**
+     * Get the project associated with this time log through the timer.
+     */
+    public function getProjectAttribute()
     {
-        return $this->belongsTo(Project::class);
+        return $this->timer?->project;
     }
-
-    // Project relationship is now required, so we don't need the getProjectAttribute method
 
     public function tags(): BelongsToMany
     {
@@ -103,7 +123,7 @@ class TimeLog extends Model
             return null;
         }
 
-        $jiraService = app(App\Services\JiraService::class);
+        $jiraService = app(JiraService::class);
 
         return $jiraService->getIssue($this->jira_issue_key);
     }
@@ -121,7 +141,7 @@ class TimeLog extends Model
      */
     public function setJiraIssue(string $issueKey): bool
     {
-        $jiraService = app(App\Services\JiraService::class);
+        $jiraService = app(JiraService::class);
 
         if (! $jiraService->validateIssue($issueKey)) {
             return false;

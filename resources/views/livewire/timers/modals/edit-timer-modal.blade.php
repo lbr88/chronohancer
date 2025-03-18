@@ -11,35 +11,16 @@
         </div>
 
         <form wire:submit.prevent="saveEditedTimer" class="ch-form">
-            <!-- Timer Name -->
+            <!-- Unified Timer Selector -->
             <div class="ch-form-group">
-                <label for="editingTimerName" class="ch-label">Timer Name</label>
-                <input
-                    type="text"
-                    id="editingTimerName"
-                    wire:model="editingTimerName"
-                    required
-                    class="ch-input">
-            </div>
-
-            <!-- Description -->
-            <div class="ch-form-group">
-                <label for="editingTimerDescription" class="ch-label">Description</label>
-                <textarea
-                    id="editingTimerDescription"
-                    wire:model="editingTimerDescription"
-                    rows="2"
-                    class="ch-textarea"></textarea>
-            </div>
-
-            <!-- Project -->
-            <div class="ch-form-group">
-                <label for="editingTimerProjectName" class="ch-label">Project</label>
-                <input
-                    type="text"
-                    id="editingTimerProjectName"
-                    wire:model="editingTimerProjectName"
-                    class="ch-input">
+                @livewire('components.unified-timer-selector', [
+                'timerId' => $editingTimerId,
+                'timerDescriptionId' => $editingTimerDescriptionId,
+                'projectId' => null,
+                'timerName' => $editingTimerName,
+                'description' => $editingTimerDescription,
+                'projectName' => $editingTimerProjectName
+                ], key('edit-timer-unified-selector'))
             </div>
 
             <!-- Tags -->

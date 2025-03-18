@@ -69,23 +69,12 @@
             </div>
 
             <div>
-                <label for="quick_time_project_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Project</label>
-                @livewire('components.project-selector', ['projectId' => $quickTimeProjectId], key('quick-time-project-selector'))
-            </div>
-
-            <div>
-                <label for="quick_time_timer_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Timer</label>
-                <select wire:model="quickTimeTimerId" id="quick_time_timer_id" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2">
-                    <option value="">Manual Entry</option>
-                    @foreach($quickTimeProjectTimers as $timer)
-                    <option value="{{ $timer->id }}">{{ $timer->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div>
-                <label for="quick_time_description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description (optional)</label>
-                <textarea wire:model="quickTimeDescription" id="quick_time_description" rows="2" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2"></textarea>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Timer Selection</label>
+                @livewire('components.unified-timer-selector', [
+                'timerId' => $quickTimeTimerId,
+                'timerDescriptionId' => $quickTimeTimerDescriptionId,
+                'projectId' => $quickTimeProjectId
+                ], key('quick-time-unified-selector'))
             </div>
 
             <div>
