@@ -69,51 +69,50 @@
           {{ __('Disconnect') }}
         </button>
       </div>
-      
+
       <!-- Calendar Selection -->
       <div class="mt-6">
         <h3 class="text-lg font-medium text-gray-900 dark:text-white">{{ __('Select Calendar') }}</h3>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ __('Choose which calendar you want to use with Chronohancer.') }}
+          {{ __('Choose which calendar you want to use with Chronohancer. You can select from your personal calendars or calendars shared with you.') }}
         </p>
-        
+
         @error('calendars')
-          <div class="mt-2 text-sm text-red-600">{{ $message }}</div>
+        <div class="mt-2 text-sm text-red-600">{{ $message }}</div>
         @enderror
-        
+
         <div class="mt-4">
           @if($loadingCalendars)
-            <div class="flex items-center justify-center py-4">
-              <svg class="animate-spin h-5 w-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span class="ml-2 text-sm text-gray-500">{{ __('Loading calendars...') }}</span>
-            </div>
+          <div class="flex items-center justify-center py-4">
+            <svg class="animate-spin h-5 w-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="ml-2 text-sm text-gray-500">{{ __('Loading calendars...') }}</span>
+          </div>
           @elseif(empty($calendars))
-            <div class="py-4 text-sm text-gray-500">
-              {{ __('No calendars found.') }}
-              <button wire:click="fetchCalendars" class="text-indigo-600 hover:text-indigo-900">{{ __('Refresh') }}</button>
-            </div>
+          <div class="py-4 text-sm text-gray-500">
+            {{ __('No calendars found.') }}
+            <button wire:click="fetchCalendars" class="text-indigo-600 hover:text-indigo-900">{{ __('Refresh') }}</button>
+          </div>
           @else
-            <div class="space-y-2">
-              @foreach($calendars as $calendar)
-                <div class="flex items-center p-3 border rounded-md {{ $selectedCalendarId === $calendar['id'] ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-gray-700' }}">
-                  <div class="flex-1">
-                    <div class="font-medium text-gray-900 dark:text-white">{{ $calendar['name'] }}</div>
-                  </div>
-                  <button
-                    wire:click="selectCalendar('{{ $calendar['id'] }}')"
-                    class="px-3 py-1 text-xs font-medium rounded-md {{ $selectedCalendarId === $calendar['id'] ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300' }}"
-                  >
-                    {{ $selectedCalendarId === $calendar['id'] ? __('Selected') : __('Select') }}
-                  </button>
-                </div>
-              @endforeach
+          <div class="space-y-2">
+            @foreach($calendars as $calendar)
+            <div class="flex items-center p-3 border rounded-md {{ $selectedCalendarId === $calendar['id'] ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-gray-700' }}">
+              <div class="flex-1">
+                <div class="font-medium text-gray-900 dark:text-white">{{ $calendar['name'] }}</div>
+              </div>
+              <button
+                wire:click="selectCalendar('{{ $calendar['id'] }}')"
+                class="px-3 py-1 text-xs font-medium rounded-md {{ $selectedCalendarId === $calendar['id'] ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300' }}">
+                {{ $selectedCalendarId === $calendar['id'] ? __('Selected') : __('Select') }}
+              </button>
             </div>
-            <div class="mt-2 text-right">
-              <button wire:click="fetchCalendars" class="text-sm text-indigo-600 hover:text-indigo-900">{{ __('Refresh calendars') }}</button>
-            </div>
+            @endforeach
+          </div>
+          <div class="mt-2 text-right">
+            <button wire:click="fetchCalendars" class="text-sm text-indigo-600 hover:text-indigo-900">{{ __('Refresh calendars') }}</button>
+          </div>
           @endif
         </div>
       </div>
@@ -124,7 +123,8 @@
           {{ __('Your Microsoft Calendar integration allows Chronohancer to:') }}
         </p>
         <ul class="mt-3 list-disc pl-5 text-sm text-gray-500 dark:text-gray-400 space-y-1">
-          <li>{{ __('View your calendar events') }}</li>
+          <li>{{ __('View your personal calendar events') }}</li>
+          <li>{{ __('View events from calendars shared with you') }}</li>
         </ul>
       </div>
       @else
@@ -133,7 +133,7 @@
           <div>
             <h3 class="text-lg font-medium text-gray-900 dark:text-white">{{ __('Connect to Microsoft Calendar') }}</h3>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {{ __('Connect your Microsoft 365 account to access your calendar. This integration allows you to view your calendar events directly from Chronohancer (read-only access).') }}
+              {{ __('Connect your Microsoft 365 account to access your calendars. This integration allows you to view events from your personal calendars and calendars shared with you directly from Chronohancer (read-only access).') }}
             </p>
           </div>
           <button wire:click="connect" type="button" class="ch-btn-primary">

@@ -2,8 +2,8 @@
 
 use App\Http\Controllers\Auth\JiraAuthController;
 use App\Http\Controllers\JiraController;
-use App\Http\Controllers\MicrosoftGraphController;
 use App\Http\Controllers\MicrosoftCalendarController;
+use App\Http\Controllers\MicrosoftGraphController;
 use App\Http\Controllers\TempoAuthController;
 use App\Livewire\Dashboard;
 use App\Livewire\Projects;
@@ -68,4 +68,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // Profile routes are handled by Livewire components
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

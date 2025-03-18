@@ -85,7 +85,7 @@ class JiraIssuesList extends Component
 
                 // Create text search condition
                 $searchText = implode(' ', array_map(function ($word) {
-                    return strtolower($word) . '*';
+                    return strtolower($word).'*';
                 }, $words));
 
                 if (! empty($searchText)) {
@@ -109,7 +109,7 @@ class JiraIssuesList extends Component
 
                 // Combine all conditions
                 if (! empty($searchConditions)) {
-                    $jql[] = '(' . implode(' OR ', $searchConditions) . ')';
+                    $jql[] = '('.implode(' OR ', $searchConditions).')';
                 }
             }
 
@@ -128,11 +128,11 @@ class JiraIssuesList extends Component
                     return collect();
                 }
 
-                $jql[] = 'id in (' . $favoriteIds->join(',') . ')';
+                $jql[] = 'id in ('.$favoriteIds->join(',').')';
             }
 
             // Combine conditions and add ordering
-            $finalQuery = implode(' AND ', $jql) . ' ORDER BY updated DESC';
+            $finalQuery = implode(' AND ', $jql).' ORDER BY updated DESC';
 
             // Log the query for debugging
             logger()->info('Jira search query', ['query' => $finalQuery]);
@@ -265,7 +265,7 @@ class JiraIssuesList extends Component
                 'issueKey' => $issueKey,
                 'summary' => $summary,
             ]);
-            $this->dispatch('notify', type: 'error', message: 'Failed to create timer: ' . $e->getMessage());
+            $this->dispatch('notify', type: 'error', message: 'Failed to create timer: '.$e->getMessage());
         }
     }
 

@@ -79,6 +79,7 @@ class Profile extends Component
 
         if ($user->email_verified_at !== null) {
             $this->redirectIntended(default: route('dashboard', absolute: false));
+
             return;
         }
 

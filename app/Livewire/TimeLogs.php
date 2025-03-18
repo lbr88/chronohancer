@@ -95,7 +95,7 @@ class TimeLogs extends Component
     protected $listeners = [
         'timeLogSaved' => '$refresh',
         'createTimeLogFromEvent' => 'handleCreateTimeLogFromEvent',
-        'weekChanged' => 'updateWeekForCalendar'
+        'weekChanged' => 'updateWeekForCalendar',
     ];
 
     protected $queryString = [
@@ -186,7 +186,7 @@ class TimeLogs extends Component
      */
     protected function dispatchWeekChangedIfNeeded()
     {
-        $currentWeekRange = $this->startOfWeek . '-' . $this->endOfWeek;
+        $currentWeekRange = $this->startOfWeek.'-'.$this->endOfWeek;
 
         \Illuminate\Support\Facades\Log::info('TimeLogs dispatchWeekChangedIfNeeded check', [
             'current_week_range' => $currentWeekRange,
@@ -519,8 +519,8 @@ class TimeLogs extends Component
             ->where('workspace_id', app('current.workspace')->id)
             ->whereNotNull('end_time') // Only show logs that have an end time (completed logs)
             ->whereBetween('start_time', [
-                $this->startOfWeek . ' 00:00:00',
-                $this->endOfWeek . ' 23:59:59',
+                $this->startOfWeek.' 00:00:00',
+                $this->endOfWeek.' 23:59:59',
             ])
             ->with(['project', 'timer', 'tags'])
             ->get();
@@ -605,7 +605,7 @@ class TimeLogs extends Component
                 $timerId = $log->timer_id ?? 'manual';
                 $description = trim($log->description ?? '');
 
-                return $timerId . '|' . $description;
+                return $timerId.'|'.$description;
             });
 
             // Add timers with logs
@@ -635,7 +635,7 @@ class TimeLogs extends Component
                 // Add description to timer name if it exists
                 $displayName = $timerName;
                 if (! empty($description)) {
-                    $displayName .= ': ' . $description;
+                    $displayName .= ': '.$description;
                 }
 
                 $timersWithLogs[] = [
@@ -790,10 +790,10 @@ class TimeLogs extends Component
             $mins = $minutes % 60;
 
             if ($hours > 0) {
-                return $hours . 'h ' . ($mins > 0 ? $mins . 'm' : '');
+                return $hours.'h '.($mins > 0 ? $mins.'m' : '');
             }
 
-            return $mins . 'm';
+            return $mins.'m';
         }
     }
 
@@ -887,11 +887,11 @@ class TimeLogs extends Component
             }
 
             if ($this->filterDateFrom) {
-                $query->where('start_time', '>=', $this->filterDateFrom . ' 00:00:00');
+                $query->where('start_time', '>=', $this->filterDateFrom.' 00:00:00');
             }
 
             if ($this->filterDateTo) {
-                $query->where('start_time', '<=', $this->filterDateTo . ' 23:59:59');
+                $query->where('start_time', '<=', $this->filterDateTo.' 23:59:59');
             }
 
             // Handle search query
@@ -910,9 +910,9 @@ class TimeLogs extends Component
                 // Apply all search conditions
                 $query->where(function ($q) use ($searchTerm, $defaultProject, $matchesDefaultProject) {
                     // Regular search in description and project name
-                    $q->where('description', 'like', '%' . $searchTerm . '%')
+                    $q->where('description', 'like', '%'.$searchTerm.'%')
                         ->orWhereHas('project', function ($q) use ($searchTerm) {
-                            $q->where('name', 'like', '%' . $searchTerm . '%');
+                            $q->where('name', 'like', '%'.$searchTerm.'%');
                         });
 
                     // Include default project results if the search term matches
@@ -950,11 +950,11 @@ class TimeLogs extends Component
         }
 
         if ($this->filterDateFrom) {
-            $query->where('start_time', '>=', $this->filterDateFrom . ' 00:00:00');
+            $query->where('start_time', '>=', $this->filterDateFrom.' 00:00:00');
         }
 
         if ($this->filterDateTo) {
-            $query->where('start_time', '<=', $this->filterDateTo . ' 23:59:59');
+            $query->where('start_time', '<=', $this->filterDateTo.' 23:59:59');
         }
 
         // Handle search query
@@ -973,9 +973,9 @@ class TimeLogs extends Component
             // Apply all search conditions
             $query->where(function ($q) use ($searchTerm, $defaultProject, $matchesDefaultProject) {
                 // Regular search in description and project name
-                $q->where('description', 'like', '%' . $searchTerm . '%')
+                $q->where('description', 'like', '%'.$searchTerm.'%')
                     ->orWhereHas('project', function ($q) use ($searchTerm) {
-                        $q->where('name', 'like', '%' . $searchTerm . '%');
+                        $q->where('name', 'like', '%'.$searchTerm.'%');
                     });
 
                 // Include default project results if the search term matches
@@ -1019,7 +1019,7 @@ class TimeLogs extends Component
             // Dispatch event to update the daily progress bar
             $this->dispatch('timeLogSaved');
 
-            session()->flash('message', $count . ' time ' . ($count === 1 ? 'log' : 'logs') . ' deleted successfully.');
+            session()->flash('message', $count.' time '.($count === 1 ? 'log' : 'logs').' deleted successfully.');
         }
     }
 
@@ -1216,11 +1216,11 @@ class TimeLogs extends Component
         }
 
         if ($this->filterDateFrom) {
-            $query->where('start_time', '>=', $this->filterDateFrom . ' 00:00:00');
+            $query->where('start_time', '>=', $this->filterDateFrom.' 00:00:00');
         }
 
         if ($this->filterDateTo) {
-            $query->where('start_time', '<=', $this->filterDateTo . ' 23:59:59');
+            $query->where('start_time', '<=', $this->filterDateTo.' 23:59:59');
         }
 
         // Handle search query
@@ -1239,9 +1239,9 @@ class TimeLogs extends Component
             // Apply all search conditions
             $query->where(function ($q) use ($searchTerm, $defaultProject, $matchesDefaultProject) {
                 // Regular search in description and project name
-                $q->where('description', 'like', '%' . $searchTerm . '%')
+                $q->where('description', 'like', '%'.$searchTerm.'%')
                     ->orWhereHas('project', function ($q) use ($searchTerm) {
-                        $q->where('name', 'like', '%' . $searchTerm . '%');
+                        $q->where('name', 'like', '%'.$searchTerm.'%');
                     });
 
                 // Include default project results if the search term matches
@@ -1271,14 +1271,14 @@ class TimeLogs extends Component
         $totalFilteredDuration = $timeLogs->sum('duration_minutes');
 
         // Use a public property for Microsoft Calendar status to persist between requests
-        if (!isset($this->showMicrosoftCalendar)) {
+        if (! isset($this->showMicrosoftCalendar)) {
             try {
                 $this->showMicrosoftCalendar = auth()->user()->hasMicrosoftEnabled();
 
                 // Log the Microsoft Calendar status for debugging
                 \Illuminate\Support\Facades\Log::info('TimeLogs Microsoft Calendar Status', [
                     'showMicrosoftCalendar' => $this->showMicrosoftCalendar,
-                    'weekRange' => $this->startOfWeek . '-' . $this->endOfWeek,
+                    'weekRange' => $this->startOfWeek.'-'.$this->endOfWeek,
                     'user_id' => auth()->id(),
                     'last_dispatched_week_range' => $this->lastDispatchedWeekRange,
                 ]);

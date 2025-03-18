@@ -139,7 +139,7 @@ class Timers extends Component
                 if (empty($jql)) {
                     // Create text search condition
                     $searchText = implode(' ', array_map(function ($word) {
-                        return strtolower($word) . '*';
+                        return strtolower($word).'*';
                     }, $words));
 
                     if (! empty($searchText)) {
@@ -155,7 +155,7 @@ class Timers extends Component
             // $jql[] = '(assignee = currentUser() OR reporter = currentUser())';
 
             // Combine conditions and add ordering
-            $finalQuery = implode(' AND ', $jql) . ' ORDER BY updated DESC';
+            $finalQuery = implode(' AND ', $jql).' ORDER BY updated DESC';
 
             $response = $this->jiraService->searchIssues($finalQuery, 5, 0);
 
@@ -211,7 +211,7 @@ class Timers extends Component
             $this->existingTimers = Timer::with(['project', 'tags'])
                 ->where('user_id', auth()->id())
                 ->where('workspace_id', app('current.workspace')->id)
-                ->where('name', 'like', '%' . $this->search . '%')
+                ->where('name', 'like', '%'.$this->search.'%')
                 ->orderBy('updated_at', 'desc')
                 ->limit(5)
                 ->get();
@@ -226,7 +226,7 @@ class Timers extends Component
             $this->suggestions['projects'] = Project::with('tags')
                 ->where('user_id', auth()->id())
                 ->where('workspace_id', app('current.workspace')->id)
-                ->where('name', 'like', '%' . $this->project_name . '%')
+                ->where('name', 'like', '%'.$this->project_name.'%')
                 ->limit(5)
                 ->get();
         } else {
@@ -243,7 +243,7 @@ class Timers extends Component
         if (strlen($lastTag) >= 2) {
             $this->suggestions['tags'] = Tag::where('user_id', auth()->id())
                 ->where('workspace_id', app('current.workspace')->id)
-                ->where('name', 'like', '%' . $lastTag . '%')
+                ->where('name', 'like', '%'.$lastTag.'%')
                 ->orderBy('updated_at', 'desc')
                 ->limit(5)
                 ->get();
@@ -261,7 +261,7 @@ class Timers extends Component
             if ($project->tags->isNotEmpty()) {
                 $projectTags = $project->tags->pluck('name')->implode(', ');
                 $this->tag_input = $this->tag_input
-                    ? $this->tag_input . ', ' . $projectTags
+                    ? $this->tag_input.', '.$projectTags
                     : $projectTags;
             }
         }
@@ -272,8 +272,8 @@ class Timers extends Component
     {
         // Extract all tags except the last one (which is being typed)
         $tags = collect(explode(',', $this->tag_input))
-            ->map(fn($tag) => trim($tag))
-            ->filter(fn($tag) => ! empty($tag));
+            ->map(fn ($tag) => trim($tag))
+            ->filter(fn ($tag) => ! empty($tag));
 
         // Remove the last tag (which is being typed)
         if ($tags->count() > 0) {
@@ -284,7 +284,7 @@ class Timers extends Component
         $tags->push($tagName);
 
         // Update the tag input
-        $this->tag_input = $tags->implode(', ') . ', ';
+        $this->tag_input = $tags->implode(', ').', ';
 
         // Clear suggestions
         $this->suggestions['tags'] = [];
@@ -337,7 +337,7 @@ class Timers extends Component
         // Process tags
         if ($this->tag_input) {
             $tagNames = collect(explode(',', $this->tag_input))
-                ->map(fn($name) => trim($name))
+                ->map(fn ($name) => trim($name))
                 ->filter();
 
             $tags = $tagNames->map(function ($name) {
@@ -473,13 +473,13 @@ class Timers extends Component
 
         $result = '';
         if ($hours > 0) {
-            $result .= $hours . 'h';
+            $result .= $hours.'h';
             if ($mins > 0) {
-                $result .= ' ' . $mins . 'm';
+                $result .= ' '.$mins.'m';
             }
         } else {
             if ($mins > 0) {
-                $result .= $mins . 'm';
+                $result .= $mins.'m';
             } else {
                 $result = '0m';
             }
@@ -570,7 +570,7 @@ class Timers extends Component
         // Process tags
         if ($this->editingTimerTagInput) {
             $tagNames = collect(explode(',', $this->editingTimerTagInput))
-                ->map(fn($name) => trim($name))
+                ->map(fn ($name) => trim($name))
                 ->filter();
 
             $tags = $tagNames->map(function ($name) {
@@ -896,24 +896,24 @@ class Timers extends Component
             if ($hours > 0) {
                 if ($minutes > 0) {
                     if ($secs > 0) {
-                        return $hours . 'h ' . $minutes . 'm ' . $secs . 's';
+                        return $hours.'h '.$minutes.'m '.$secs.'s';
                     }
 
-                    return $hours . 'h ' . $minutes . 'm';
+                    return $hours.'h '.$minutes.'m';
                 }
 
-                return $hours . 'h';
+                return $hours.'h';
             }
 
             if ($minutes > 0) {
                 if ($secs > 0) {
-                    return $minutes . 'm ' . $secs . 's';
+                    return $minutes.'m '.$secs.'s';
                 }
 
-                return $minutes . 'm';
+                return $minutes.'m';
             }
 
-            return $secs . 's';
+            return $secs.'s';
         }
     }
 
@@ -1237,7 +1237,7 @@ class Timers extends Component
     public function render()
     {
         // Cache recent tags for 5 minutes to improve performance
-        $recentTags = Cache::remember('user.' . auth()->id() . '.workspace.' . app('current.workspace')->id . '.recent_tags', 300, function () {
+        $recentTags = Cache::remember('user.'.auth()->id().'.workspace.'.app('current.workspace')->id.'.recent_tags', 300, function () {
             return Tag::where('user_id', auth()->id())
                 ->where('workspace_id', app('current.workspace')->id)
                 ->orderBy('updated_at', 'desc')
