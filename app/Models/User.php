@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Services\JiraService;
+use App\Services\MicrosoftGraphService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -51,6 +53,11 @@ class User extends Authenticatable
         'tempo_refresh_token',
         'tempo_token_expires_at',
         'tempo_enabled',
+        'microsoft_enabled',
+        'microsoft_access_token',
+        'microsoft_refresh_token',
+        'microsoft_token_expires_at',
+        'microsoft_calendar_id',
     ];
 
     /**
@@ -77,6 +84,8 @@ class User extends Authenticatable
             'jira_token_expires_at' => 'datetime',
             'tempo_enabled' => 'boolean',
             'tempo_token_expires_at' => 'datetime',
+            'microsoft_enabled' => 'boolean',
+            'microsoft_token_expires_at' => 'datetime',
         ];
     }
 
@@ -86,9 +95,9 @@ class User extends Authenticatable
     public function hasJiraEnabled(): bool
     {
         return $this->jira_enabled &&
-               $this->jira_access_token &&
-               $this->jira_cloud_id &&
-               $this->jira_site_url;
+            $this->jira_access_token &&
+            $this->jira_cloud_id &&
+            $this->jira_site_url;
     }
 
     /**
@@ -97,8 +106,8 @@ class User extends Authenticatable
     public function hasTempoEnabled(): bool
     {
         return $this->tempo_enabled &&
-               $this->tempo_access_token &&
-               $this->tempo_refresh_token;
+            $this->tempo_access_token &&
+            $this->tempo_refresh_token;
     }
 
     /**
@@ -125,13 +134,46 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if Microsoft Graph integration is enabled and configured.
+     */
+    public function hasMicrosoftEnabled(): bool
+    {
+        return $this->microsoft_enabled &&
+            $this->microsoft_access_token &&
+            $this->microsoft_refresh_token;
+    }
+
+    /**
+     * Get a configured instance of MicrosoftGraphService for this user.
+     */
+    public function microsoft(): MicrosoftGraphService
+    {
+        return app(MicrosoftGraphService::class)->setUser($this);
+    }
+
+    // Removed duplicate method
+
+    /**
+     * Disconnect Microsoft Graph integration.
+     */
+    public function disconnectMicrosoft(): void
+    {
+        $this->update([
+            'microsoft_enabled' => false,
+            'microsoft_access_token' => null,
+            'microsoft_refresh_token' => null,
+            'microsoft_token_expires_at' => null,
+        ]);
+    }
+
+    /**
      * Get the user's initials
      */
     public function initials(): string
     {
         return Str::of($this->name)
             ->explode(' ')
-            ->map(fn (string $name) => Str::of($name)->substr(0, 1))
+            ->map(fn(string $name) => Str::of($name)->substr(0, 1))
             ->implode('');
     }
 

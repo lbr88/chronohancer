@@ -49,6 +49,7 @@
     <x-auth-session-status class="text-center" :status="session('status')" />
 
     <div class="grid grid-cols-3 gap-3">
+        @if(env('GITHUB_CLIENT_ID') && env('GITHUB_CLIENT_SECRET'))
         <a href="{{ route('socialite.redirect', ['provider' => 'github']) }}"
             class="flex items-center justify-center gap-3 rounded-md bg-white px-3 py-2 text-sm font-semibold text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-700 dark:hover:bg-zinc-700">
             <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -56,7 +57,9 @@
             </svg>
             <span>GitHub</span>
         </a>
+        @endif
 
+        @if(env('GOOGLE_CLIENT_ID') && env('GOOGLE_CLIENT_SECRET'))
         <a href="{{ route('socialite.redirect', ['provider' => 'google']) }}"
             class="flex items-center justify-center gap-3 rounded-md bg-white px-3 py-2 text-sm font-semibold text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-700 dark:hover:bg-zinc-700">
             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
@@ -64,7 +67,9 @@
             </svg>
             <span>Google</span>
         </a>
+        @endif
 
+        @if(env('MICROSOFT_CLIENT_ID') && env('MICROSOFT_CLIENT_SECRET'))
         <a href="{{ route('socialite.redirect', ['provider' => 'microsoft']) }}"
             class="flex items-center justify-center gap-3 rounded-md bg-white px-3 py-2 text-sm font-semibold text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-700 dark:hover:bg-zinc-700">
             <svg class="h-5 w-5" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -75,6 +80,7 @@
             </svg>
             <span>Microsoft</span>
         </a>
+        @endif
     </div>
     @endif
 

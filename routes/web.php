@@ -2,11 +2,14 @@
 
 use App\Http\Controllers\Auth\JiraAuthController;
 use App\Http\Controllers\JiraController;
+use App\Http\Controllers\MicrosoftGraphController;
+use App\Http\Controllers\MicrosoftCalendarController;
 use App\Http\Controllers\TempoAuthController;
 use App\Livewire\Dashboard;
 use App\Livewire\Projects;
 use App\Livewire\Settings\Appearance;
 use App\Livewire\Settings\JiraIntegration;
+use App\Livewire\Settings\MicrosoftCalendarIntegration;
 use App\Livewire\Settings\Password;
 use App\Livewire\Settings\Profile;
 use App\Livewire\Settings\TempoIntegration;
@@ -44,6 +47,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/settings/password', Password::class)->name('settings.password');
     Route::get('/settings/integrations/tempo', TempoIntegration::class)->name('settings.integrations.tempo');
     Route::get('/settings/integrations/jira', JiraIntegration::class)->name('settings.integrations.jira');
+    Route::get('/settings/integrations/microsoft-calendar', MicrosoftCalendarIntegration::class)->name('settings.integrations.microsoft-calendar');
     Route::get('/auth/jira/callback', [JiraAuthController::class, 'callback'])->name('auth.jira.callback');
     Route::get('/api/jira/issue/{key}', [JiraController::class, 'getIssue'])->name('jira.issue');
 
@@ -51,8 +55,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/auth/tempo/redirect', [TempoAuthController::class, 'redirect'])->name('auth.tempo.redirect');
     Route::get('/auth/tempo/callback', [TempoAuthController::class, 'callback'])->name('auth.tempo.callback');
     Route::post('/auth/tempo/disconnect', [TempoAuthController::class, 'disconnect'])->name('auth.tempo.disconnect');
+
+    // Microsoft Graph routes
+    Route::get('/auth/microsoft-graph/redirect', [MicrosoftGraphController::class, 'redirect'])->name('auth.microsoft-graph.redirect');
+    Route::get('/auth/microsoft-graph/callback', [MicrosoftGraphController::class, 'callback'])->name('auth.microsoft-graph.callback');
+    Route::get('/auth/microsoft-graph/disconnect', [MicrosoftGraphController::class, 'disconnect'])->name('auth.microsoft-graph.disconnect');
+    Route::get('/api/microsoft-graph/calendars', [MicrosoftGraphController::class, 'getCalendars'])->name('microsoft-graph.calendars');
+    Route::get('/api/microsoft-graph/events', [MicrosoftGraphController::class, 'getEvents'])->name('microsoft-graph.events');
+    Route::post('/api/microsoft-graph/set-default-calendar', [MicrosoftGraphController::class, 'setDefaultCalendar'])->name('microsoft-graph.set-default-calendar');
+    Route::get('/api/microsoft-calendar/weekly-events', [MicrosoftCalendarController::class, 'getWeeklyEvents'])->name('microsoft-calendar.weekly-events');
 });
 
 // Profile routes are handled by Livewire components
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

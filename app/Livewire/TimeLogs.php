@@ -87,6 +87,15 @@ class TimeLogs extends Component
 
     public $selectedTempoWorklogId = null;
 
+    // Microsoft Calendar integration status
+    public $showMicrosoftCalendar = null;
+
+    protected $listeners = [
+        'timeLogSaved' => '$refresh',
+        'createTimeLogFromEvent' => 'handleCreateTimeLogFromEvent',
+        'weekChanged' => 'updateWeekForCalendar'
+    ];
+
     protected $queryString = [
         'sortField' => ['except' => 'start_time'],
         'sortDirection' => ['except' => 'desc'],
@@ -131,18 +140,26 @@ class TimeLogs extends Component
     {
         $this->currentWeek = $this->currentWeek->subWeek();
         $this->updateWeekRange();
+        $this->dispatchWeekChangedIfNeeded();
     }
 
     public function nextWeek()
     {
         $this->currentWeek = $this->currentWeek->addWeek();
         $this->updateWeekRange();
+        $this->dispatchWeekChangedIfNeeded();
     }
 
     public function currentWeek()
     {
         $this->currentWeek = now();
         $this->updateWeekRange();
+        $this->dispatchWeekChangedIfNeeded();
+    }
+
+    public function updateWeekForCalendar()
+    {
+        $this->dispatchWeekChangedIfNeeded();
     }
 
     private function updateWeekRange()
@@ -151,9 +168,47 @@ class TimeLogs extends Component
         $this->endOfWeek = $this->currentWeek->copy()->endOfWeek()->format('Y-m-d');
     }
 
+    // Track the last dispatched week range to prevent duplicate dispatches - must be public to persist between requests
+    public $lastDispatchedWeekRange = null;
+
     public function switchView($view)
     {
         $this->view = $view;
+        if ($view === 'weekly') {
+            $this->dispatchWeekChangedIfNeeded();
+        }
+    }
+
+    /**
+     * Dispatch the weekChanged event only if the week range has changed
+     */
+    protected function dispatchWeekChangedIfNeeded()
+    {
+        $currentWeekRange = $this->startOfWeek . '-' . $this->endOfWeek;
+
+        \Illuminate\Support\Facades\Log::info('TimeLogs dispatchWeekChangedIfNeeded check', [
+            'current_week_range' => $currentWeekRange,
+            'last_dispatched_week_range' => $this->lastDispatchedWeekRange,
+            'is_same' => $this->lastDispatchedWeekRange === $currentWeekRange,
+        ]);
+
+        // Only dispatch if the week range has changed
+        if ($this->lastDispatchedWeekRange !== $currentWeekRange) {
+            // Set the property before dispatching to prevent duplicate dispatches
+            $this->lastDispatchedWeekRange = $currentWeekRange;
+
+            \Illuminate\Support\Facades\Log::info('TimeLogs dispatching weekChanged', [
+                'startOfWeek' => $this->startOfWeek,
+                'endOfWeek' => $this->endOfWeek,
+                'weekRange' => $currentWeekRange,
+            ]);
+
+            $this->dispatch('weekChanged', $this->startOfWeek, $this->endOfWeek);
+        } else {
+            \Illuminate\Support\Facades\Log::info('TimeLogs skipping duplicate weekChanged dispatch', [
+                'weekRange' => $currentWeekRange,
+            ]);
+        }
     }
 
     public function calculateDuration()
@@ -198,6 +253,22 @@ class TimeLogs extends Component
         $this->selected_date = $date;
         $this->reset(['project_id', 'timer_id', 'description', 'duration_minutes', 'selectedTags']);
         $this->dispatch('scroll-to-form');
+    }
+
+    /**
+     * Handle creating a time log from a calendar event
+     */
+    public function handleCreateTimeLogFromEvent($data)
+    {
+        $this->openQuickTimeModal(
+            $data['date'],
+            null, // Use default project
+            null, // No timer
+            $data['description']
+        );
+
+        // Set the duration from the event
+        $this->quickTimeDuration = $data['duration_minutes'];
     }
 
     public function save()
@@ -352,8 +423,12 @@ class TimeLogs extends Component
     public function cancelEdit()
     {
         $this->reset([
-            'editingTimeLog', 'project_id', 'timer_id', 'description',
-            'duration_minutes', 'selectedTags',
+            'editingTimeLog',
+            'project_id',
+            'timer_id',
+            'description',
+            'duration_minutes',
+            'selectedTags',
         ]);
 
         // Redirect back to dashboard if requested
@@ -401,8 +476,12 @@ class TimeLogs extends Component
         $returnToDashboard = $this->returnToDashboard;
 
         $this->reset([
-            'editingTimeLog', 'project_id', 'timer_id', 'description',
-            'duration_minutes', 'selectedTags',
+            'editingTimeLog',
+            'project_id',
+            'timer_id',
+            'description',
+            'duration_minutes',
+            'selectedTags',
         ]);
 
         session()->flash('message', 'Time log updated successfully.');
@@ -438,8 +517,8 @@ class TimeLogs extends Component
             ->where('workspace_id', app('current.workspace')->id)
             ->whereNotNull('end_time') // Only show logs that have an end time (completed logs)
             ->whereBetween('start_time', [
-                $this->startOfWeek.' 00:00:00',
-                $this->endOfWeek.' 23:59:59',
+                $this->startOfWeek . ' 00:00:00',
+                $this->endOfWeek . ' 23:59:59',
             ])
             ->with(['project', 'timer', 'tags'])
             ->get();
@@ -524,7 +603,7 @@ class TimeLogs extends Component
                 $timerId = $log->timer_id ?? 'manual';
                 $description = trim($log->description ?? '');
 
-                return $timerId.'|'.$description;
+                return $timerId . '|' . $description;
             });
 
             // Add timers with logs
@@ -554,7 +633,7 @@ class TimeLogs extends Component
                 // Add description to timer name if it exists
                 $displayName = $timerName;
                 if (! empty($description)) {
-                    $displayName .= ': '.$description;
+                    $displayName .= ': ' . $description;
                 }
 
                 $timersWithLogs[] = [
@@ -709,10 +788,10 @@ class TimeLogs extends Component
             $mins = $minutes % 60;
 
             if ($hours > 0) {
-                return $hours.'h '.($mins > 0 ? $mins.'m' : '');
+                return $hours . 'h ' . ($mins > 0 ? $mins . 'm' : '');
             }
 
-            return $mins.'m';
+            return $mins . 'm';
         }
     }
 
@@ -806,11 +885,11 @@ class TimeLogs extends Component
             }
 
             if ($this->filterDateFrom) {
-                $query->where('start_time', '>=', $this->filterDateFrom.' 00:00:00');
+                $query->where('start_time', '>=', $this->filterDateFrom . ' 00:00:00');
             }
 
             if ($this->filterDateTo) {
-                $query->where('start_time', '<=', $this->filterDateTo.' 23:59:59');
+                $query->where('start_time', '<=', $this->filterDateTo . ' 23:59:59');
             }
 
             // Handle search query
@@ -820,8 +899,8 @@ class TimeLogs extends Component
 
                 // Check if search term contains any part of "no project" or default project
                 $matchesDefaultProject = str_contains('no project', $searchTermLower) ||
-                                        str_contains($searchTermLower, 'no') ||
-                                        str_contains($searchTermLower, 'project');
+                    str_contains($searchTermLower, 'no') ||
+                    str_contains($searchTermLower, 'project');
 
                 // Get the default project
                 $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
@@ -829,9 +908,9 @@ class TimeLogs extends Component
                 // Apply all search conditions
                 $query->where(function ($q) use ($searchTerm, $defaultProject, $matchesDefaultProject) {
                     // Regular search in description and project name
-                    $q->where('description', 'like', '%'.$searchTerm.'%')
+                    $q->where('description', 'like', '%' . $searchTerm . '%')
                         ->orWhereHas('project', function ($q) use ($searchTerm) {
-                            $q->where('name', 'like', '%'.$searchTerm.'%');
+                            $q->where('name', 'like', '%' . $searchTerm . '%');
                         });
 
                     // Include default project results if the search term matches
@@ -869,11 +948,11 @@ class TimeLogs extends Component
         }
 
         if ($this->filterDateFrom) {
-            $query->where('start_time', '>=', $this->filterDateFrom.' 00:00:00');
+            $query->where('start_time', '>=', $this->filterDateFrom . ' 00:00:00');
         }
 
         if ($this->filterDateTo) {
-            $query->where('start_time', '<=', $this->filterDateTo.' 23:59:59');
+            $query->where('start_time', '<=', $this->filterDateTo . ' 23:59:59');
         }
 
         // Handle search query
@@ -883,8 +962,8 @@ class TimeLogs extends Component
 
             // Check if search term contains any part of "no project" or default project
             $matchesDefaultProject = str_contains('no project', $searchTermLower) ||
-                                    str_contains($searchTermLower, 'no') ||
-                                    str_contains($searchTermLower, 'project');
+                str_contains($searchTermLower, 'no') ||
+                str_contains($searchTermLower, 'project');
 
             // Get the default project
             $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
@@ -892,9 +971,9 @@ class TimeLogs extends Component
             // Apply all search conditions
             $query->where(function ($q) use ($searchTerm, $defaultProject, $matchesDefaultProject) {
                 // Regular search in description and project name
-                $q->where('description', 'like', '%'.$searchTerm.'%')
+                $q->where('description', 'like', '%' . $searchTerm . '%')
                     ->orWhereHas('project', function ($q) use ($searchTerm) {
-                        $q->where('name', 'like', '%'.$searchTerm.'%');
+                        $q->where('name', 'like', '%' . $searchTerm . '%');
                     });
 
                 // Include default project results if the search term matches
@@ -938,7 +1017,7 @@ class TimeLogs extends Component
             // Dispatch event to update the daily progress bar
             $this->dispatch('timeLogSaved');
 
-            session()->flash('message', $count.' time '.($count === 1 ? 'log' : 'logs').' deleted successfully.');
+            session()->flash('message', $count . ' time ' . ($count === 1 ? 'log' : 'logs') . ' deleted successfully.');
         }
     }
 
@@ -1123,11 +1202,11 @@ class TimeLogs extends Component
         }
 
         if ($this->filterDateFrom) {
-            $query->where('start_time', '>=', $this->filterDateFrom.' 00:00:00');
+            $query->where('start_time', '>=', $this->filterDateFrom . ' 00:00:00');
         }
 
         if ($this->filterDateTo) {
-            $query->where('start_time', '<=', $this->filterDateTo.' 23:59:59');
+            $query->where('start_time', '<=', $this->filterDateTo . ' 23:59:59');
         }
 
         // Handle search query
@@ -1137,8 +1216,8 @@ class TimeLogs extends Component
 
             // Check if search term contains any part of "no project" or default project
             $matchesDefaultProject = str_contains('no project', $searchTermLower) ||
-                                    str_contains($searchTermLower, 'no') ||
-                                    str_contains($searchTermLower, 'project');
+                str_contains($searchTermLower, 'no') ||
+                str_contains($searchTermLower, 'project');
 
             // Get the default project
             $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
@@ -1146,9 +1225,9 @@ class TimeLogs extends Component
             // Apply all search conditions
             $query->where(function ($q) use ($searchTerm, $defaultProject, $matchesDefaultProject) {
                 // Regular search in description and project name
-                $q->where('description', 'like', '%'.$searchTerm.'%')
+                $q->where('description', 'like', '%' . $searchTerm . '%')
                     ->orWhereHas('project', function ($q) use ($searchTerm) {
-                        $q->where('name', 'like', '%'.$searchTerm.'%');
+                        $q->where('name', 'like', '%' . $searchTerm . '%');
                     });
 
                 // Include default project results if the search term matches
@@ -1177,12 +1256,35 @@ class TimeLogs extends Component
         // Calculate total duration of filtered logs
         $totalFilteredDuration = $timeLogs->sum('duration_minutes');
 
+        // Use a public property for Microsoft Calendar status to persist between requests
+        if (!isset($this->showMicrosoftCalendar)) {
+            try {
+                $this->showMicrosoftCalendar = auth()->user()->hasMicrosoftEnabled();
+
+                // Log the Microsoft Calendar status for debugging
+                \Illuminate\Support\Facades\Log::info('TimeLogs Microsoft Calendar Status', [
+                    'showMicrosoftCalendar' => $this->showMicrosoftCalendar,
+                    'weekRange' => $this->startOfWeek . '-' . $this->endOfWeek,
+                    'user_id' => auth()->id(),
+                    'last_dispatched_week_range' => $this->lastDispatchedWeekRange,
+                ]);
+            } catch (\Exception $e) {
+                // If there's an error checking Microsoft status, disable it
+                \Illuminate\Support\Facades\Log::error('Error checking Microsoft Calendar status', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                $this->showMicrosoftCalendar = false;
+            }
+        }
+
         return view('livewire.time-logs', [
             'timeLogs' => $timeLogs,
             'totalFilteredDuration' => $totalFilteredDuration,
             'projects' => Project::where('user_id', auth()->id())->get(),
             'tags' => Tag::where('user_id', auth()->id())->get(),
             'allTags' => Tag::where('user_id', auth()->id())->get(),
+            'showMicrosoftCalendar' => $this->showMicrosoftCalendar,
         ]);
     }
 }

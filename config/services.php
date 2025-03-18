@@ -37,6 +37,13 @@ return [
         'tenant' => env('MICROSOFT_TENANT_ID', 'common'),
     ],
 
+    'microsoft-graph' => [
+        'client_id' => env('MICROSOFT_GRAPH_CLIENT_ID', env('MICROSOFT_CLIENT_ID')),
+        'client_secret' => env('MICROSOFT_GRAPH_CLIENT_SECRET', env('MICROSOFT_CLIENT_SECRET')),
+        'redirect' => env('MICROSOFT_GRAPH_REDIRECT_URI', env('APP_URL') . '/auth/microsoft-graph/callback'),
+        'tenant' => env('MICROSOFT_GRAPH_TENANT_ID', env('MICROSOFT_TENANT_ID', 'common')),
+    ],
+
     'jira' => [
         'client_id' => env('JIRA_CLIENT_ID'),
         'client_secret' => env('JIRA_CLIENT_SECRET'),
