@@ -74,6 +74,8 @@ class TimeLogs extends Component
 
     public $quickTimeDescription;
 
+    public $quickTimeSelectedTags = [];
+
     public $quickTimeDuration = 0;
 
     public $quickTimeProjectTimers = [];
@@ -98,6 +100,7 @@ class TimeLogs extends Component
         'createTimeLogFromEvent' => 'handleCreateTimeLogFromEvent',
         'weekChanged' => 'updateWeekForCalendar',
         'project-selected' => 'handleProjectSelected',
+        'tags-updated' => 'handleTagsUpdated',
     ];
 
     protected $queryString = [
@@ -282,6 +285,19 @@ class TimeLogs extends Component
     {
         if (isset($data['id'])) {
             $this->project_id = $data['id'];
+        }
+    }
+
+    /**
+     * Handle tag updates from the tag selector component
+     */
+    public function handleTagsUpdated($selectedTags)
+    {
+        // Check if we're in the quick time modal or the regular edit form
+        if ($this->showQuickTimeModal) {
+            $this->quickTimeSelectedTags = $selectedTags;
+        } else {
+            $this->selectedTags = $selectedTags;
         }
     }
 
@@ -917,7 +933,7 @@ class TimeLogs extends Component
 
                 // Get the default project
                 $defaultProject = Project::findOrCreateDefault(Auth::id(), app('current.workspace')->id);
-                $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+                $defaultProject = Project::findOrCreateDefault(Auth::id(), app('current.workspace')->id);
 
                 // Apply all search conditions
                 $query->where(function ($q) use ($searchTerm, $defaultProject, $matchesDefaultProject) {
@@ -1119,6 +1135,7 @@ class TimeLogs extends Component
     public function closeQuickTimeModal()
     {
         $this->showQuickTimeModal = false;
+        $this->quickTimeSelectedTags = [];
     }
 
     public function openManualTimeLogModal($date = null)
@@ -1188,6 +1205,11 @@ class TimeLogs extends Component
             'duration_minutes' => $this->quickTimeDuration,
             'workspace_id' => app('current.workspace')->id,
         ]);
+
+        // Attach tags if any are selected
+        if (! empty($this->quickTimeSelectedTags)) {
+            $timeLog->tags()->attach($this->quickTimeSelectedTags);
+        }
 
         // Dispatch event to update the daily progress bar
         $this->dispatch('timeLogSaved');

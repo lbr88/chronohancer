@@ -9,6 +9,7 @@ use App\Models\Timer;
 use App\Services\JiraService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
@@ -96,11 +97,12 @@ class Timers extends Component
         'timerPaused' => 'handleTimerPaused',
         'refresh-timers' => '$refresh',
         'project-selected' => 'handleProjectSelected',
+        'tags-updated' => 'handleTagsUpdated',
     ];
 
     public function boot(JiraService $jiraService)
     {
-        $this->jiraService = $jiraService->setUser(auth()->user());
+        $this->jiraService = $jiraService->setUser(Auth::user());
     }
 
     public function mount()
@@ -113,13 +115,13 @@ class Timers extends Component
         ];
 
         // Load user's time format preference
-        $this->timeFormat = auth()->user()->time_format ?? 'human';
+        $this->timeFormat = Auth::user()->time_format ?? 'human';
     }
 
     #[Computed]
     public function jiraIssues()
     {
-        if (! auth()->user()->hasJiraEnabled() || empty($this->jiraSearch)) {
+        if (! Auth::user()->hasJiraEnabled() || empty($this->jiraSearch)) {
             return collect();
         }
 
@@ -212,7 +214,7 @@ class Timers extends Component
     {
         if (strlen($this->search) >= 2) {
             $this->existingTimers = Timer::with(['project', 'tags'])
-                ->where('user_id', auth()->id())
+                ->where('user_id', Auth::id())
                 ->where('workspace_id', app('current.workspace')->id)
                 ->where('name', 'like', '%'.$this->search.'%')
                 ->orderBy('updated_at', 'desc')
@@ -249,7 +251,7 @@ class Timers extends Component
     {
         if (strlen($this->project_name) >= 2) {
             $this->suggestions['projects'] = Project::with('tags')
-                ->where('user_id', auth()->id())
+                ->where('user_id', Auth::id())
                 ->where('workspace_id', app('current.workspace')->id)
                 ->where('name', 'like', '%'.$this->project_name.'%')
                 ->limit(5)
@@ -266,7 +268,7 @@ class Timers extends Component
         $lastTag = trim($tags->last());
 
         if (strlen($lastTag) >= 2) {
-            $this->suggestions['tags'] = Tag::where('user_id', auth()->id())
+            $this->suggestions['tags'] = Tag::where('user_id', Auth::id())
                 ->where('workspace_id', app('current.workspace')->id)
                 ->where('name', 'like', '%'.$lastTag.'%')
                 ->orderBy('updated_at', 'desc')
@@ -341,20 +343,20 @@ class Timers extends Component
             $project = Project::find($this->project_id);
         } elseif ($this->project_name) {
             $project = Project::firstOrCreate(
-                ['name' => $this->project_name, 'user_id' => auth()->id(), 'workspace_id' => app('current.workspace')->id],
+                ['name' => $this->project_name, 'user_id' => Auth::id(), 'workspace_id' => app('current.workspace')->id],
                 ['description' => 'Project created from timer']
             );
         }
 
         if (! $project) {
             // Always use the default project if no project is found
-            $project = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+            $project = Project::findOrCreateDefault(Auth::id(), app('current.workspace')->id);
         }
         $project_id = $project->id;
 
         // Create new timer
         $timer = Timer::create([
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'project_id' => $project_id,
             'name' => $this->name,
             'description' => $this->description,
@@ -370,7 +372,7 @@ class Timers extends Component
                 ->filter();
 
             $tags = $tagNames->map(function ($name) {
-                return Tag::findOrCreateForUser($name, auth()->id(), app('current.workspace')->id);
+                return Tag::findOrCreateForUser($name, Auth::id(), app('current.workspace')->id);
             });
 
             // Use unique() to prevent duplicate tag IDs
@@ -388,7 +390,7 @@ class Timers extends Component
         // Create time log
         $timeLog = TimeLog::create([
             'timer_id' => $timer->id,
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'project_id' => $project_id,
             'start_time' => $startTime,
             'description' => $this->description ?: null,
@@ -579,12 +581,12 @@ class Timers extends Component
         $project = null;
         if ($this->editingTimerProjectName) {
             $project = Project::firstOrCreate(
-                ['name' => $this->editingTimerProjectName, 'user_id' => auth()->id(), 'workspace_id' => app('current.workspace')->id],
+                ['name' => $this->editingTimerProjectName, 'user_id' => Auth::id(), 'workspace_id' => app('current.workspace')->id],
                 ['description' => 'Project created from timer']
             );
         } else {
             // Always use the default project if no project name is provided
-            $project = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+            $project = Project::findOrCreateDefault(Auth::id(), app('current.workspace')->id);
         }
         $project_id = $project->id;
 
@@ -603,7 +605,7 @@ class Timers extends Component
                 ->filter();
 
             $tags = $tagNames->map(function ($name) {
-                return Tag::findOrCreateForUser($name, auth()->id(), app('current.workspace')->id);
+                return Tag::findOrCreateForUser($name, Auth::id(), app('current.workspace')->id);
             });
 
             $timer->tags()->sync($tags->pluck('id'));
@@ -762,6 +764,16 @@ class Timers extends Component
         if ($data && isset($data['timerId'])) {
             $this->log("Timer paused: Timer ID {$data['timerId']}");
         }
+    }
+
+    /**
+     * Handle tag updates from the tag selector component
+     */
+    public function handleTagsUpdated($selectedTags)
+    {
+        // Convert the selected tags to a comma-separated string for the tag_input field
+        $tags = Tag::whereIn('id', $selectedTags)->get();
+        $this->tag_input = $tags->pluck('name')->implode(', ');
     }
 
     /**
@@ -962,7 +974,7 @@ class Timers extends Component
         $this->timeFormat = $format;
 
         // Save to user preferences
-        $user = auth()->user();
+        $user = Auth::user();
         $user->time_format = $format;
         $user->save();
 
@@ -1093,7 +1105,7 @@ class Timers extends Component
         // Always use the timer's project_id if it exists, otherwise use default project
         $project_id = $timer->project_id;
         if (! $project_id) {
-            $defaultProject = Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+            $defaultProject = Project::findOrCreateDefault(Auth::id(), app('current.workspace')->id);
             $project_id = $defaultProject->id;
 
             // Update the timer to use the default project
@@ -1104,7 +1116,7 @@ class Timers extends Component
         // Create a new time log with current time
         $timeLog = TimeLog::create([
             'timer_id' => $timer->id,
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'project_id' => $project_id,
             'start_time' => now(),
             'description' => $timer->description ?: null,
@@ -1192,7 +1204,7 @@ class Timers extends Component
         $today = now()->startOfDay();
         $tomorrow = now()->addDay()->startOfDay();
 
-        return TimeLog::where('user_id', auth()->id())
+        return TimeLog::where('user_id', Auth::id())
             ->where('workspace_id', app('current.workspace')->id)
             ->whereNotNull('end_time') // Only completed logs
             ->where('start_time', '>=', $today)
@@ -1266,8 +1278,8 @@ class Timers extends Component
     public function render()
     {
         // Cache recent tags for 5 minutes to improve performance
-        $recentTags = Cache::remember('user.'.auth()->id().'.workspace.'.app('current.workspace')->id.'.recent_tags', 300, function () {
-            return Tag::where('user_id', auth()->id())
+        $recentTags = Cache::remember('user.'.Auth::id().'.workspace.'.app('current.workspace')->id.'.recent_tags', 300, function () {
+            return Tag::where('user_id', Auth::id())
                 ->where('workspace_id', app('current.workspace')->id)
                 ->orderBy('updated_at', 'desc')
                 ->limit(10)
@@ -1276,7 +1288,7 @@ class Timers extends Component
 
         // Get all timers for the user
         $allTimers = Timer::with(['project', 'tags', 'latestTimeLog'])
-            ->where('user_id', auth()->id())
+            ->where('user_id', Auth::id())
             ->where('workspace_id', app('current.workspace')->id)
             ->orderBy('updated_at', 'desc')
             ->get();

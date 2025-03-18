@@ -69,21 +69,7 @@
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tags</label>
-        <div class="mt-1 flex flex-wrap gap-2">
-          @foreach($tags as $tag)
-          <label
-            class="inline-flex items-center px-3 py-1 rounded-full cursor-pointer 
-                                {{ in_array($tag->id, $selectedTags) ? 'bg-opacity-100' : 'bg-opacity-30' }}"
-            style="background-color: {{ $tag->color }}; color: {{ $this->getContrastColor($tag->color) }}">
-            <input
-              type="checkbox"
-              wire:model="selectedTags"
-              value="{{ $tag->id }}"
-              class="form-checkbox h-4 w-4 mr-1 opacity-0 absolute">
-            <span>{{ $tag->name }}</span>
-          </label>
-          @endforeach
-        </div>
+        @livewire('components.tag-selector', ['selectedTags' => $selectedTags], key('manual-time-log-tag-selector'))
       </div>
       <div class="flex justify-between">
         <button type="button" wire:click="{{ $editingTimeLog ? 'cancelEdit' : 'closeManualTimeLogModal' }}" class="px-4 py-2 border dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 dark:text-gray-300">

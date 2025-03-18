@@ -137,30 +137,8 @@
 
             <!-- Tags -->
             <div class="ch-form-group">
-                <label for="tag_input" class="ch-label">Tags</label>
-                <input
-                    type="text"
-                    id="tag_input"
-                    wire:model="tag_input"
-                    placeholder="Add comma-separated tags"
-                    class="ch-input">
-
-                @if($recentTags->isNotEmpty())
-                <div class="mt-3">
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Recent tags:</p>
-                    <div class="ch-tag-list">
-                        @foreach($recentTags as $tag)
-                        <button
-                            type="button"
-                            wire:click="$set('tag_input', '{{ $tag_input ? $tag_input . ', ' . $tag->name : $tag->name }}')"
-                            class="ch-tag hover:ring-2 hover:ring-offset-1 hover:ring-indigo-300"
-                            style="background-color: {{ $tag->color }}; color: {{ $this->getContrastColor($tag->color) }}">
-                            {{ $tag->name }}
-                        </button>
-                        @endforeach
-                    </div>
-                </div>
-                @endif
+                <label class="ch-label">Tags</label>
+                @livewire('components.tag-selector', [], key('new-timer-tag-selector'))
             </div>
 
             <!-- Start Button -->
