@@ -25,6 +25,7 @@ class MicrosoftCalendarWeeklyEvents extends Component
 
     protected $listeners = [
         'weekChanged' => 'updateWeekRange',
+        'timeLogSaved' => 'refresh',
     ];
 
     // Track the last loaded week range to prevent duplicate loads - must be public to persist between requests
@@ -47,6 +48,12 @@ class MicrosoftCalendarWeeklyEvents extends Component
 
         // Call refresh directly - this will reset state and load events
         $this->refresh();
+
+        // Add a small delay to ensure the component is fully rendered before loading events again
+        // This helps with the issue where events don't load when switching views
+        $this->dispatch(function () {
+            $this->loadEvents(true);
+        });
     }
 
     public function updateWeekRange($startOfWeek, $endOfWeek)
@@ -259,12 +266,12 @@ class MicrosoftCalendarWeeklyEvents extends Component
         foreach ($events as $event) {
             try {
                 $startDateTime = isset($event['start']['dateTime'])
-                  ? Carbon::parse($event['start']['dateTime'])
-                  : null;
+                    ? Carbon::parse($event['start']['dateTime'])
+                    : null;
 
                 $endDateTime = isset($event['end']['dateTime'])
-                  ? Carbon::parse($event['end']['dateTime'])
-                  : null;
+                    ? Carbon::parse($event['end']['dateTime'])
+                    : null;
 
                 if (! $startDateTime || ! $endDateTime) {
                     Log::warning('MicrosoftCalendarWeeklyEvents - Event missing start or end time', [
@@ -333,12 +340,13 @@ class MicrosoftCalendarWeeklyEvents extends Component
         ]);
     }
 
-    public function createTimeLogFromEvent($date, $subject, $durationMinutes)
+    public function createTimeLogFromEvent($date, $subject, $durationMinutes, $eventId = null)
     {
         $this->dispatch('createTimeLogFromEvent', [
             'date' => $date,
             'description' => $subject,
             'duration_minutes' => $durationMinutes,
+            'event_id' => $eventId, // Pass the Microsoft event ID
         ]);
     }
 

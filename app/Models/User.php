@@ -209,13 +209,7 @@ class User extends Authenticatable
         return Workspace::findOrCreateDefault($this->id);
     }
 
-    /**
-     * Get the favorite Jira issues for the user.
-     */
-    public function favoriteJiraIssues(): HasMany
-    {
-        return $this->hasMany(FavoriteJiraIssue::class);
-    }
+    // Removed favoriteJiraIssues relation as we no longer use the Jira favorites functionality
 
     /**
      * Find or create a user based on OAuth provider data

@@ -139,6 +139,10 @@ class TimeLogs extends Component
         $this->start_time = now()->format('Y-m-d H:i:s');
         $this->initializeWeek();
 
+        // Set filter dates to current week by default
+        $this->filterDateFrom = $this->startOfWeek;
+        $this->filterDateTo = $this->endOfWeek;
+
         // If editId is provided, open the edit modal for that time log
         if ($this->editId) {
             $this->startEdit($this->editId);
@@ -155,6 +159,7 @@ class TimeLogs extends Component
     {
         $this->currentWeek = $this->currentWeek->subWeek();
         $this->updateWeekRange();
+        $this->updateFilterDates();
         $this->dispatchWeekChangedIfNeeded();
     }
 
@@ -162,14 +167,33 @@ class TimeLogs extends Component
     {
         $this->currentWeek = $this->currentWeek->addWeek();
         $this->updateWeekRange();
+        $this->updateFilterDates();
         $this->dispatchWeekChangedIfNeeded();
     }
 
     public function currentWeek()
     {
+        // Reset to current week
         $this->currentWeek = now();
         $this->updateWeekRange();
+        $this->updateFilterDates();
+
+        // Force a dispatch of the weekChanged event regardless of whether the week has changed
+        // This ensures the calendar components are updated
+        $this->lastDispatchedWeekRange = null; // Reset to force dispatch
         $this->dispatchWeekChangedIfNeeded();
+
+        // Force a re-render to update the UI
+        $this->dispatch('$refresh');
+    }
+
+    /**
+     * Update filter dates to match the current week
+     */
+    private function updateFilterDates()
+    {
+        $this->filterDateFrom = $this->startOfWeek;
+        $this->filterDateTo = $this->endOfWeek;
     }
 
     public function updateWeekForCalendar()
@@ -191,11 +215,20 @@ class TimeLogs extends Component
         $this->view = $view;
         if ($view === 'weekly') {
             $this->dispatchWeekChangedIfNeeded();
+
+            // Force reload of Microsoft calendar events when switching to weekly view
+            $this->dispatch('load-events');
+        } elseif ($view === 'list') {
+            // When switching to list view, ensure filter dates match the current week
+            $this->updateFilterDates();
+
+            // Force reload of Microsoft calendar events when switching to list view
+            $this->dispatch('load-events');
         }
     }
 
     /**
-     * Dispatch the weekChanged event only if the week range has changed
+     * Dispatch the weekChanged event if the week range has changed or if forced
      */
     protected function dispatchWeekChangedIfNeeded()
     {
@@ -207,7 +240,7 @@ class TimeLogs extends Component
             'is_same' => $this->lastDispatchedWeekRange === $currentWeekRange,
         ]);
 
-        // Only dispatch if the week range has changed
+        // Dispatch if the week range has changed or if lastDispatchedWeekRange is null (forced dispatch)
         if ($this->lastDispatchedWeekRange !== $currentWeekRange) {
             // Set the property before dispatching to prevent duplicate dispatches
             $this->lastDispatchedWeekRange = $currentWeekRange;
@@ -218,6 +251,7 @@ class TimeLogs extends Component
                 'weekRange' => $currentWeekRange,
             ]);
 
+            // Dispatch the event to both Microsoft calendar components
             $this->dispatch('weekChanged', $this->startOfWeek, $this->endOfWeek);
         } else {
             \Illuminate\Support\Facades\Log::info('TimeLogs skipping duplicate weekChanged dispatch', [
@@ -275,15 +309,49 @@ class TimeLogs extends Component
      */
     public function handleCreateTimeLogFromEvent($data)
     {
+        $description = $data['description'];
+        $projectId = null;
+        $timerId = null;
+
+        // Try to find a previous time log with the same description
+        $previousTimeLog = TimeLog::where('user_id', Auth::id())
+            ->where('workspace_id', app('current.workspace')->id)
+            ->where(function ($query) use ($description) {
+                $query->where('description', $description)
+                    ->orWhereHas('timerDescription', function ($q) use ($description) {
+                        $q->where('description', $description);
+                    });
+            })
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        // If found, use the same timer and project
+        if ($previousTimeLog) {
+            $timerId = $previousTimeLog->timer_id;
+
+            if ($timerId) {
+                $timer = Timer::find($timerId);
+                if ($timer) {
+                    $projectId = $timer->project_id;
+                }
+            }
+
+            // Also get the timer description ID if available
+            $this->quickTimeTimerDescriptionId = $previousTimeLog->timer_description_id;
+        }
+
         $this->openQuickTimeModal(
             $data['date'],
-            null, // Use default project
-            null, // No timer
-            $data['description']
+            $projectId, // Use project from previous time log or default
+            $timerId,   // Use timer from previous time log or null
+            $description
         );
 
         // Set the duration from the event
         $this->quickTimeDuration = $data['duration_minutes'];
+
+        // Store the Microsoft event ID in the session for later use
+        session(['microsoft_event_id' => $data['event_id'] ?? null]);
     }
 
     /**
@@ -950,8 +1018,8 @@ class TimeLogs extends Component
     {
         $this->filterProject = null;
         $this->filterTag = null;
-        $this->filterDateFrom = null;
-        $this->filterDateTo = null;
+        $this->filterDateFrom = $this->startOfWeek;
+        $this->filterDateTo = $this->endOfWeek;
         $this->searchQuery = '';
     }
 
@@ -1169,6 +1237,24 @@ class TimeLogs extends Component
         // Load timers
         $this->loadProjectTimers($this->quickTimeProjectId);
 
+        // Also load tags from previous time logs with the same description
+        if ($description) {
+            $previousTimeLog = TimeLog::where('user_id', Auth::id())
+                ->where('workspace_id', app('current.workspace')->id)
+                ->where(function ($query) use ($description) {
+                    $query->where('description', $description)
+                        ->orWhereHas('timerDescription', function ($q) use ($description) {
+                            $q->where('description', $description);
+                        });
+                })
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($previousTimeLog && $previousTimeLog->tags->count() > 0) {
+                $this->quickTimeSelectedTags = $previousTimeLog->tags->pluck('id')->toArray();
+            }
+        }
+
         $this->showQuickTimeModal = true;
     }
 
@@ -1374,6 +1460,9 @@ class TimeLogs extends Component
             }
         }
 
+        // Get the Microsoft event ID from the session if it exists
+        $microsoftEventId = session('microsoft_event_id');
+
         $timeLog = TimeLog::create([
             'timer_id' => $timer_id,
             'timer_description_id' => $this->quickTimeTimerDescriptionId,
@@ -1383,7 +1472,11 @@ class TimeLogs extends Component
             'end_time' => $end_time,
             'duration_minutes' => $this->quickTimeDuration,
             'workspace_id' => app('current.workspace')->id,
+            'microsoft_event_id' => $microsoftEventId,
         ]);
+
+        // Clear the Microsoft event ID from the session
+        session()->forget('microsoft_event_id');
 
         // Attach tags if any are selected
         if (! empty($this->quickTimeSelectedTags)) {
@@ -1392,6 +1485,12 @@ class TimeLogs extends Component
 
         // Dispatch event to update the daily progress bar
         $this->dispatch('timeLogSaved');
+
+        // If this was a Microsoft calendar event, reload the calendar events
+        if ($microsoftEventId) {
+            // Reload Microsoft calendar events to hide the logged event
+            $this->dispatch('load-events');
+        }
 
         $this->closeQuickTimeModal();
         session()->flash('message', 'Time log created successfully.');

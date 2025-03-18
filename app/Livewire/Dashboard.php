@@ -59,27 +59,24 @@ class Dashboard extends Component
         $totalDuration = 0;
 
         foreach ($timeLogs as $log) {
-            $projectId = $log->project_id;
+            // Get project through timer relationship
+            $project = $log->timer?->project;
+            $projectId = $project?->id;
+
+            // Skip logs without a project (shouldn't happen with new data structure)
+            if (! $projectId) {
+                continue;
+            }
+
             if (! isset($projectTotals[$projectId])) {
-                if ($projectId === null) {
-                    // Use a fixed color for "No project"
-                    $projectTotals[$projectId] = [
-                        'id' => $projectId,
-                        'name' => 'No Project',
-                        'duration' => 0,
-                        'percentage' => 0,
-                        'color' => '#9ca3af', // Gray color for "No project"
-                    ];
-                } else {
-                    $projectTotals[$projectId] = [
-                        'id' => $projectId,
-                        'name' => $log->project->name ?? 'No Project',
-                        'description' => $log->project->description ?? '',
-                        'duration' => 0,
-                        'percentage' => 0,
-                        'color' => $log->project->color ?? $this->getRandomColor($projectId),
-                    ];
-                }
+                $projectTotals[$projectId] = [
+                    'id' => $projectId,
+                    'name' => $project->name,
+                    'description' => $project->description ?? '',
+                    'duration' => 0,
+                    'percentage' => 0,
+                    'color' => $project->color ?? $this->getRandomColor($projectId),
+                ];
             }
 
             $projectTotals[$projectId]['duration'] += $log->duration_minutes;
@@ -237,7 +234,7 @@ class Dashboard extends Component
             'projects' => Project::where('user_id', auth()->id())->with('timers')->get(),
             'recentTimeLogs' => TimeLog::where('user_id', auth()->id())
                 ->whereNotNull('end_time') // Only show completed time logs
-                ->with(['project', 'tags'])
+                ->with(['timer.project', 'tags'])
                 ->latest()
                 ->take(5)
                 ->get(),

@@ -28,6 +28,7 @@ class TimeLog extends Model
         'synced_to_tempo_at',
         'jira_issue_id',
         'jira_issue_key',
+        'microsoft_event_id',
     ];
 
     protected $casts = [
@@ -38,6 +39,7 @@ class TimeLog extends Model
         'synced_to_tempo_at' => 'datetime',
         'jira_issue_id' => 'string',
         'jira_issue_key' => 'string',
+        'microsoft_event_id' => 'string',
     ];
 
     /**
@@ -102,7 +104,21 @@ class TimeLog extends Model
     }
 
     /**
-     * Get the project associated with this time log through the timer.
+     * Note: The project relationship is accessed through the timer relationship.
+     * When eager loading, use 'timer.project' instead of 'project'.
+     *
+     * @deprecated Use timer.project for eager loading instead
+     */
+    public function project()
+    {
+        // This is a placeholder relationship to prevent errors when using ->with('project')
+        // It doesn't actually return a proper relationship
+        return $this->timer();
+    }
+
+    /**
+     * Get the project attribute through the timer relationship.
+     * Kept for backward compatibility.
      */
     public function getProjectAttribute()
     {
@@ -134,6 +150,14 @@ class TimeLog extends Model
     public function hasJiraIssue(): bool
     {
         return ! is_null($this->jira_issue_key);
+    }
+
+    /**
+     * Check if the time log was created from a Microsoft calendar event.
+     */
+    public function isFromMicrosoftEvent(): bool
+    {
+        return ! is_null($this->microsoft_event_id);
     }
 
     /**

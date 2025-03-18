@@ -33,10 +33,10 @@ use App\Models\TimeLog;
         <div>
             <div class="inline-flex rounded-md shadow-sm" role="group">
                 <button wire:click="switchView('list')" type="button" class="px-4 py-2 text-sm font-medium {{ $view === 'list' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-300' }} border border-gray-200 dark:border-gray-700 rounded-l-lg hover:bg-gray-100 dark:hover:bg-zinc-700">
-                    List View
+                    List
                 </button>
                 <button wire:click="switchView('weekly')" type="button" class="px-4 py-2 text-sm font-medium {{ $view === 'weekly' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-300' }} border border-gray-200 dark:border-gray-700 rounded-r-lg hover:bg-gray-100 dark:hover:bg-zinc-700">
-                    Weekly Summary
+                    Calendar
                 </button>
             </div>
         </div>
@@ -128,7 +128,7 @@ use App\Models\TimeLog;
     <!-- Weekly Summary View -->
     <!-- Microsoft Calendar Events (if enabled) -->
     @if(isset($showMicrosoftCalendar) && $showMicrosoftCalendar)
-    <livewire:microsoft-calendar-weekly-events :startOfWeek="$startOfWeek" :endOfWeek="$endOfWeek" :key="$startOfWeek.$endOfWeek" />
+    <livewire:microsoft-calendar-weekly-events :startOfWeek="$startOfWeek" :endOfWeek="$endOfWeek" :key="'weekly_'.$startOfWeek.$endOfWeek" wire:init="$refresh" />
     @endif
 
     <div class="bg-white dark:bg-zinc-900 shadow-md rounded-lg p-6 mb-6">
@@ -578,17 +578,49 @@ use App\Models\TimeLog;
     <!-- List View -->
     <div class="grid grid-cols-1 gap-6">
         @if($view === 'list')
+        <!-- Microsoft Calendar Events (if enabled) -->
+        @if(isset($showMicrosoftCalendar) && $showMicrosoftCalendar)
+        <div class="bg-white dark:bg-zinc-900 shadow-md rounded-lg p-6 mb-6">
+            <livewire:microsoft-calendar-events :startOfWeek="$startOfWeek" :endOfWeek="$endOfWeek" :key="'list_'.$startOfWeek.$endOfWeek" wire:init="$refresh" />
+        </div>
+        @endif
+
         <div>
             <div class="bg-white dark:bg-zinc-900 shadow-md rounded-lg p-6">
                 <div class="mb-4">
                     <div class="flex justify-between items-center mb-4">
                         <div>
-                            <h2 class="text-xl font-semibold dark:text-white">All Time Logs</h2>
-                            @if($filterProject || $filterTag || $filterDateFrom || $filterDateTo || $searchQuery)
-                            <div class="text-sm text-indigo-600 dark:text-indigo-400 mt-1">
-                                <span class="font-medium">Filtered:</span> {{ count($timeLogs) }} entries | Total: {{ $this->formatDuration($totalFilteredDuration) }}
+                            <h2 class="text-xl font-semibold dark:text-white">
+                                Time Logs for {{ $currentWeek->isCurrentWeek() ? 'This Week' : 'Selected Week' }}
+                            </h2>
+                            <div class="flex items-center mt-2">
+                                <button wire:click="previousWeek" class="px-3 py-1 border dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 dark:text-gray-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                                <h2 class="text-sm font-medium dark:text-white mx-2">
+                                    {{ Carbon\Carbon::parse($startOfWeek)->format('M d') }} - {{ Carbon\Carbon::parse($endOfWeek)->format('M d, Y') }}
+                                </h2>
+                                <button wire:click="currentWeek" class="px-3 py-1 border dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 dark:text-gray-300 {{ $currentWeek->isCurrentWeek() ? 'bg-gray-200 dark:bg-zinc-700' : '' }} mx-1">
+                                    Today
+                                </button>
+                                <button wire:click="nextWeek" class="px-3 py-1 border dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 dark:text-gray-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
                             </div>
-                            @endif
+                            <div class="text-sm text-indigo-600 dark:text-indigo-400 mt-1">
+                                <span class="font-medium">
+                                    @if($filterProject || $filterTag || ($filterDateFrom && $filterDateFrom != $startOfWeek) || ($filterDateTo && $filterDateTo != $endOfWeek) || $searchQuery)
+                                    Filtered:
+                                    @else
+                                    {{ $currentWeek->isCurrentWeek() ? 'This week:' : 'Selected week:' }}
+                                    @endif
+                                </span>
+                                {{ count($timeLogs) }} entries | Total: {{ $this->formatDuration($totalFilteredDuration) }}
+                            </div>
                         </div>
                         <div class="flex items-center space-x-3">
                             @php
@@ -789,6 +821,16 @@ use App\Models\TimeLog;
                             <div class="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
                                 {{ $timeLog->description ?: 'No description' }}
                             </div>
+                            @if($timeLog->microsoft_event_id)
+                            <div class="mt-1">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    Calendar Event
+                                </span>
+                            </div>
+                            @endif
                             @if($timeLog->tags->count() > 0)
                             <div class="flex flex-wrap gap-1 mt-1">
                                 @foreach($timeLog->tags as $tag)
@@ -842,9 +884,9 @@ use App\Models\TimeLog;
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <p>No time logs found matching your criteria.</p>
-                        @if($filterProject || $filterTag || $filterDateFrom || $filterDateTo || $searchQuery)
+                        @if($filterProject || $filterTag || ($filterDateFrom && $filterDateFrom != $startOfWeek) || ($filterDateTo && $filterDateTo != $endOfWeek) || $searchQuery)
                         <button wire:click="resetFilters" class="mt-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 text-sm font-medium">
-                            Clear filters
+                            {{ $currentWeek->isCurrentWeek() ? 'Reset to current week' : 'Reset to selected week' }}
                         </button>
                         @else
                         <p class="mt-2 text-sm">Start tracking time to see logs here!</p>

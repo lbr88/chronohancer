@@ -40,10 +40,10 @@ class JiraService
     public function isConfigured(): bool
     {
         return $this->user &&
-               $this->user->jira_enabled &&
-               $this->user->jira_access_token &&
-               $this->user->jira_cloud_id &&
-               $this->user->jira_site_url;
+            $this->user->jira_enabled &&
+            $this->user->jira_access_token &&
+            $this->user->jira_cloud_id &&
+            $this->user->jira_site_url;
     }
 
     /**
@@ -165,8 +165,10 @@ class JiraService
         }
 
         // Check if token needs refresh
-        if ($this->user->jira_token_expires_at &&
-            Carbon::parse($this->user->jira_token_expires_at)->subMinutes(5)->isPast()) {
+        if (
+            $this->user->jira_token_expires_at &&
+            Carbon::parse($this->user->jira_token_expires_at)->subMinutes(5)->isPast()
+        ) {
             if (! $this->refreshToken()) {
                 return null;
             }
@@ -297,4 +299,6 @@ class JiraService
     {
         return $this->getIssue($issueIdOrKey) !== null;
     }
+
+    // Removed getFavoriteIssues method as Jira's API doesn't support getting starred items
 }

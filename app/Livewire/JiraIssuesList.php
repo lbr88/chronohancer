@@ -2,10 +2,11 @@
 
 namespace App\Livewire;
 
-use App\Models\FavoriteJiraIssue;
 use App\Models\Project;
 use App\Models\Tag;
+use App\Models\TimeLog;
 use App\Models\Timer as TimerModel;
+use App\Models\TimerDescription;
 use App\Services\JiraService;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
@@ -29,13 +30,33 @@ class JiraIssuesList extends Component
 
     public int $perPage = 10;
 
-    public bool $showFavoritesOnly = false;
-
     public bool $showMyIssues = true;
 
     public bool $showDoneIssues = false;
 
+    // Properties for timer creation modal
+    public bool $showTimerModal = false;
+
+    public string $issueKey = '';
+
+    public string $issueSummary = '';
+
+    public array $issueLabels = [];
+
+    public string $timerAction = 'create'; // 'create' or 'start'
+
+    public ?int $projectId = null;
+
+    public ?int $timerDescriptionId = null;
+
+    public ?string $description = '';
+
     protected $jiraService;
+
+    protected $listeners = [
+        'project-selected' => 'handleProjectSelected',
+        'description-selected' => 'handleDescriptionSelected',
+    ];
 
     public function boot(JiraService $jiraService)
     {
@@ -118,18 +139,7 @@ class JiraIssuesList extends Component
                 $jql[] = '(assignee = currentUser() OR reporter = currentUser())';
             }
 
-            // Add favorites filter
-            if ($this->showFavoritesOnly) {
-                $favoriteIds = auth()->user()->favoriteJiraIssues()
-                    ->where('workspace_id', app('current.workspace')->id)
-                    ->pluck('jira_issue_id');
-
-                if ($favoriteIds->isEmpty()) {
-                    return collect();
-                }
-
-                $jql[] = 'id in ('.$favoriteIds->join(',').')';
-            }
+            // Favorites filter removed as Jira's API doesn't support getting starred items
 
             // Combine conditions and add ordering
             $finalQuery = implode(' AND ', $jql).' ORDER BY updated DESC';
@@ -158,13 +168,7 @@ class JiraIssuesList extends Component
         }
     }
 
-    #[Computed]
-    public function favoriteIssueIds(): Collection
-    {
-        return auth()->user()->favoriteJiraIssues()
-            ->where('workspace_id', app('current.workspace')->id)
-            ->pluck('jira_issue_id');
-    }
+    // Removed favoriteIssueIds computed property as Jira's API doesn't support getting starred items
 
     #[Computed]
     public function existingTimerIssueKeys(): Collection
@@ -182,35 +186,108 @@ class JiraIssuesList extends Component
         return collect($timers->map->jiraKey->filter()->values());
     }
 
-    public function toggleFavorite(string $issueId, string $key, string $title, ?string $status): void
+    /**
+     * Get existing timer for a Jira issue key
+     */
+    #[Computed]
+    public function existingTimers(): Collection
     {
-        $user = auth()->user();
-        $workspace = app('current.workspace');
+        return TimerModel::where('user_id', auth()->id())
+            ->where('workspace_id', app('current.workspace')->id)
+            ->get()
+            ->keyBy(function ($timer) {
+                return $timer->jiraKey;
+            });
+    }
+    /**
+     * Note: We're using a read-only approach for favorites.
+     * The toggleFavorite method has been removed as we only have read access to Jira.
+     * Favorites are stored locally in the database and can only be viewed, not modified.
+     */
+    // Removed toggleFavorite method as we're using read-only favorites
 
-        $existing = FavoriteJiraIssue::where('user_id', $user->id)
-            ->where('workspace_id', $workspace->id)
-            ->where('jira_issue_id', $issueId)
-            ->first();
+    /**
+     * Open the timer modal for creating or starting a timer
+     */
+    public function openTimerModal(string $issueKey, string $summary, array $labels = [], string $action = 'create'): void
+    {
+        $this->issueKey = $issueKey;
+        $this->issueSummary = $summary;
+        $this->issueLabels = $labels;
+        $this->timerAction = $action;
 
-        if ($existing) {
-            $existing->delete();
-        } else {
-            FavoriteJiraIssue::create([
-                'user_id' => $user->id,
-                'workspace_id' => $workspace->id,
-                'jira_issue_id' => $issueId,
-                'key' => $key,
-                'title' => $title,
-                'status' => $status,
-            ]);
+        // Reset project and description
+        $this->projectId = null;
+        $this->timerDescriptionId = null;
+        $this->description = '';
+
+        // If we're starting an existing timer, get the default project
+        if ($action === 'start') {
+            $workspace = app('current.workspace');
+            if ($workspace) {
+                $defaultProject = Project::findOrCreateDefault(auth()->id(), $workspace->id);
+                $this->projectId = $defaultProject->id;
+            }
         }
 
-        $this->dispatch('favorite-toggled');
+        $this->showTimerModal = true;
     }
 
-    public function createTimer(string $issueKey, string $summary, array $labels = []): void
+    /**
+     * Close the timer modal
+     */
+    public function closeTimerModal(): void
+    {
+        $this->showTimerModal = false;
+        $this->issueKey = '';
+        $this->issueSummary = '';
+        $this->issueLabels = [];
+        $this->projectId = null;
+        $this->timerDescriptionId = null;
+        $this->description = '';
+    }
+
+    /**
+     * Handle project selection from the project selector component
+     */
+    public function handleProjectSelected($data): void
+    {
+        if (isset($data['id'])) {
+            $this->projectId = $data['id'];
+        }
+    }
+
+    /**
+     * Handle description selection from the timer description selector component
+     */
+    public function handleDescriptionSelected($data): void
+    {
+        if (isset($data['id'])) {
+            $this->timerDescriptionId = $data['id'];
+            $this->description = $data['description'];
+        } elseif (isset($data['description'])) {
+            $this->description = $data['description'];
+        }
+    }
+
+    /**
+     * Create a timer for a Jira issue
+     */
+    public function createTimer(?string $issueKey = null, ?string $summary = null, array $labels = []): void
     {
         try {
+            // If called directly from the view, open the modal instead
+            if ($this->showTimerModal === false && $issueKey !== null) {
+                $this->openTimerModal($issueKey, $summary, $labels, 'create');
+
+                return;
+            }
+
+            // Use modal values if not provided directly
+            $issueKey = $issueKey ?? $this->issueKey;
+            $summary = $summary ?? $this->issueSummary;
+            $labels = ! empty($labels) ? $labels : $this->issueLabels;
+
             $workspace = app('current.workspace');
             if (! $workspace) {
                 logger()->error('Failed to create timer: No workspace found');
@@ -219,22 +296,47 @@ class JiraIssuesList extends Component
                 return;
             }
 
-            $defaultProject = Project::findOrCreateDefault(auth()->id(), $workspace->id);
+            // Use selected project or default
+            $projectId = $this->projectId;
+            if (! $projectId) {
+                $defaultProject = Project::findOrCreateDefault(auth()->id(), $workspace->id);
+                $projectId = $defaultProject->id;
+            }
 
             logger()->info('Creating timer', [
                 'issueKey' => $issueKey,
                 'summary' => $summary,
                 'workspace_id' => $workspace->id,
-                'project_id' => $defaultProject->id,
+                'project_id' => $projectId,
             ]);
 
             $timer = TimerModel::create([
                 'user_id' => auth()->id(),
                 'workspace_id' => $workspace->id,
-                'project_id' => $defaultProject->id,
+                'project_id' => $projectId,
                 'name' => "$issueKey: $summary",
                 'jira_key' => $issueKey,
+                'is_running' => true,
+            ]);
+
+            // Create a timer description if provided
+            if (! empty($this->description)) {
+                $timerDescription = TimerDescription::create([
+                    'description' => $this->description,
+                    'timer_id' => $timer->id,
+                    'user_id' => auth()->id(),
+                    'workspace_id' => $workspace->id,
+                ]);
+            }
+
+            // Create time log
+            $timeLog = TimeLog::create([
+                'timer_id' => $timer->id,
+                'timer_description_id' => $timerDescription->id ?? null,
+                'user_id' => auth()->id(),
                 'start_time' => now(),
+                'description' => $this->description ?: null, // Keep for backward compatibility
+                'workspace_id' => $workspace->id,
             ]);
 
             // Create tags from Jira labels
@@ -246,8 +348,11 @@ class JiraIssuesList extends Component
                 // Attach tags to timer
                 $timer->tags()->attach($tags->pluck('id'));
 
-                // Also attach tags to the default project
-                $defaultProject->tags()->syncWithoutDetaching($tags->pluck('id'));
+                // Also attach tags to the project
+                $project = Project::find($projectId);
+                if ($project) {
+                    $project->tags()->syncWithoutDetaching($tags->pluck('id'));
+                }
 
                 logger()->info('Created timer with tags', [
                     'timer_id' => $timer->id,
@@ -255,6 +360,7 @@ class JiraIssuesList extends Component
                 ]);
             }
 
+            $this->closeTimerModal();
             $this->dispatch('timer-created', timerId: $timer->id);
             $this->dispatch('refresh-timers');
             $this->dispatch('notify', type: 'success', message: 'Timer created successfully');
@@ -266,6 +372,107 @@ class JiraIssuesList extends Component
                 'summary' => $summary,
             ]);
             $this->dispatch('notify', type: 'error', message: 'Failed to create timer: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Start an existing timer for a Jira issue
+     */
+    public function startTimer(string $issueKey): void
+    {
+        try {
+            // If called directly from the view, open the modal instead
+            if ($this->showTimerModal === false) {
+                $existingTimers = $this->existingTimers;
+                $timer = $existingTimers[$issueKey] ?? null;
+
+                if (! $timer) {
+                    $this->dispatch('notify', type: 'error', message: 'Timer not found for issue: '.$issueKey);
+
+                    return;
+                }
+
+                $this->openTimerModal($issueKey, str_replace("$issueKey: ", '', $timer->name), [], 'start');
+
+                return;
+            }
+
+            $existingTimers = $this->existingTimers;
+            $timer = $existingTimers[$this->issueKey] ?? null;
+
+            if (! $timer) {
+                $this->dispatch('notify', type: 'error', message: 'Timer not found for issue: '.$this->issueKey);
+
+                return;
+            }
+
+            $workspace = app('current.workspace');
+            if (! $workspace) {
+                $this->dispatch('notify', type: 'error', message: 'Failed to start timer: No workspace found');
+
+                return;
+            }
+
+            // Mark timer as running
+            $timer->is_running = true;
+            $timer->is_paused = false;
+            $timer->save();
+
+            // Use selected project if provided
+            if ($this->projectId) {
+                $timer->project_id = $this->projectId;
+                $timer->save();
+            }
+
+            // Create a timer description if provided
+            $timerDescriptionId = null;
+            if (! empty($this->description)) {
+                if ($this->timerDescriptionId) {
+                    $timerDescriptionId = $this->timerDescriptionId;
+                } else {
+                    $timerDescription = TimerDescription::create([
+                        'description' => $this->description,
+                        'timer_id' => $timer->id,
+                        'user_id' => auth()->id(),
+                        'workspace_id' => $workspace->id,
+                    ]);
+                    $timerDescriptionId = $timerDescription->id;
+                }
+            }
+
+            // Create a new time log
+            $timeLog = TimeLog::create([
+                'timer_id' => $timer->id,
+                'timer_description_id' => $timerDescriptionId,
+                'user_id' => auth()->id(),
+                'start_time' => now(),
+                'description' => $this->description ?: null, // Keep for backward compatibility
+                'workspace_id' => $workspace->id,
+            ]);
+
+            $this->closeTimerModal();
+            $this->dispatch('timerStarted', ['timerId' => $timer->id, 'startTime' => $timeLog->start_time->toIso8601String()]);
+            $this->dispatch('refresh-timers');
+            $this->dispatch('notify', type: 'success', message: 'Timer started successfully');
+        } catch (\Exception $e) {
+            logger()->error('Failed to start timer', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'issueKey' => $this->issueKey,
+            ]);
+            $this->dispatch('notify', type: 'error', message: 'Failed to start timer: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Submit the timer form (create or start)
+     */
+    public function submitTimerForm(): void
+    {
+        if ($this->timerAction === 'create') {
+            $this->createTimer();
+        } else {
+            $this->startTimer($this->issueKey);
         }
     }
 
@@ -299,17 +506,12 @@ class JiraIssuesList extends Component
         $this->resetPage();
     }
 
-    public function toggleFavoriteFilter(): void
-    {
-        $this->showFavoritesOnly = ! $this->showFavoritesOnly;
-        $this->resetPage();
-    }
+    // Removed toggleFavoriteFilter method as Jira's API doesn't support getting starred items
 
     public function render()
     {
         return view('livewire.jira-issues-list', [
             'issues' => $this->issues,
-            'favoriteIds' => $this->favoriteIssueIds,
             'existingTimerIssueKeys' => $this->existingTimerIssueKeys,
             'isConfigured' => auth()->user()->hasJiraEnabled(),
         ]);

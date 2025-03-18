@@ -129,7 +129,7 @@
                 </div>
                 <div class="mt-2 flex justify-end">
                   <button
-                    wire:click="createTimeLogFromEvent('{{ $day['date'] }}', '{{ addslashes($event['subject']) }}', {{ $event['duration_minutes'] }})"
+                    wire:click="createTimeLogFromEvent('{{ $day['date'] }}', '{{ addslashes($event['subject']) }}', {{ $event['duration_minutes'] }}, '{{ $event['id'] }}')"
                     class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />

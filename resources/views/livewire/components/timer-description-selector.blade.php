@@ -13,13 +13,8 @@
         </div>
     </div>
 
-    @if($showDropdown)
+    @if($showDropdown && !$descriptions->isEmpty())
     <div class="absolute z-10 mt-1 w-full bg-white dark:bg-zinc-800 shadow-lg rounded-md py-1 max-h-60 overflow-auto">
-        @if($descriptions->isEmpty())
-        <div class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
-            No descriptions found
-        </div>
-        @else
         @foreach($descriptions as $desc)
         <div
             wire:key="description-{{ $desc->id }}"
@@ -36,7 +31,6 @@
             </div>
         </div>
         @endforeach
-        @endif
 
         @if($createNewDescription)
         <div
@@ -47,6 +41,12 @@
             </div>
         </div>
         @endif
+    </div>
+    @elseif($createNewDescription)
+    <div class="mt-1 text-sm text-indigo-600 dark:text-indigo-400">
+        <span wire:click="createDescription" class="cursor-pointer hover:underline">
+            Will create new description with this text
+        </span>
     </div>
     @endif
 
