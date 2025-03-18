@@ -101,6 +101,7 @@ class TimeLogs extends Component
         'weekChanged' => 'updateWeekForCalendar',
         'project-selected' => 'handleProjectSelected',
         'tags-updated' => 'handleTagsUpdated',
+        'time-input-changed' => 'handleTimeInputChanged',
     ];
 
     protected $queryString = [
@@ -298,6 +299,21 @@ class TimeLogs extends Component
             $this->quickTimeSelectedTags = $selectedTags;
         } else {
             $this->selectedTags = $selectedTags;
+        }
+    }
+
+    /**
+     * Handle time input changes from the TimeInput component
+     *
+     * @param  array  $data
+     * @return void
+     */
+    public function handleTimeInputChanged($data)
+    {
+        if ($data['name'] === 'quickTimeDuration') {
+            $this->quickTimeDuration = $data['minutes'];
+        } elseif ($data['name'] === 'duration_minutes') {
+            $this->duration_minutes = $data['value'];
         }
     }
 

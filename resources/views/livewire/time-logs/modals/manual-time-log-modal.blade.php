@@ -55,16 +55,15 @@
         <textarea wire:model="description" id="description" rows="2" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2"></textarea>
       </div>
       <div>
-        <label for="duration_minutes" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Duration</label>
-        <div class="flex items-center space-x-2">
-          <input type="text" wire:model="duration_minutes" id="duration_minutes" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2">
-          @if($duration_minutes)
-          <span class="text-sm text-gray-500 dark:text-gray-400">
-            ({{ $this->formatDuration($this->parseDurationString($duration_minutes)) }})
-          </span>
-          @endif
-        </div>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Enter duration in minutes or format like "3h5m"</p>
+        @livewire('components.time-input', [
+        'value' => $duration_minutes,
+        'name' => 'duration_minutes',
+        'inputId' => 'duration_minutes',
+        'label' => 'Duration',
+        'showPresets' => true,
+        'showIncrementButtons' => true,
+        'helpText' => 'Enter duration in minutes, HH:MM, or format like "3h5m"',
+        ], key('manual-time-log-duration-input'))
         @error('duration_minutes') <span class="text-red-500 dark:text-red-400 text-xs">{{ $message }}</span> @enderror
       </div>
       <div>

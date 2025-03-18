@@ -25,16 +25,51 @@ class Tags extends Component
     public $editingTagColor = null;
 
     // Rules for creating a new tag
-    protected $createRules = [
-        'name' => 'required|min:2',
-        'color' => 'required',
-    ];
+    protected function getCreateRules()
+    {
+        return [
+            'name' => [
+                'required',
+                'min:2',
+                function ($attribute, $value, $fail) {
+                    // Check if a tag with this name already exists for the current user and workspace
+                    $exists = Tag::where('name', $value)
+                        ->where('user_id', auth()->id())
+                        ->where('workspace_id', app('current.workspace')->id)
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('A tag with this name already exists in your workspace.');
+                    }
+                },
+            ],
+            'color' => 'required',
+        ];
+    }
 
     // Rules for editing an existing tag
-    protected $editRules = [
-        'editingTagName' => 'required|min:2',
-        'editingTagColor' => 'required',
-    ];
+    protected function getEditRules()
+    {
+        return [
+            'editingTagName' => [
+                'required',
+                'min:2',
+                function ($attribute, $value, $fail) {
+                    // Check if another tag with this name exists for the current user and workspace
+                    $exists = Tag::where('name', $value)
+                        ->where('user_id', auth()->id())
+                        ->where('workspace_id', app('current.workspace')->id)
+                        ->where('id', '!=', $this->editingTagId) // Exclude the current tag
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('Another tag with this name already exists in your workspace.');
+                    }
+                },
+            ],
+            'editingTagColor' => 'required',
+        ];
+    }
 
     public function mount()
     {
@@ -97,8 +132,8 @@ class Tags extends Component
 
     public function save()
     {
-        // Validate using the createRules
-        $this->validate($this->createRules);
+        // Validate using the getCreateRules method
+        $this->validate($this->getCreateRules());
 
         Tag::create([
             'name' => $this->name,
@@ -155,7 +190,7 @@ class Tags extends Component
      */
     public function saveEditedTag()
     {
-        $this->validate($this->editRules);
+        $this->validate($this->getEditRules());
 
         $tag = Tag::findOrFail($this->editingTagId);
 

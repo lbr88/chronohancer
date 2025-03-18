@@ -98,6 +98,7 @@ class Timers extends Component
         'refresh-timers' => '$refresh',
         'project-selected' => 'handleProjectSelected',
         'tags-updated' => 'handleTagsUpdated',
+        'time-input-changed' => 'handleTimeInputChanged',
     ];
 
     public function boot(JiraService $jiraService)
@@ -774,6 +775,24 @@ class Timers extends Component
         // Convert the selected tags to a comma-separated string for the tag_input field
         $tags = Tag::whereIn('id', $selectedTags)->get();
         $this->tag_input = $tags->pluck('name')->implode(', ');
+    }
+
+    /**
+     * Handle time input changes from the TimeInput component
+     *
+     * @param  array  $data
+     * @return void
+     */
+    public function handleTimeInputChanged($data)
+    {
+        if ($data['name'] === 'editingDurationHuman') {
+            $this->editingDurationHuman = $data['value'];
+
+            // Parse the duration to update hours and minutes
+            $minutes = $this->parseHumanDuration($data['value']);
+            $this->editingDurationHours = floor($minutes / 60);
+            $this->editingDurationMinutes = $minutes % 60;
+        }
     }
 
     /**

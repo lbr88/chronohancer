@@ -24,20 +24,23 @@
         @endif
 
         <div class="mb-6">
-            <div class="bg-gray-100 dark:bg-zinc-800 p-4 rounded-lg text-center mb-4">
-                <div class="text-3xl font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                    {{ floor($quickTimeDuration / 60) }}:{{ str_pad($quickTimeDuration % 60, 2, '0', STR_PAD_LEFT) }}
-                </div>
-                <div class="text-sm text-gray-500 dark:text-gray-400">
-                    {{ $this->formatDuration($quickTimeDuration) }}
-                </div>
+            @livewire('components.time-input', [
+            'value' => $quickTimeDuration,
+            'name' => 'quickTimeDuration',
+            'inputId' => 'quick_time_duration',
+            'label' => 'Duration',
+            'showPresets' => true,
+            'showIncrementButtons' => true,
+            'helpText' => '',
+            ], key('quick-time-duration-input'))
 
-                @php
-                $remainingMinutes = $this->getRemainingTimeForDate($quickTimeDate);
-                @endphp
+            @php
+            $remainingMinutes = $this->getRemainingTimeForDate($quickTimeDate);
+            @endphp
 
+            <div class="bg-gray-100 dark:bg-zinc-800 p-3 rounded-lg text-center mt-3">
                 @if($remainingMinutes > 0)
-                <div class="mt-2 text-sm {{ $remainingMinutes < 60 ? 'text-orange-500 dark:text-orange-400' : 'text-blue-500 dark:text-blue-400' }}">
+                <div class="text-sm {{ $remainingMinutes < 60 ? 'text-orange-500 dark:text-orange-400' : 'text-blue-500 dark:text-blue-400' }}">
                     <span class="font-medium">Missing to reach 7h 24m:</span>
                     {{ $this->formatRemainingTime($remainingMinutes) }}
 
@@ -52,37 +55,10 @@
                         @endif
                 </div>
                 @else
-                <div class="mt-2 text-sm text-green-500 dark:text-green-400">
+                <div class="text-sm text-green-500 dark:text-green-400">
                     <span class="font-medium">7h 24m target reached for today!</span>
                 </div>
                 @endif
-            </div>
-
-            <div class="grid grid-cols-4 gap-2 mb-4">
-                <button type="button" wire:click="addQuickTime(5)" class="px-3 py-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-md hover:bg-indigo-200 dark:hover:bg-indigo-800">
-                    +5m
-                </button>
-                <button type="button" wire:click="addQuickTime(15)" class="px-3 py-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-md hover:bg-indigo-200 dark:hover:bg-indigo-800">
-                    +15m
-                </button>
-                <button type="button" wire:click="addQuickTime(30)" class="px-3 py-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-md hover:bg-indigo-200 dark:hover:bg-indigo-800">
-                    +30m
-                </button>
-                <button type="button" wire:click="addQuickTime(60)" class="px-3 py-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-md hover:bg-indigo-200 dark:hover:bg-indigo-800">
-                    +1h
-                </button>
-                <button type="button" wire:click="setQuickTime(30)" class="px-3 py-2 bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 rounded-md hover:bg-indigo-300 dark:hover:bg-indigo-700">
-                    30m
-                </button>
-                <button type="button" wire:click="setQuickTime(60)" class="px-3 py-2 bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 rounded-md hover:bg-indigo-300 dark:hover:bg-indigo-700">
-                    1h
-                </button>
-                <button type="button" wire:click="setQuickTime(120)" class="px-3 py-2 bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 rounded-md hover:bg-indigo-300 dark:hover:bg-indigo-700">
-                    2h
-                </button>
-                <button type="button" wire:click="setQuickTime(444)" class="px-3 py-2 bg-indigo-300 dark:bg-indigo-700 text-indigo-800 dark:text-indigo-200 rounded-md hover:bg-indigo-400 dark:hover:bg-indigo-600 font-medium">
-                    7h 24m
-                </button>
             </div>
         </div>
 
