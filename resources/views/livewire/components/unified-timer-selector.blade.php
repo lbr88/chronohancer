@@ -63,11 +63,13 @@
     </div>
   </div>
 
-  <!-- Project Selection -->
+  <!-- Project Selection (only shown when showProjectSelector is true) -->
+  @if($showProjectSelector)
   <div class="mb-4">
     <label for="project_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Project</label>
     @livewire('components.project-selector', ['projectId' => $projectId], key('unified-timer-project-selector-' . uniqid()))
   </div>
+  @endif
 
   <!-- Description -->
   <div class="mb-4">

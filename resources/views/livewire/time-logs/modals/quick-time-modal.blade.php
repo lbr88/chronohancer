@@ -73,9 +73,18 @@
                 @livewire('components.unified-timer-selector', [
                 'timerId' => $quickTimeTimerId,
                 'timerDescriptionId' => $quickTimeTimerDescriptionId,
-                'projectId' => $quickTimeProjectId
+                'projectId' => $quickTimeProjectId,
+                'showProjectSelector' => false
                 ], key('quick-time-unified-selector'))
             </div>
+
+            <!-- Project Selection (only shown when no timer is selected) -->
+            @if(!$quickTimeTimerId)
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Project</label>
+                @livewire('components.project-selector', ['projectId' => $quickTimeProjectId], key('quick-time-project-selector'))
+            </div>
+            @endif
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tags</label>

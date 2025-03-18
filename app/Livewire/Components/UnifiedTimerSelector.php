@@ -32,15 +32,18 @@ class UnifiedTimerSelector extends Component
 
     public $recentTimers = [];
 
+    public $showProjectSelector = true;
+
     protected $listeners = [
         'jira-issue-selected' => 'handleJiraIssueSelected',
     ];
 
-    public function mount($timerId = null, $timerDescriptionId = null, $projectId = null, $timerName = null, $description = null, $projectName = null)
+    public function mount($timerId = null, $timerDescriptionId = null, $projectId = null, $timerName = null, $description = null, $projectName = null, $showProjectSelector = true)
     {
         $this->timerId = $timerId;
         $this->timerDescriptionId = $timerDescriptionId;
         $this->projectId = $projectId;
+        $this->showProjectSelector = $showProjectSelector;
 
         // Set timer name if provided
         if ($timerName) {

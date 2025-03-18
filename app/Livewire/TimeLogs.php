@@ -359,7 +359,15 @@ class TimeLogs extends Component
      */
     public function handleProjectSelected($data)
     {
-        if (isset($data['id'])) {
+        if (! isset($data['id'])) {
+            return;
+        }
+
+        // Check if we're in the quick time modal or the regular edit form
+        if ($this->showQuickTimeModal) {
+            $this->quickTimeProjectId = $data['id'];
+            $this->loadProjectTimers($data['id']);
+        } else {
             $this->project_id = $data['id'];
         }
     }
