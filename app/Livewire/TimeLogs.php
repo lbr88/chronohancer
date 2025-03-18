@@ -1421,6 +1421,22 @@ class TimeLogs extends Component
         }
     }
 
+    /**
+     * Handle Jira issue selection from the JiraSearch component
+     */
+    public function handleJiraIssueSelected($data)
+    {
+        if ($this->showQuickTimeModal) {
+            if (isset($data['name'])) {
+                $this->quickTimeDescription = $data['name'];
+            }
+        } else {
+            if (isset($data['name'])) {
+                $this->description = $data['name'];
+            }
+        }
+    }
+
     public function addQuickTime($minutes)
     {
         $this->quickTimeDuration += $minutes;

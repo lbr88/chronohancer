@@ -84,6 +84,9 @@
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Project</label>
                 @livewire('components.project-selector', ['projectId' => $quickTimeProjectId], key('quick-time-project-selector'))
             </div>
+
+            <!-- Jira Issues Search (only shown when no timer is selected) -->
+            @livewire('components.jira-search', [], key('quick-time-jira-search'))
             @endif
 
             <div>

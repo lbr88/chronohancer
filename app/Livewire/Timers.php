@@ -7,11 +7,9 @@ use App\Models\Tag;
 use App\Models\TimeLog;
 use App\Models\Timer;
 use App\Models\TimerDescription;
-use App\Services\JiraService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
-use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 class Timers extends Component
@@ -86,11 +84,7 @@ class Timers extends Component
 
     public $timeFormat;
 
-    public $jiraSearch = '';
-
     public $jiraKey = '';
-
-    protected $jiraService;
 
     protected $rules = [
         'project_name' => 'nullable|string|max:255',
@@ -112,12 +106,8 @@ class Timers extends Component
         'description-selected' => 'handleDescriptionSelected',
         'timer-selected' => 'handleTimerSelected',
         'unified-timer-selected' => 'handleUnifiedTimerSelected',
+        'jira-issue-selected' => 'handleJiraIssueSelected',
     ];
-
-    public function boot(JiraService $jiraService)
-    {
-        $this->jiraService = $jiraService->setUser(Auth::user());
-    }
 
     public function mount()
     {
@@ -131,76 +121,18 @@ class Timers extends Component
         $this->timeFormat = Auth::user()->time_format ?? 'human';
     }
 
-    #[Computed]
-    public function jiraIssues()
+    /**
+     * Handle Jira issue selection from the JiraSearch component
+     */
+    public function handleJiraIssueSelected($data)
     {
-        $user = Auth::user();
-        if (! ($user->jira_enabled && $user->jira_access_token && $user->jira_cloud_id && $user->jira_site_url) || empty($this->jiraSearch)) {
-            return collect();
+        if (isset($data['name'])) {
+            $this->name = $data['name'];
         }
 
-        try {
-            $jql = [];
-
-            // Add search filter
-            if ($this->jiraSearch) {
-                $searchTerm = $this->jiraSearch;
-                $words = array_filter(preg_split('/\s+/', trim($searchTerm)));
-
-                // Handle exact Jira key matches first
-                foreach ($words as $word) {
-                    if (preg_match('/^[A-Z]+-\d+$/i', $word)) {
-                        $jql[] = sprintf('key = "%s"', strtoupper($word));
-                        break;
-                    }
-                }
-
-                if (empty($jql)) {
-                    // Create text search condition
-                    $searchText = implode(' ', array_map(function ($word) {
-                        return strtolower($word).'*';
-                    }, $words));
-
-                    if (! empty($searchText)) {
-                        $jql[] = sprintf('(text ~ "%s" OR summary ~ "%s")', $searchText, $searchText);
-                    }
-                }
-            }
-
-            // Add status filter by default
-            $jql[] = 'status not in (Done, Solved, Closed, Resolved)';
-
-            // Add my issues filter
-            // $jql[] = '(assignee = currentUser() OR reporter = currentUser())';
-
-            // Combine conditions and add ordering
-            $finalQuery = implode(' AND ', $jql).' ORDER BY updated DESC';
-
-            $response = $this->jiraService->searchIssues($finalQuery, 5, 0);
-
-            return collect($response['issues']);
-        } catch (\Exception $e) {
-            logger()->error('Jira issues fetch failed', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return collect();
+        if (isset($data['jiraKey'])) {
+            $this->jiraKey = $data['jiraKey'];
         }
-    }
-
-    public function useJiraIssue($key, $summary)
-    {
-        $this->name = "$key: $summary";
-        $this->jiraKey = $key;
-        $this->search = '';
-        $this->jiraSearch = '';
-
-        // Dispatch an event to update the timer name in the UnifiedTimerSelector component
-        $this->dispatch('jira-issue-selected', [
-            'name' => "$key: $summary",
-            'jiraKey' => $key,
-        ]);
     }
 
     /**
@@ -223,7 +155,7 @@ class Timers extends Component
      */
     public function closeNewTimerModal()
     {
-        $this->reset(['name', 'description', 'timerDescriptionId', 'project_name', 'project_id', 'tag_input', 'search', 'jiraSearch', 'jiraKey']);
+        $this->reset(['name', 'description', 'timerDescriptionId', 'project_name', 'project_id', 'tag_input', 'search', 'jiraKey']);
         $this->suggestions = ['projects' => [], 'tags' => []];
         $this->showNewTimerModal = false;
     }
@@ -1523,7 +1455,6 @@ class Timers extends Component
             'dailyTimeLogs' => $dailyTimeLogs,
             'dailyProgressPercentage' => $dailyProgressPercentage,
             'remainingDailyTime' => $remainingDailyTime,
-            'jiraIssues' => $this->jiraIssues,
         ]);
     }
 }
