@@ -2,9 +2,9 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, dev ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, dev ]
 
 env:
   REGISTRY: ghcr.io
@@ -38,6 +38,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/nginx
           tags: |
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'master') }}
+            type=raw,value=dev-latest,enable=${{ github.ref == format('refs/heads/{0}', 'dev') }}
             type=ref,event=branch
             type=sha,format=short
 
@@ -48,6 +49,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/php-fpm
           tags: |
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'master') }}
+            type=raw,value=dev-latest,enable=${{ github.ref == format('refs/heads/{0}', 'dev') }}
             type=ref,event=branch
             type=sha,format=short
 
