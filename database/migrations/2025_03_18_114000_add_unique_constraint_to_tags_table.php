@@ -32,7 +32,7 @@ return new class extends Migration
         $duplicates = DB::table('tags')
             ->select('name', 'user_id', 'workspace_id', DB::raw('COUNT(*) as count'))
             ->groupBy('name', 'user_id', 'workspace_id')
-            ->having('count', '>', 1)
+            ->having(DB::raw('COUNT(*)'), '>', 1)
             ->get();
 
         foreach ($duplicates as $duplicate) {
