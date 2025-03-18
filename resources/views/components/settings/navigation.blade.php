@@ -11,11 +11,13 @@
         {{ __('Appearance') }}
     </a>
 
+    @if(env('ENABLE_EMAIL_SIGNUP', true))
     <a href="{{ route('settings.password') }}" @class([ 'border-b-2 px-1 pb-4 text-sm font-medium' , 'border-primary-600 text-primary-600'=> request()->routeIs('settings.password'),
         'border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-zinc-200' => !request()->routeIs('settings.password'),
         ])>
         {{ __('Password') }}
     </a>
+    @endif
 
     @if(env('TEMPO_CLIENT_ID') && env('TEMPO_CLIENT_SECRET'))
     <a href="{{ route('settings.integrations.tempo') }}" @class([ 'border-b-2 px-1 pb-4 text-sm font-medium' , 'border-primary-600 text-primary-600'=> request()->routeIs('settings.integrations.tempo'),

@@ -44,7 +44,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/workspaces', Workspaces::class)->name('workspaces');
     Route::get('/settings/profile', Profile::class)->name('settings.profile');
     Route::get('/settings/appearance', Appearance::class)->name('settings.appearance');
-    Route::get('/settings/password', Password::class)->name('settings.password');
+
+    if (env('ENABLE_EMAIL_SIGNUP', true)) {
+        Route::get('/settings/password', Password::class)->name('settings.password');
+    }
     Route::get('/settings/integrations/tempo', TempoIntegration::class)->name('settings.integrations.tempo');
     Route::get('/settings/integrations/jira', JiraIntegration::class)->name('settings.integrations.jira');
     Route::get('/settings/integrations/microsoft-calendar', MicrosoftCalendarIntegration::class)->name('settings.integrations.microsoft-calendar');
