@@ -617,31 +617,24 @@ class TimeLogs extends Component
         $start_time = Carbon::parse($this->selected_date)->startOfDay();
         $end_time = $start_time->copy()->addMinutes($durationMinutes);
 
-        // Always use the selected project_id if it exists, otherwise use default project
-        $project_id = $this->project_id;
-        if ($project_id === null) {
-            $defaultProject = Project::findOrCreateDefault(Auth::id(), app('current.workspace')->id);
-            $project_id = $defaultProject->id;
-        }
+        // Use the existing timer - don't allow changing to a different timer that might
+        // be associated with a different project
+        $timer_id = $timeLog->timer_id;
 
-        // If timer_id is null, create a new timer
-        $timer_id = $this->timer_id;
+        // If there's no timer_id (which should be rare), we need to create one
         if (! $timer_id) {
-            // Create a new timer with the project
+            // Create a new timer using the same project as before (through the project relationship)
+            // or use default project if there's no associated project
+            $defaultProject = Project::findOrCreateDefault(Auth::id(), app('current.workspace')->id);
+
             $timer = Timer::create([
                 'name' => 'Manual Entry',
-                'project_id' => $project_id,
+                'project_id' => $defaultProject->id,
                 'user_id' => Auth::id(),
                 'workspace_id' => app('current.workspace')->id,
                 'is_running' => false,
             ]);
             $timer_id = $timer->id;
-        } else {
-            // If the timer exists but has a different project, update the timer's project
-            $timer = Timer::find($timer_id);
-            if ($timer && $timer->project_id !== $project_id) {
-                $timer->update(['project_id' => $project_id]);
-            }
         }
 
         $timeLog->update([

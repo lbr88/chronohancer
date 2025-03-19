@@ -5,8 +5,24 @@
         <form wire:submit.prevent="updateTimeLog" class="space-y-4">
             <div>
                 <label for="edit_project_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Project</label>
-                @livewire('components.project-selector', ['projectId' => $project_id], key('edit-form-project-selector'))
-                @error('project_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                <div class="mt-1 p-2 border rounded-md border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800 text-gray-800 dark:text-gray-300">
+                    @php
+                        $projectName = "No Project";
+                        if ($editingTimeLog) {
+                            $timeLog = \App\Models\TimeLog::find($editingTimeLog);
+                            if ($timeLog && $timeLog->timer && $timeLog->timer->project) {
+                                $projectName = $timeLog->timer->project->name;
+                            } else {
+                                $defaultProject = \App\Models\Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+                                $projectName = $defaultProject->name;
+                            }
+                        }
+                    @endphp
+                    {{ $projectName }}
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Project is associated with the timer and cannot be changed here
+                    </div>
+                </div>
             </div>
             <div>
                 <label for="edit_selected_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
