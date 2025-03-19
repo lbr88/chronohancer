@@ -143,7 +143,7 @@
             <div
                 class="absolute inset-y-0 {{ $segmentColor }} opacity-90 hover:opacity-100 transition-opacity cursor-pointer {{ $index === 0 ? 'rounded-l-full' : '' }} {{ $index === count($dailyTimeLogs) - 1 ? 'rounded-r-full' : '' }}"
                 style="left: {{ $segmentLeft > 100 ? 100 : $segmentLeft }}%; width: {{ $segmentWidth > (100 - $segmentLeft) ? (100 - $segmentLeft) : $segmentWidth }}%;"
-                @mouseenter="showTooltip = true; tooltipContent = '{{ $tooltipContent }}'; tooltipPosition = $event.target.getBoundingClientRect().left + ($event.target.getBoundingClientRect().width / 2);"
+                @mouseenter="showTooltip = true; tooltipContent = '{{ $tooltipContent }}'; tooltipPosition = $event.offsetX + ($event.target.offsetWidth / 2);"
                 @mouseleave="showTooltip = false"></div>
             @endforeach
 
@@ -156,7 +156,7 @@
             <div
                 class="absolute inset-y-0 bg-red-500 opacity-90 transition-opacity cursor-pointer animate-pulse rounded-r-full"
                 style="left: {{ $activeTimerLeft > 100 ? 100 : $activeTimerLeft }}%; width: {{ $activeTimerWidth > (100 - $activeTimerLeft) ? (100 - $activeTimerLeft) : $activeTimerWidth }}%;"
-                @mouseenter="showTooltip = true; tooltipContent = 'Active timer(s)'; tooltipPosition = $event.target.getBoundingClientRect().left + ($event.target.getBoundingClientRect().width / 2);"
+                @mouseenter="showTooltip = true; tooltipContent = 'Active timer(s)'; tooltipPosition = $event.offsetX + ($event.target.offsetWidth / 2);"
                 @mouseleave="showTooltip = false"></div>
             @endif
 
