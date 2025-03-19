@@ -40,6 +40,7 @@ class User extends Authenticatable
         'email',
         'password',
         'time_format',
+        'auto_pause_timers',
         'provider',
         'provider_id',
         'avatar',
@@ -80,6 +81,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'auto_pause_timers' => 'boolean',
             'jira_enabled' => 'boolean',
             'jira_token_expires_at' => 'datetime',
             'tempo_enabled' => 'boolean',

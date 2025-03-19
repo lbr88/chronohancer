@@ -195,6 +195,9 @@ class UnifiedTimerSelector extends Component
 
     public function updatedTimerName()
     {
+        // Log the timer name update
+        logger()->debug("Timer name updated to: {$this->timerName}");
+
         // When the timer name is updated, dispatch the event to the parent component
         $this->dispatchUnifiedTimerSelected();
     }
@@ -226,7 +229,7 @@ class UnifiedTimerSelector extends Component
 
     protected function dispatchUnifiedTimerSelected()
     {
-        $this->dispatch('unified-timer-selected', [
+        $data = [
             'timerId' => $this->timerId,
             'timerName' => $this->timerName,
             'timerDescriptionId' => $this->timerDescriptionId,
@@ -234,7 +237,12 @@ class UnifiedTimerSelector extends Component
             'projectId' => $this->projectId,
             'projectName' => $this->projectName,
             'jiraKey' => $this->jiraKey,
-        ]);
+        ];
+
+        // Log the data being dispatched
+        logger()->debug('Dispatching unified-timer-selected with data: '.json_encode($data));
+
+        $this->dispatch('unified-timer-selected', $data);
     }
 
     public function render()

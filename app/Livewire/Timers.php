@@ -84,6 +84,8 @@ class Timers extends Component
 
     public $timeFormat;
 
+    public $autoPauseTimers;
+
     public $jiraKey = '';
 
     protected $rules = [
@@ -117,8 +119,10 @@ class Timers extends Component
             'tags' => [],
         ];
 
-        // Load user's time format preference
-        $this->timeFormat = Auth::user()->time_format ?? 'human';
+        // Load user's preferences
+        $user = Auth::user();
+        $this->timeFormat = $user->time_format ?? 'human';
+        $this->autoPauseTimers = $user->auto_pause_timers ?? false;
     }
 
     /**
@@ -258,91 +262,116 @@ class Timers extends Component
 
     public function startTimer()
     {
-        $this->validate();
+        try {
+            // Log the current state before validation
+            $this->log("Before validation - Timer name: '{$this->name}', Project: '{$this->project_name}', Description: '".($this->description ?? 'none')."'");
 
-        // Find or create project if project_id or name is provided, or use default project
-        $project = null;
-        if ($this->project_id) {
-            $project = Project::find($this->project_id);
-        } elseif ($this->project_name) {
-            $project = Project::firstOrCreate(
-                ['name' => $this->project_name, 'user_id' => Auth::id(), 'workspace_id' => app('current.workspace')->id],
-                ['description' => 'Project created from timer']
-            );
-        }
-
-        if (! $project) {
-            // Always use the default project if no project is found
-            $project = Project::findOrCreateDefault(Auth::id(), app('current.workspace')->id);
-        }
-        $project_id = $project->id;
-
-        // Create new timer
-        $timer = Timer::create([
-            'user_id' => Auth::id(),
-            'project_id' => $project_id,
-            'name' => $this->name,
-            'is_running' => true,
-            'workspace_id' => app('current.workspace')->id,
-            'jira_key' => $this->jiraKey ?: null,
-        ]);
-
-        // Create a timer description if provided
-        $timerDescriptionId = null;
-        if (! empty($this->description)) {
-            $timerDescription = TimerDescription::create([
+            // Dump all properties for debugging
+            logger()->debug('Timer properties before validation: '.json_encode([
+                'name' => $this->name,
+                'project_name' => $this->project_name,
+                'project_id' => $this->project_id,
                 'description' => $this->description,
-                'timer_id' => $timer->id,
+                'timerDescriptionId' => $this->timerDescriptionId,
+                'tag_input' => $this->tag_input,
+            ]));
+
+            $this->validate();
+
+            // If auto-pause is enabled, pause all other running timers
+            if ($this->autoPauseTimers) {
+                $this->pauseAllRunningTimers();
+            }
+
+            $this->log("Starting timer with name: '{$this->name}', project: '{$this->project_name}', description: '".($this->description ?? 'none')."'");
+
+            // Find or create project if project_id or name is provided, or use default project
+            $project = null;
+            if ($this->project_id) {
+                $project = Project::find($this->project_id);
+            } elseif ($this->project_name) {
+                $project = Project::firstOrCreate(
+                    ['name' => $this->project_name, 'user_id' => Auth::id(), 'workspace_id' => app('current.workspace')->id],
+                    ['description' => 'Project created from timer']
+                );
+            }
+
+            if (! $project) {
+                // Always use the default project if no project is found
+                $project = Project::findOrCreateDefault(Auth::id(), app('current.workspace')->id);
+            }
+            $project_id = $project->id;
+
+            // Create new timer
+            $timer = Timer::create([
                 'user_id' => Auth::id(),
+                'project_id' => $project_id,
+                'name' => $this->name,
+                'is_running' => true,
+                'workspace_id' => app('current.workspace')->id,
+                'jira_key' => $this->jiraKey ?: null,
+            ]);
+
+            // Create a timer description if provided
+            $timerDescriptionId = null;
+            if (! empty($this->description)) {
+                $timerDescription = TimerDescription::create([
+                    'description' => $this->description,
+                    'timer_id' => $timer->id,
+                    'user_id' => Auth::id(),
+                    'workspace_id' => app('current.workspace')->id,
+                ]);
+                $timerDescriptionId = $timerDescription->id;
+            } elseif ($this->timerDescriptionId) {
+                // Use existing timer description
+                $timerDescriptionId = $this->timerDescriptionId;
+            }
+
+            // Process tags
+            if ($this->tag_input) {
+                $tagNames = collect(explode(',', $this->tag_input))
+                    ->map(fn ($name) => trim($name))
+                    ->filter();
+
+                $tags = $tagNames->map(function ($name) {
+                    return Tag::findOrCreateForUser($name, Auth::id(), app('current.workspace')->id);
+                });
+
+                // Use unique() to prevent duplicate tag IDs
+                $timer->tags()->attach($tags->pluck('id')->unique());
+
+                // If we have a project, also attach the tags to it
+                if ($project_id) {
+                    $project->tags()->syncWithoutDetaching($tags->pluck('id'));
+                }
+            }
+
+            // Use the stored start time if available, otherwise use current time
+            $startTime = $this->timerStartTime ?: now();
+
+            // Create time log
+            $timeLog = TimeLog::create([
+                'timer_id' => $timer->id,
+                'timer_description_id' => $timerDescriptionId,
+                'user_id' => Auth::id(),
+                'start_time' => $startTime,
+                'description' => $this->description ?: null, // Keep for backward compatibility
                 'workspace_id' => app('current.workspace')->id,
             ]);
-            $timerDescriptionId = $timerDescription->id;
-        } elseif ($this->timerDescriptionId) {
-            // Use existing timer description
-            $timerDescriptionId = $this->timerDescriptionId;
+
+            // Refresh the timer to include the latest time log
+            $timer->refresh();
+
+            $this->showNotification('Timer started successfully', 'success');
+            $this->dispatch('timerStarted', ['timerId' => $timer->id, 'startTime' => $timeLog->start_time->toIso8601String()]);
+
+            // Reset form and close modal
+            $this->closeNewTimerModal();
+            $this->timerStartTime = null;
+        } catch (\Exception $e) {
+            $this->log('Error starting timer: '.$e->getMessage());
+            $this->showNotification('Error starting timer: '.$e->getMessage(), 'error');
         }
-
-        // Process tags
-        if ($this->tag_input) {
-            $tagNames = collect(explode(',', $this->tag_input))
-                ->map(fn ($name) => trim($name))
-                ->filter();
-
-            $tags = $tagNames->map(function ($name) {
-                return Tag::findOrCreateForUser($name, Auth::id(), app('current.workspace')->id);
-            });
-
-            // Use unique() to prevent duplicate tag IDs
-            $timer->tags()->attach($tags->pluck('id')->unique());
-
-            // If we have a project, also attach the tags to it
-            if ($project_id) {
-                $project->tags()->syncWithoutDetaching($tags->pluck('id'));
-            }
-        }
-
-        // Use the stored start time if available, otherwise use current time
-        $startTime = $this->timerStartTime ?: now();
-
-        // Create time log
-        $timeLog = TimeLog::create([
-            'timer_id' => $timer->id,
-            'timer_description_id' => $timerDescriptionId,
-            'user_id' => Auth::id(),
-            'start_time' => $startTime,
-            'description' => $this->description ?: null, // Keep for backward compatibility
-            'workspace_id' => app('current.workspace')->id,
-        ]);
-
-        // Refresh the timer to include the latest time log
-        $timer->refresh();
-
-        $this->showNotification('Timer started successfully', 'success');
-        $this->dispatch('timerStarted', ['timerId' => $timer->id, 'startTime' => $timeLog->start_time->toIso8601String()]);
-
-        // Reset form and close modal
-        $this->closeNewTimerModal();
-        $this->timerStartTime = null;
     }
 
     public function stopTimer($timerId)
@@ -782,8 +811,9 @@ class Timers extends Component
     public function handleUnifiedTimerSelected($data)
     {
         // Set timer data
-        if (isset($data['timerId'])) {
-            $this->name = $data['timerName'] ?? '';
+        if (isset($data['timerName'])) {
+            $this->name = $data['timerName'];
+            $this->log("Timer name set to: {$this->name}");
         }
 
         // Set project data
@@ -822,6 +852,21 @@ class Timers extends Component
             $minutes = $this->parseHumanDuration($data['value']);
             $this->editingDurationHours = floor($minutes / 60);
             $this->editingDurationMinutes = $minutes % 60;
+        }
+    }
+
+    /**
+     * Pause all currently running timers
+     */
+    private function pauseAllRunningTimers()
+    {
+        $runningTimers = Timer::where('user_id', Auth::id())
+            ->where('workspace_id', app('current.workspace')->id)
+            ->where('is_running', true)
+            ->get();
+
+        foreach ($runningTimers as $timer) {
+            $this->pauseTimer($timer->id);
         }
     }
 
@@ -1031,6 +1076,23 @@ class Timers extends Component
     }
 
     /**
+     * Toggle auto-pause timers setting
+     */
+    public function toggleAutoPauseTimers()
+    {
+        // Toggle the setting
+        $this->autoPauseTimers = ! $this->autoPauseTimers;
+
+        // Save to user preferences
+        \Illuminate\Support\Facades\DB::table('users')
+            ->where('id', Auth::id())
+            ->update(['auto_pause_timers' => $this->autoPauseTimers]);
+
+        $status = $this->autoPauseTimers ? 'enabled' : 'disabled';
+        $this->showNotification("Auto-pause timers {$status}", 'success');
+    }
+
+    /**
      * Get the duration of the current timer session
      */
     public function getTimerDuration($timer)
@@ -1196,6 +1258,11 @@ class Timers extends Component
     {
         $timer = Timer::findOrFail($this->restartTimerId);
         $wasPaused = $timer->is_paused;
+
+        // If auto-pause is enabled, pause all other running timers
+        if ($this->autoPauseTimers) {
+            $this->pauseAllRunningTimers();
+        }
 
         // Mark timer as running and not paused
         $timer->is_running = true;

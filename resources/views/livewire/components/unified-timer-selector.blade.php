@@ -6,7 +6,7 @@
       <input
         type="text"
         id="timer_name"
-        wire:model.live="timerName"
+        wire:model.live.debounce.300ms="timerName"
         required
         placeholder="What are you working on?"
         class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2">

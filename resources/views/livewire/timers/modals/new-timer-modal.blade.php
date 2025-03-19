@@ -11,6 +11,9 @@
         </div>
 
         <form wire:submit.prevent="startTimer" class="ch-form">
+            <!-- Hidden input for name validation -->
+            <input type="hidden" wire:model="name" required>
+
             <!-- Unified Timer Selector -->
             <div class="ch-form-group">
                 @livewire('components.unified-timer-selector', [

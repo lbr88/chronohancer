@@ -26,20 +26,23 @@
                     <div class="ch-card-header">
                         <h2 class="ch-card-title">Running Timers</h2>
                         <div class="flex items-center gap-4">
-                            <!-- Time Format Selector -->
+                            <!-- Auto-Pause Toggle -->
                             <div class="inline-flex flex-col">
-                                <div class="inline-flex rounded-md shadow-sm" role="group">
-                                    <button wire:click="setTimeFormat('human')" type="button" class="px-3 py-1 text-xs font-medium {{ $timeFormat === 'human' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 dark:bg-gray-700 dark:text-gray-300' }} border border-gray-200 dark:border-gray-600 rounded-l-lg hover:bg-gray-100 dark:hover:bg-gray-600">
-                                        1h3m10s
+                                <div class="inline-flex items-center">
+                                    <button
+                                        wire:click="toggleAutoPauseTimers"
+                                        type="button"
+                                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 {{ $autoPauseTimers ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700' }}"
+                                        role="switch"
+                                        aria-checked="{{ $autoPauseTimers ? 'true' : 'false' }}">
+                                        <span class="sr-only">Auto-pause other timers</span>
+                                        <span
+                                            aria-hidden="true"
+                                            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $autoPauseTimers ? 'translate-x-5' : 'translate-x-0' }}"></span>
                                     </button>
-                                    <button wire:click="setTimeFormat('hm')" type="button" class="px-3 py-1 text-xs font-medium {{ $timeFormat === 'hm' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 dark:bg-gray-700 dark:text-gray-300' }} border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600">
-                                        HH:MM
-                                    </button>
-                                    <button wire:click="setTimeFormat('hms')" type="button" class="px-3 py-1 text-xs font-medium {{ $timeFormat === 'hms' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 dark:bg-gray-700 dark:text-gray-300' }} border border-gray-200 dark:border-gray-600 rounded-r-lg hover:bg-gray-100 dark:hover:bg-gray-600">
-                                        HH:MM:SS
-                                    </button>
+                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Auto-pause timers</span>
                                 </div>
-                                <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">Format saved to your profile</span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">Only one timer active at a time</span>
                             </div>
                             <span class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ $runningTimers->count() }} active</span>
                         </div>
