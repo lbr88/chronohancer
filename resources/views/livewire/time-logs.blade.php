@@ -434,31 +434,44 @@ use App\Models\TimeLog;
                                         $timelogCount = 0;
                                         $logId = $timer['dailyLogIds'][$day['date']] ?? null;
                                         if ($logId) {
-                                        $description = $timer['description'] ?? '';
-                                        $timelogCount = TimeLog::where('user_id', auth()->id())
-                                        ->where('workspace_id', app('current.workspace')->id)
-                                        ->whereHas('timer', function($q) use ($project) {
-                                            $q->where('project_id', $project['id']);
-                                        })
-                                        ->where(function($query) use ($timer) {
-                                        if ($timer['id']) {
-                                        $query->where('timer_id', $timer['id']);
-                                        } else {
-                                        $query->whereNull('timer_id');
-                                        }
-                                        })
-                                        ->whereDate('start_time', $day['date'])
-                                        ->where(function($query) use ($description) {
-                                        if (!empty($description)) {
-                                        $query->where('description', $description);
-                                        } else {
-                                        $query->where(function($q) {
-                                        $q->whereNull('description')
-                                        ->orWhere('description', '');
-                                        });
-                                        }
-                                        })
-                                        ->count();
+                                            $description = $timer['description'] ?? '';
+                                            $timerDescriptionId = $timer['timerDescriptionId'] ?? null;
+                                            
+                                            $query = TimeLog::where('user_id', auth()->id())
+                                                ->where('workspace_id', app('current.workspace')->id)
+                                                ->whereHas('timer', function($q) use ($project) {
+                                                    $q->where('project_id', $project['id']);
+                                                })
+                                                ->where(function($q) use ($timer) {
+                                                    if ($timer['id']) {
+                                                        $q->where('timer_id', $timer['id']);
+                                                    } else {
+                                                        $q->whereNull('timer_id');
+                                                    }
+                                                })
+                                                ->whereDate('start_time', $day['date']);
+                                            
+                                            // Match the same criteria used for grouping in the PHP code (timer_id AND timer_description_id)
+                                            if ($timerDescriptionId) {
+                                                $query->where('timer_description_id', $timerDescriptionId);
+                                            } else {
+                                                // If no timer_description_id, filter by description
+                                                if (!empty($description)) {
+                                                    $query->where(function($q) use ($description) {
+                                                        $q->where('description', $description)
+                                                          ->orWhereHas('timerDescription', function($tq) use ($description) {
+                                                              $tq->where('description', $description);
+                                                          });
+                                                    });
+                                                } else {
+                                                    $query->where(function($q) {
+                                                        $q->whereNull('description')
+                                                          ->orWhere('description', '');
+                                                    });
+                                                }
+                                            }
+                                            
+                                            $timelogCount = $query->count();
                                         }
                                         @endphp
                                         @if($timelogCount > 1)
