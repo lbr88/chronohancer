@@ -1099,7 +1099,6 @@ class TimeLogs extends Component
 
                 // Get the default project
                 $defaultProject = Project::findOrCreateDefault(Auth::id(), app('current.workspace')->id);
-                $defaultProject = Project::findOrCreateDefault(Auth::id(), app('current.workspace')->id);
 
                 // Apply all search conditions
                 $query->where(function ($q) use ($searchTerm, $defaultProject, $matchesDefaultProject) {
