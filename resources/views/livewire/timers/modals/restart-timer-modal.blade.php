@@ -11,7 +11,20 @@
 
       <div>
         <label for="timer_description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
-        @livewire('components.timer-description-selector', ['timerId' => $restartTimerId, 'timerDescriptionId' => $restartTimerDescriptionId], key('restart-timer-description-selector'))
+        @livewire('components.timer-description-selector', [
+          'timerId' => $restartTimerId,
+          'timerDescriptionId' => $restartTimerDescriptionId
+        ], key('restart-timer-description-selector'))
+        
+        <script>
+          document.addEventListener('description-selected', (event) => {
+            // Handle timer description selection events
+            if (event.detail && event.detail.description) {
+              // Update the parent component's description
+              Livewire.dispatch('description-selected', event.detail);
+            }
+          });
+        </script>
       </div>
 
       <div class="flex justify-between">

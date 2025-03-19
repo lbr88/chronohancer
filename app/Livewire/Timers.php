@@ -1289,31 +1289,32 @@ class Timers extends Component
             $timer->save();
         }
 
+        // Add logging to help diagnose timer restart issues
+        $this->log("Restarting timer ID: {$this->restartTimerId}, Description ID: ".($this->restartTimerDescriptionId ?? 'none'));
+
         // Get the description from the selector
         $timerDescriptionId = $this->restartTimerDescriptionId;
-        $description = null;
+        $description = $this->description ?? null; // Use the description property directly
 
         if ($timerDescriptionId) {
             // Use existing timer description
             $timerDescription = TimerDescription::find($timerDescriptionId);
             if ($timerDescription) {
                 $description = $timerDescription->description;
+                $this->log("Using existing description: {$description}");
             }
-        } else {
-            // Get the description text from the component
-            // Try to find the timer-description-selector component
-            $descriptionSelector = $this->getFormWireModelValue('timer-description-selector');
-            if ($descriptionSelector && ! empty($descriptionSelector['description'])) {
-                // Create a new timer description
-                $description = $descriptionSelector['description'];
-                $timerDescription = TimerDescription::create([
-                    'description' => $description,
-                    'timer_id' => $timer->id,
-                    'user_id' => Auth::id(),
-                    'workspace_id' => app('current.workspace')->id,
-                ]);
-                $timerDescriptionId = $timerDescription->id;
-            }
+        } elseif (! empty($description)) {
+            // We have a description text but no ID, so create a new timer description
+            $this->log("Creating new description: {$description}");
+
+            $timerDescription = TimerDescription::create([
+                'description' => $description,
+                'timer_id' => $timer->id,
+                'user_id' => Auth::id(),
+                'workspace_id' => app('current.workspace')->id,
+            ]);
+            $timerDescriptionId = $timerDescription->id;
+            $this->log("Created new description with ID: {$timerDescriptionId}");
         }
 
         // Create a new time log with current time

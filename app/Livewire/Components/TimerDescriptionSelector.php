@@ -105,13 +105,13 @@ class TimerDescriptionSelector extends Component
             return;
         }
 
+        // Determine which event to dispatch based on the key
+        $eventName = str_contains($this->getId(), 'quick-time')
+            ? 'quick-time-description-selected'
+            : 'description-selected';
+
         // If no timer is selected, we'll just store the description text without creating a record
         if (! $this->timerId) {
-            // Determine which event to dispatch based on the key
-            $eventName = str_contains($this->getId(), 'quick-time')
-                ? 'quick-time-description-selected'
-                : 'description-selected';
-
             $this->dispatch($eventName, [
                 'id' => null,
                 'description' => $this->description,
@@ -142,7 +142,20 @@ class TimerDescriptionSelector extends Component
             'workspace_id' => app('current.workspace')->id,
         ]);
 
-        $this->selectDescription($timerDescription->id, $timerDescription->description);
+        // Get component key to determine if this is for restart timer modal
+        $componentKey = $this->getId();
+
+        // Special handling for restart timer modal to ensure description is captured correctly
+        if (str_contains($componentKey, 'restart-timer')) {
+            $this->dispatch('description-selected', [
+                'id' => $timerDescription->id,
+                'description' => $timerDescription->description,
+                'isRestart' => true,
+            ]);
+            $this->showDropdown = false;
+        } else {
+            $this->selectDescription($timerDescription->id, $timerDescription->description);
+        }
     }
 
     public function toggleDropdown()
