@@ -779,63 +779,86 @@ class TimeLogs extends Component
             $projectLogs = $logsByProject[$projectId] ?? collect();
             $hasLogs = $projectLogs->isNotEmpty();
 
-            // Group logs by timer and timer description
+            // First group logs by timer only
             $timerGroups = $projectLogs->groupBy(function ($log) {
-                // Group by timer_id and timer_description_id
-                // This ensures logs with the same timer but different descriptions are grouped separately
-                $timerId = $log->timer_id ?? 'manual';
-                $timerDescriptionId = $log->timer_description_id ?? 'no-desc';
-
-                return $timerId.'|'.$timerDescriptionId;
+                return $log->timer_id ?? 'manual';
             });
 
             // Add timers with logs
-            foreach ($timerGroups as $timerKey => $timerLogs) {
-                // Extract timer_id and timer_description_id from the group key
-                [$timerId, $timerDescriptionId] = explode('|', $timerKey, 2);
+            foreach ($timerGroups as $timerId => $timerLogs) {
                 $timerId = $timerId === 'manual' ? null : $timerId;
-                $timerDescriptionId = $timerDescriptionId === 'no-desc' ? null : $timerDescriptionId;
-
                 $timerName = $timerId ? ($timerLogs->first()->timer->name ?? 'Unnamed Timer') : 'Manual Entry';
-                $description = '';
-
-                // Get the description from the timer description if available
-                if ($timerDescriptionId && $timerLogs->first()->timerDescription) {
-                    $description = $timerLogs->first()->timerDescription->description;
-                } else {
-                    // Fallback to the legacy description field
-                    $description = trim($timerLogs->first()->description ?? '');
-                }
 
                 $timerTotal = 0;
                 $dailyDurations = array_fill_keys(array_keys($weekDays), 0);
-                $dailyDescriptions = array_fill_keys(array_keys($weekDays), $description);
                 $dailyLogIds = array_fill_keys(array_keys($weekDays), null);
 
-                // Calculate daily durations
+                // Group timer logs by description/timerDescription
+                $descriptionsCollection = collect();
+
+                // Track descriptions by day to build a more accurate view
+                $descriptionsPerDay = [];
+
+                // Calculate daily durations grouped by timer
                 foreach ($timerLogs as $log) {
                     $logDate = Carbon::parse($log->start_time)->format('Y-m-d');
                     $dailyDurations[$logDate] = ($dailyDurations[$logDate] ?? 0) + $log->duration_minutes;
 
                     // Store the log ID for this day (for editing)
-                    // If multiple logs exist for this day, the selection modal will handle it
                     $dailyLogIds[$logDate] = $log->id;
 
                     $timerTotal += $log->duration_minutes;
+
+                    // Get the description for this log
+                    $description = '';
+                    if ($log->timer_description_id && $log->timerDescription) {
+                        $description = $log->timerDescription->description;
+                    } else {
+                        $description = trim($log->description ?? '');
+                    }
+
+                    // Only add non-empty descriptions
+                    if (! empty($description)) {
+                        // Track descriptions by day
+                        if (! isset($descriptionsPerDay[$logDate])) {
+                            $descriptionsPerDay[$logDate] = [];
+                        }
+                        $descriptionsPerDay[$logDate][] = $description;
+
+                        // Add to unique descriptions collection with date context
+                        $descriptionsCollection->push([
+                            'description' => $description,
+                            'timerDescriptionId' => $log->timer_description_id,
+                            'date' => $logDate,
+                            'duration' => $log->duration_minutes,
+                        ]);
+                    }
                 }
 
-                // Add description to timer name if it exists
-                $displayName = $timerName;
-                if (! empty($description)) {
-                    $displayName .= ': '.$description;
+                // Get unique descriptions for this timer - group by description
+                $uniqueDescriptions = $descriptionsCollection
+                    ->groupBy('description')
+                    ->map(function ($group, $description) {
+                        return [
+                            'description' => $description,
+                            'timerDescriptionId' => $group->first()['timerDescriptionId'],
+                            'count' => $group->count(),
+                            'total_duration' => $group->sum('duration'),
+                        ];
+                    })
+                    ->values();
+
+                // Prepare daily descriptions map (for hover tooltips)
+                $dailyDescriptions = array_fill_keys(array_keys($weekDays), '');
+                foreach ($descriptionsPerDay as $date => $descriptions) {
+                    $dailyDescriptions[$date] = implode(', ', array_unique($descriptions));
                 }
 
                 $timersWithLogs[] = [
                     'id' => $timerId,
-                    'name' => $displayName,
+                    'name' => $timerName,
                     'originalName' => $timerName,
-                    'description' => $description,
-                    'timerDescriptionId' => $timerDescriptionId,
+                    'descriptions' => $uniqueDescriptions,
                     'daily' => $dailyDurations,
                     'dailyDescriptions' => $dailyDescriptions,
                     'dailyLogIds' => $dailyLogIds,
@@ -867,8 +890,7 @@ class TimeLogs extends Component
                             'id' => $timer->id,
                             'name' => $timer->name,
                             'originalName' => $timer->name,
-                            'description' => '',
-                            'timerDescriptionId' => null,
+                            'descriptions' => [],  // Empty descriptions array to match new data structure
                             'daily' => $dailyDurations,
                             'dailyDescriptions' => $dailyDescriptions,
                             'dailyLogIds' => $dailyLogIds,

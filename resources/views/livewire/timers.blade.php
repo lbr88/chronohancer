@@ -80,17 +80,24 @@
                                         </div>
                                         @endif
 
-                                        @if($timer->latestTimeLog && $timer->latestTimeLog->timer_description_id)
+                                        @php
+                                            $timerDescription = null;
+                                            // First try to get description from latest time log
+                                            if ($timer->latestTimeLog && $timer->latestTimeLog->timer_description_id && $timer->latestTimeLog->timerDescription) {
+                                                $timerDescription = $timer->latestTimeLog->timerDescription->description;
+                                            }
+                                            // If not found, try to get from latest description
+                                            elseif ($timer->latestDescription) {
+                                                $timerDescription = $timer->latestDescription->description;
+                                            }
+                                            // Finally, fall back to timer description field
+                                            elseif ($timer->description) {
+                                                $timerDescription = $timer->description;
+                                            }
+                                        @endphp
+                                        @if($timerDescription)
                                         <div class="mt-1 text-xs text-gray-600 dark:text-gray-300">
-                                            {{ $timer->latestTimeLog->timerDescription ? $timer->latestTimeLog->timerDescription->description : '' }}
-                                        </div>
-                                        @elseif($timer->latestDescription)
-                                        <div class="mt-1 text-xs text-gray-600 dark:text-gray-300">
-                                            {{ $timer->latestDescription->description }}
-                                        </div>
-                                        @elseif($timer->description)
-                                        <div class="mt-1 text-xs text-gray-600 dark:text-gray-300">
-                                            {{ $timer->description }}
+                                            {{ $timerDescription }}
                                         </div>
                                         @endif
                                     </div>
@@ -213,17 +220,24 @@
                                             </div>
                                             @endif
 
-                                            @if($timer->latestTimeLog && $timer->latestTimeLog->timer_description_id)
+                                            @php
+                                                $timerDescription = null;
+                                                // First try to get description from latest time log
+                                                if ($timer->latestTimeLog && $timer->latestTimeLog->timer_description_id && $timer->latestTimeLog->timerDescription) {
+                                                    $timerDescription = $timer->latestTimeLog->timerDescription->description;
+                                                }
+                                                // If not found, try to get from latest description
+                                                elseif ($timer->latestDescription) {
+                                                    $timerDescription = $timer->latestDescription->description;
+                                                }
+                                                // Finally, fall back to timer description field
+                                                elseif ($timer->description) {
+                                                    $timerDescription = $timer->description;
+                                                }
+                                            @endphp
+                                            @if($timerDescription)
                                             <div class="mt-1 text-xs text-gray-600 dark:text-gray-300">
-                                                {{ $timer->latestTimeLog->timerDescription ? $timer->latestTimeLog->timerDescription->description : '' }}
-                                            </div>
-                                            @elseif($timer->latestDescription)
-                                            <div class="mt-1 text-xs text-gray-600 dark:text-gray-300">
-                                                {{ $timer->latestDescription->description }}
-                                            </div>
-                                            @elseif($timer->description)
-                                            <div class="mt-1 text-xs text-gray-600 dark:text-gray-300">
-                                                {{ $timer->description }}
+                                                {{ $timerDescription }}
                                             </div>
                                             @endif
                                         </div>

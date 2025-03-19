@@ -43,12 +43,6 @@
         </div>
         @endif
     </div>
-    @elseif($createNewDescription)
-    <div class="mt-1 text-sm text-indigo-600 dark:text-indigo-400">
-        <span wire:click="createDescription" class="cursor-pointer hover:underline">
-            Will create new description with this text
-        </span>
-    </div>
     @endif
 
     <input type="hidden" name="timer_description_id" wire:model="timerDescriptionId">

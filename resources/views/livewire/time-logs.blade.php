@@ -386,7 +386,7 @@ use App\Models\TimeLog;
                     <tr class="{{ $timer['total'] == 0 ? 'bg-gray-50/50 dark:bg-zinc-800/50' : '' }}">
                         <td class="px-6 py-3 whitespace-nowrap text-sm">
                             <div class="flex items-center">
-                                <div class="ml-4">
+                                <div class="ml-4 w-full">
                                     <div class="text-sm font-medium text-gray-900 dark:text-white">
                                         @if($timer['id'])
                                         <a href="{{ route('time-logs') }}?view=list&searchQuery={{ urlencode($timer['originalName']) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
@@ -401,13 +401,23 @@ use App\Models\TimeLog;
                                         <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">(No logs)</span>
                                         @endif
                                     </div>
-                                    @if(!empty($timer['description']))
-                                    <div class="text-xs text-gray-600 dark:text-gray-300 mt-1">
-                                        {{ $timer['description'] }}
+                                    
+                                    <!-- List of descriptions -->
+                                    @if(isset($timer['descriptions']) && count($timer['descriptions']) > 0)
+                                    <div class="mt-1 ml-4">
+                                        @foreach($timer['descriptions'] as $descItem)
+                                        <div class="text-xs text-gray-600 dark:text-gray-300 mb-1">
+                                            {{ $descItem['description'] }}
+                                            @if(isset($descItem['count']) && $descItem['count'] > 1)
+                                                <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">({{ $descItem['count'] }} logs, {{ $this->formatDuration($descItem['total_duration']) }})</span>
+                                            @endif
+                                        </div>
+                                        @endforeach
                                     </div>
                                     @endif
+                                    
                                     @if(count($timer['tags']) > 0)
-                                    <div class="flex flex-wrap gap-1 mt-1">
+                                    <div class="flex flex-wrap gap-1 mt-2">
                                         @foreach($timer['tags'] as $tag)
                                         <span class="inline-block px-2 py-0.5 text-xs rounded-full"
                                             style="background-color: {{ $tag->color }}; color: {{ $this->getContrastColor($tag->color) }}">
@@ -427,7 +437,7 @@ use App\Models\TimeLog;
                                     <button
                                         wire:click="findAndEditTimeLog('{{ $day['date'] }}', {{ $project['id'] === null ? 'null' : $project['id'] }}, {{ $timer['id'] ?: 'null' }}, '{{ addslashes($timer['dailyDescriptions'][$day['date']]) }}')"
                                         class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 font-medium"
-                                        title="{{ !empty($timer['dailyDescriptions'][$day['date']]) ? 'Description: ' . $timer['dailyDescriptions'][$day['date']] : 'No description' }}">
+                                        title="{{ !empty($timer['dailyDescriptions'][$day['date']]) ? 'Descriptions: ' . $timer['dailyDescriptions'][$day['date']] : 'No description' }}">
                                         {{ $this->formatDuration($timer['daily'][$day['date']]) }}
                                         @php
                                         // Count how many time logs exist for this day
@@ -478,8 +488,11 @@ use App\Models\TimeLog;
                                     </button>
 
                                     @if(!empty($timer['dailyDescriptions'][$day['date']]))
-                                    <div class="absolute z-10 hidden group-hover:block bg-gray-800 dark:bg-black text-white text-xs rounded p-2 mt-1 min-w-[150px] max-w-[250px] whitespace-normal">
-                                        {{ $timer['dailyDescriptions'][$day['date']] }}
+                                    <div class="absolute z-10 hidden group-hover:block bg-gray-800 dark:bg-black text-white text-xs rounded p-2 mt-1 min-w-[150px] max-w-[300px] whitespace-normal">
+                                        <div class="font-medium mb-1">Descriptions:</div>
+                                        @foreach(explode(', ', $timer['dailyDescriptions'][$day['date']]) as $desc)
+                                            <div class="pl-2">• {{ $desc }}</div>
+                                        @endforeach
                                     </div>
                                     @endif
                                 </div>
@@ -487,7 +500,7 @@ use App\Models\TimeLog;
                                     <button
                                         wire:click="openQuickTimeModal('{{ $day['date'] }}', {{ $project['id'] === null ? 'null' : $project['id'] }}, {{ $timer['id'] ?: 'null' }}, '{{ addslashes($timer['dailyDescriptions'][$day['date']]) }}')"
                                         class="text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400"
-                                        title="Add new time log for {{ $timer['name'] }} on {{ Carbon\Carbon::parse($day['date'])->format('M d, Y') }}">
+                                        title="Add new time log for {{ $timer['originalName'] }} on {{ Carbon\Carbon::parse($day['date'])->format('M d, Y') }}">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                         </svg>
@@ -496,7 +509,7 @@ use App\Models\TimeLog;
                                     <button
                                         wire:click="findAndEditTimeLog('{{ $day['date'] }}', {{ $project['id'] === null ? 'null' : $project['id'] }}, {{ $timer['id'] ?: 'null' }}, '{{ addslashes($timer['dailyDescriptions'][$day['date']]) }}')"
                                         class="text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400"
-                                        title="Edit time log">
+                                        title="Edit time log for {{ $timer['originalName'] }}">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>
@@ -517,9 +530,9 @@ use App\Models\TimeLog;
                             @endphp
                             <div class="group relative">
                                 <button
-                                    wire:click="openQuickTimeModal('{{ $day['date'] }}', {{ $project['id'] === null ? 'null' : $project['id'] }}, {{ $timer['id'] ?: 'null' }}, '{{ addslashes($timer['dailyDescriptions'][$day['date']]) }}')"
+                                    wire:click="openQuickTimeModal('{{ $day['date'] }}', {{ $project['id'] === null ? 'null' : $project['id'] }}, {{ $timer['id'] ?: 'null' }})"
                                     class="text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 w-full h-full flex items-center justify-center"
-                                    title="Add quick time log for {{ $timer['name'] }} on {{ Carbon\Carbon::parse($day['date'])->format('M d, Y') }}">
+                                    title="Add quick time log for {{ $timer['originalName'] }} on {{ Carbon\Carbon::parse($day['date'])->format('M d, Y') }}">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                                     </svg>

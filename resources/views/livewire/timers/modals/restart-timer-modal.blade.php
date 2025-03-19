@@ -17,12 +17,26 @@
         ], key('restart-timer-description-selector'))
         
         <script>
-          document.addEventListener('description-selected', (event) => {
-            // Handle timer description selection events
-            if (event.detail && event.detail.description) {
-              // Update the parent component's description
-              Livewire.dispatch('description-selected', event.detail);
-            }
+          document.addEventListener('livewire:initialized', () => {
+            document.addEventListener('description-selected', (event) => {
+              // Handle timer description selection events
+              if (event.detail && event.detail.description) {
+                // Update the parent component's description
+                @this.dispatch('description-selected', event.detail);
+              }
+            });
+            
+            // Auto-create description when form is submitted
+            document.querySelector('form').addEventListener('submit', () => {
+              // If there's text in the description field but no description ID is set,
+              // create it automatically
+              if (@this.description && !@this.restartTimerDescriptionId) {
+                const selector = Livewire.find('restart-timer-description-selector');
+                if (selector) {
+                  selector.createDescription();
+                }
+              }
+            });
           });
         </script>
       </div>
