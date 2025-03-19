@@ -173,7 +173,7 @@ class DailyProgressBar extends Component
         $remainingMinutes = max(0, $this->requiredMinutes - $this->totalDailyMinutes);
 
         $hours = floor($remainingMinutes / 60);
-        $minutes = $remainingMinutes % 60;
+        $minutes = floor($remainingMinutes % 60);
 
         if ($hours > 0 && $minutes > 0) {
             return "{$hours}h {$minutes}m";
@@ -233,11 +233,7 @@ class DailyProgressBar extends Component
 
     public function render()
     {
-        // Don't render the progress bar if the daily target is 0
-        if ($this->requiredMinutes === 0) {
-            return;
-        }
-
+        // Always render the progress bar, even if the daily target is 0
         return view('livewire.daily-progress-bar');
     }
 }

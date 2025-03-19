@@ -56,15 +56,15 @@
                     const startTime = this.startTimes[timer.id];
                     if (startTime) {
                         const now = new Date();
-                        const diffMs = now - startTime;
+                        const diffMs = Math.floor(now - startTime);
                         const diffMinutes = Math.floor(diffMs / 60000);
-                        additionalMinutes += diffMinutes;
+                        additionalMinutes += Math.floor(diffMinutes);
                     }
                 });
                 
                 // Calculate completed minutes (from server) + active minutes (calculated live)
                 const completedMinutes = {{ $totalDailyMinutes - collect($activeTimers)->sum('current_duration') }};
-                const totalMinutes = completedMinutes + additionalMinutes;
+                const totalMinutes = Math.floor(completedMinutes + additionalMinutes);
                 
                 // Update the display
                 this.totalMinutes = totalMinutes;
@@ -73,7 +73,7 @@
                 // Update remaining time
                 const remainingMinutes = Math.max(0, {{ $requiredMinutes }} - totalMinutes);
                 const hours = Math.floor(remainingMinutes / 60);
-                const minutes = remainingMinutes % 60;
+                const minutes = Math.floor(remainingMinutes % 60);
                 
                 if (hours > 0 && minutes > 0) {
                     this.remainingTime = `${hours}h ${minutes}m`;
@@ -94,7 +94,7 @@
         
         formatTime(minutes) {
             const hours = Math.floor(minutes / 60);
-            const mins = minutes % 60;
+            const mins = Math.floor(minutes % 60);
             return `${hours}h ${mins}m`;
         }
     }"
@@ -102,7 +102,7 @@
     @disconnect="stopTimerUpdates()">
     <div class="flex items-center dark:bg-transparent">
         <div class="text-xs font-medium text-gray-700 dark:text-gray-300 mr-3 whitespace-nowrap">
-            <span x-text="Math.floor(totalMinutes / 60) + 'h ' + (totalMinutes % 60) + 'm'"></span> / 7h24m
+            <span x-text="Math.floor(totalMinutes / 60) + 'h ' + Math.floor(totalMinutes % 60) + 'm'"></span> / 7h24m
         </div>
 
         <div class="flex-grow relative h-2.5 dark:bg-transparent">
@@ -129,7 +129,7 @@
 
             // Format time for tooltip
             $hours = floor($log->duration_minutes / 60);
-            $minutes = $log->duration_minutes % 60;
+            $minutes = floor($log->duration_minutes % 60);
             $duration = ($hours > 0 ? $hours . 'h ' : '') . ($minutes > 0 ? $minutes . 'm' : '');
 
             // Format tooltip content
@@ -141,8 +141,8 @@
             @endphp
 
             <div
-                class="absolute inset-y-0 {{ $segmentColor }} opacity-90 hover:opacity-100 transition-opacity cursor-pointer rounded-full"
-                style="left: {{ $segmentLeft }}%; width: {{ $segmentWidth }}%;"
+                class="absolute inset-y-0 {{ $segmentColor }} opacity-90 hover:opacity-100 transition-opacity cursor-pointer {{ $index === 0 ? 'rounded-l-full' : '' }} {{ $index === count($dailyTimeLogs) - 1 ? 'rounded-r-full' : '' }}"
+                style="left: {{ $segmentLeft > 100 ? 100 : $segmentLeft }}%; width: {{ $segmentWidth > (100 - $segmentLeft) ? (100 - $segmentLeft) : $segmentWidth }}%;"
                 @mouseenter="showTooltip = true; tooltipContent = '{{ $tooltipContent }}'; tooltipPosition = $event.target.getBoundingClientRect().left + ($event.target.getBoundingClientRect().width / 2);"
                 @mouseleave="showTooltip = false"></div>
             @endforeach
@@ -154,11 +154,10 @@
             $activeTimerLeft = $totalWidth;
             @endphp
             <div
-                class="absolute inset-y-0 bg-red-500 opacity-90 transition-opacity cursor-pointer rounded-full animate-pulse"
-                style="left: {{ $activeTimerLeft }}%; width: {{ $activeTimerWidth }}%;"
+                class="absolute inset-y-0 bg-red-500 opacity-90 transition-opacity cursor-pointer animate-pulse rounded-r-full"
+                style="left: {{ $activeTimerLeft > 100 ? 100 : $activeTimerLeft }}%; width: {{ $activeTimerWidth > (100 - $activeTimerLeft) ? (100 - $activeTimerLeft) : $activeTimerWidth }}%;"
                 @mouseenter="showTooltip = true; tooltipContent = 'Active timer(s)'; tooltipPosition = $event.target.getBoundingClientRect().left + ($event.target.getBoundingClientRect().width / 2);"
-                @mouseleave="showTooltip = false"
-                x-bind:style="'left: {{ $activeTimerLeft }}%; width: ' + ((totalMinutes - {{ $totalDailyMinutes - collect($activeTimers)->sum('current_duration') }}) / {{ $requiredMinutes }} * 100) + '%'"></div>
+                @mouseleave="showTooltip = false"></div>
             @endif
 
             <!-- Tooltip -->
