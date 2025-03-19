@@ -121,21 +121,8 @@ class TimerDescriptionSelector extends Component
             return;
         }
 
-        // Check if description already exists for this timer
-        $existingDescription = TimerDescription::where('description', $this->description)
-            ->where('timer_id', $this->timerId)
-            ->where('user_id', Auth::id())
-            ->where('workspace_id', app('current.workspace')->id)
-            ->first();
-
-        if ($existingDescription) {
-            $this->selectDescription($existingDescription->id, $existingDescription->description);
-
-            return;
-        }
-
-        // Create new description
-        $timerDescription = TimerDescription::create([
+        // Use the new findOrCreateForTimer method from our model to handle uniqueness
+        $timerDescription = TimerDescription::findOrCreateForTimer([
             'description' => $this->description,
             'timer_id' => $this->timerId,
             'user_id' => Auth::id(),

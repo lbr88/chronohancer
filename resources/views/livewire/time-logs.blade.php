@@ -452,17 +452,15 @@ use App\Models\TimeLog;
                                                 ->whereDate('start_time', $day['date']);
                                             
                                             // Match the same criteria used for grouping in the PHP code (timer_id AND timer_description_id)
+                                            // Always prioritize timer_description_id for grouping
                                             if ($timerDescriptionId) {
                                                 $query->where('timer_description_id', $timerDescriptionId);
                                             } else {
-                                                // If no timer_description_id, filter by description
+                                                // Only use description as fallback for legacy data
+                                                $query->whereNull('timer_description_id');
+                                                
                                                 if (!empty($description)) {
-                                                    $query->where(function($q) use ($description) {
-                                                        $q->where('description', $description)
-                                                          ->orWhereHas('timerDescription', function($tq) use ($description) {
-                                                              $tq->where('description', $description);
-                                                          });
-                                                    });
+                                                    $query->where('description', $description);
                                                 } else {
                                                     $query->where(function($q) {
                                                         $q->whereNull('description')
