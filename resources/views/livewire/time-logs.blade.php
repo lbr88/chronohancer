@@ -436,7 +436,10 @@ use App\Models\TimeLog;
                                         if ($logId) {
                                         $description = $timer['description'] ?? '';
                                         $timelogCount = TimeLog::where('user_id', auth()->id())
-                                        ->where('project_id', $project['id'])
+                                        ->where('workspace_id', app('current.workspace')->id)
+                                        ->whereHas('timer', function($q) use ($project) {
+                                            $q->where('project_id', $project['id']);
+                                        })
                                         ->where(function($query) use ($timer) {
                                         if ($timer['id']) {
                                         $query->where('timer_id', $timer['id']);
@@ -785,12 +788,12 @@ use App\Models\TimeLog;
 
                         <div class="col-span-3">
                             <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                @if($timeLog->project_id && isset($timeLog->project) && $timeLog->project->trashed())
-                                <span class="line-through text-gray-500 dark:text-gray-400">{{ $timeLog->project->name }}</span>
+                                @if($timeLog->timer && $timeLog->timer->project_id && isset($timeLog->timer->project) && $timeLog->timer->project->trashed())
+                                <span class="line-through text-gray-500 dark:text-gray-400">{{ $timeLog->timer->project->name }}</span>
                                 <span class="text-xs text-red-500 dark:text-red-400">(deleted)</span>
-                                @elseif($timeLog->project_id && isset($timeLog->project))
-                                <a href="{{ route('time-logs') }}?view=list&filterProject={{ $timeLog->project_id }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
-                                    {{ $timeLog->project->name }}
+                                @elseif($timeLog->timer && $timeLog->timer->project_id && isset($timeLog->timer->project))
+                                <a href="{{ route('time-logs') }}?view=list&filterProject={{ $timeLog->timer->project_id }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
+                                    {{ $timeLog->timer->project->name }}
                                 </a>
                                 @else
                                 @php

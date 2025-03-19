@@ -18,7 +18,6 @@ class TimeLog extends Model
         'timer_id',
         'timer_description_id',
         'user_id',
-        'project_id',
         'workspace_id',
         'description',
         'start_time',
@@ -34,7 +33,6 @@ class TimeLog extends Model
     protected $casts = [
         'start_time' => 'datetime',
         'end_time' => 'datetime',
-        'project_id' => 'integer',
         'duration_minutes' => 'integer',
         'synced_to_tempo_at' => 'datetime',
         'jira_issue_id' => 'string',
