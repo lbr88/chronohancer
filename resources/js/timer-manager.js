@@ -11,7 +11,7 @@ export class TimerManager {
         this.interval = null;
         this.initialized = false;
         this.timers = new Map(); // Store timer elements and their data
-        this.debug = true; // Set to true to enable debug logging
+        this.debug = false; // Set to true to enable debug logging
     }
 
     /**
