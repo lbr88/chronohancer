@@ -563,36 +563,54 @@
             if ((detail.totalDuration || detail.lastDuration) && detail.timerId) {
                 // Wait for the DOM to update with the paused timer
                 setTimeout(() => {
-                    // Find the paused timer in the paused timers section
-                    const pausedTimerElements = document.querySelectorAll('.font-mono.text-yellow-600');
-                    pausedTimerElements.forEach(element => {
-                        // Get all spans in the element
-                        const spans = element.querySelectorAll('span');
+                    try {
+                        // Find the paused timer in the paused timers section
+                        const pausedTimerElements = document.querySelectorAll('.font-mono.text-yellow-600');
+                        pausedTimerElements.forEach(element => {
+                            // Get all spans in the element
+                            const spans = element.querySelectorAll('span');
 
-                        // Update Today duration
-                        if (detail.totalDuration && spans.length > 0) {
-                            const todaySpan = spans[0];
-                            if (todaySpan && todaySpan.textContent.includes('Today:')) {
-                                // Update the total duration text
-                                todaySpan.textContent = `Today: ${detail.totalDuration}`;
+                            // Update Today duration
+                            if (detail.totalDuration && spans.length > 0) {
+                                const todaySpan = spans[0];
+                                if (todaySpan && todaySpan.textContent.includes('Today:')) {
+                                    // Update the total duration text
+                                    todaySpan.textContent = `Today: ${detail.totalDuration}`;
 
-                                // Store the total duration seconds in a data attribute for real-time updates
-                                const [hours, minutes, seconds] = detail.totalDuration.split(':').map(Number);
-                                const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-                                element.dataset.totalSeconds = totalSeconds;
-                                element.dataset.lastUpdated = Date.now();
+                                    // Store the total duration seconds in a data attribute for real-time updates
+                                    if (detail.totalDuration.includes(':')) {
+                                        const parts = detail.totalDuration.split(':');
+                                        let hours = 0,
+                                            minutes = 0,
+                                            seconds = 0;
+
+                                        if (parts.length === 3) {
+                                            [hours, minutes, seconds] = parts.map(Number);
+                                        } else if (parts.length === 2) {
+                                            [minutes, seconds] = parts.map(Number);
+                                        } else if (parts.length === 1) {
+                                            seconds = Number(parts[0]);
+                                        }
+
+                                        const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+                                        element.dataset.totalSeconds = totalSeconds;
+                                        element.dataset.lastUpdated = Date.now();
+                                    }
+                                }
                             }
-                        }
 
-                        // Update Last duration
-                        if (detail.lastDuration && spans.length > 2) {
-                            const lastSpan = spans[2];
-                            if (lastSpan && lastSpan.textContent.includes('Last:')) {
-                                // Update the last duration text
-                                lastSpan.textContent = `Last: ${detail.lastDuration}`;
+                            // Update Last duration
+                            if (detail.lastDuration && spans.length > 2) {
+                                const lastSpan = spans[2];
+                                if (lastSpan && lastSpan.textContent.includes('Last:')) {
+                                    // Update the last duration text
+                                    lastSpan.textContent = `Last: ${detail.lastDuration}`;
+                                }
                             }
-                        }
-                    });
+                        });
+                    } catch (error) {
+                        console.error('Error updating paused timer display:', error);
+                    }
                 }, 500); // Give the DOM time to update
             }
 

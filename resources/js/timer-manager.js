@@ -24,7 +24,7 @@ export class TimerManager {
         const hours = Math.floor(seconds / 3600);
         const minutes = Math.floor((seconds % 3600) / 60);
         const secs = Math.floor(seconds % 60);
-        
+
         // Default to hms format
         if (!format || format === 'hms') {
             return [
@@ -51,17 +51,17 @@ export class TimerManager {
                 }
                 return `${hours}h`;
             }
-            
+
             if (minutes > 0) {
                 if (secs > 0) {
                     return `${minutes}m ${secs}s`;
                 }
                 return `${minutes}m`;
             }
-            
+
             return `${secs}s`;
         }
-        
+
         // Fallback to HH:MM:SS
         return [
             hours.toString().padStart(2, '0'),
@@ -94,7 +94,7 @@ export class TimerManager {
         try {
             // Try parsing as ISO format first
             let date = new Date(dateStr);
-            
+
             // If invalid, try other formats
             if (isNaN(date.getTime())) {
                 // Try MySQL format (YYYY-MM-DD HH:MM:SS)
@@ -102,13 +102,13 @@ export class TimerManager {
                     date = new Date(dateStr.replace(' ', 'T'));
                 }
             }
-            
+
             // Final check if date is valid
             if (isNaN(date.getTime())) {
                 this.log('Invalid date after parsing attempts:', dateStr);
                 return null;
             }
-            
+
             return date;
         } catch (e) {
             this.log('Error parsing date:', e, dateStr);
@@ -125,45 +125,45 @@ export class TimerManager {
             // Get the start time from the data attribute
             const startTimeStr = element.dataset.start;
             this.log('Updating timer with start time:', startTimeStr);
-            
+
             // Parse the start time
             const startTime = this.parseDate(startTimeStr);
             if (!startTime) {
                 element.textContent = '00:00:00';
                 return;
             }
-            
+
             const now = new Date();
             const diffSeconds = Math.floor((now - startTime) / 1000);
-            
+
             if (diffSeconds < 0) {
                 this.log('Negative time difference:', diffSeconds);
                 element.textContent = '00:00:00';
                 return;
             }
-            
+
             // Store the timer data
             this.timers.set(element, {
                 startTime,
                 seconds: diffSeconds,
                 lastUpdated: now
             });
-            
+
             // Get the time format from the data attribute or use default
             let timeFormat = element.dataset.timeFormat || 'hms';
-            
+
             // Update the display with the format
             const formattedTime = this.formatTime(diffSeconds, timeFormat);
             element.textContent = formattedTime;
-            
+
             this.log(`Timer updated: ${element.id || 'unnamed'} - Start: ${startTimeStr}, Diff: ${diffSeconds}s, Format: ${timeFormat}, Display: ${formattedTime}`);
-            
+
             // Add a pulsing effect when seconds change
             element.classList.add('timer-pulse');
             setTimeout(() => {
                 element.classList.remove('timer-pulse');
             }, 500);
-            
+
             // Update the total duration display if it exists
             const timerContainer = element.closest('.flex-col');
             if (timerContainer) {
@@ -173,7 +173,7 @@ export class TimerManager {
                     if (!totalDurationElement.dataset.totalSeconds) {
                         const totalText = totalDurationElement.textContent;
                         const timeMatch = totalText.match(/Today: (\d{2}):(\d{2}):(\d{2})/);
-                        
+
                         if (timeMatch) {
                             const [_, hours, minutes, seconds] = timeMatch;
                             const totalSeconds = parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
@@ -181,29 +181,29 @@ export class TimerManager {
                             totalDurationElement.dataset.lastUpdated = Date.now();
                         }
                     }
-                    
+
                     // If we have stored total seconds, update it
                     if (totalDurationElement.dataset.totalSeconds) {
                         const totalSeconds = parseInt(totalDurationElement.dataset.totalSeconds);
                         const lastUpdated = parseInt(totalDurationElement.dataset.lastUpdated || 0);
                         const now = Date.now();
-                        
+
                         // Only update if timer is running (element has current time)
                         if (diffSeconds > 0) {
                             // Calculate seconds elapsed since last update
                             const elapsedSince = Math.floor((now - lastUpdated) / 1000);
-                            
+
                             // Update the total seconds and last updated time
                             const newTotalSeconds = totalSeconds + elapsedSince;
                             totalDurationElement.dataset.totalSeconds = newTotalSeconds;
                             totalDurationElement.dataset.lastUpdated = now;
-                            
+
                             // Get the time format from the main timer element's data attribute
                             let timeFormat = element.dataset.timeFormat || 'hms';
-                            
+
                             // Update the display with the format
                             totalDurationElement.textContent = `Today: ${this.formatTime(newTotalSeconds, timeFormat)}`;
-                            
+
                             // Add a subtle pulse to the total duration as well
                             totalDurationElement.classList.add('timer-pulse-subtle');
                             setTimeout(() => {
@@ -213,7 +213,7 @@ export class TimerManager {
                     }
                 }
             }
-            
+
         } catch (e) {
             this.log('Error updating timer:', e);
             element.textContent = '00:00:00';
@@ -226,13 +226,13 @@ export class TimerManager {
     updateAllTimers() {
         const timerElements = document.querySelectorAll('.timer-display');
         this.log(`Found ${timerElements.length} timer elements to update`);
-        
+
         if (timerElements.length === 0) {
             this.log('No timer elements found, stopping timer manager');
             this.stop();
             return;
         }
-        
+
         timerElements.forEach(element => this.updateTimer(element));
     }
 
@@ -243,7 +243,7 @@ export class TimerManager {
         if (this.interval) {
             this.stop();
         }
-        
+
         this.log('Starting timer updates');
         this.updateAllTimers();
         this.interval = setInterval(() => this.updateAllTimers(), 1000);
@@ -358,7 +358,7 @@ export class TimerManager {
                     timerDisplay.style.color = '#4f46e5'; // Highlight color on hover
                 }
             });
-            
+
             card.addEventListener('mouseleave', () => {
                 const timerDisplay = card.querySelector('.timer-display');
                 if (timerDisplay) {
@@ -366,30 +366,30 @@ export class TimerManager {
                 }
             });
         });
-        
+
         // Add animation to buttons
         document.querySelectorAll('button[type="submit"], button[wire\\:click*="stopTimer"]').forEach(button => {
             button.classList.add('timer-btn');
         });
-        
+
         // Add animation to buttons except stop buttons
         document.querySelectorAll('button[type="submit"]').forEach(button => {
             button.classList.add('timer-btn');
         });
-        
+
         // Special handling for stop buttons
         document.querySelectorAll('.stop-button').forEach(button => {
             // Remove any padding
             button.style.padding = '0';
-            
+
             // Ensure the SVG is not modified by other code
             const svg = button.querySelector('svg');
             if (svg) {
                 svg.style.pointerEvents = 'none';
-                
+
                 // Prevent any other code from modifying this SVG
                 svg.setAttribute('data-no-modify', 'true');
-                
+
                 // Make sure the SVG is visible
                 svg.style.display = 'block';
                 svg.style.width = '24px';
@@ -407,28 +407,28 @@ export class TimerManager {
             this.start();
             return;
         }
-        
+
         this.log('Initializing timer manager');
         this.initialized = true;
-        
+
         // Add CSS for timer animations
         this.addStyles();
-        
+
         // Start timers immediately
         this.start();
-        
+
         // Handle Livewire events
         this.setupLivewireEventListeners();
-        
+
         // Listen for DOM changes that might add new timer elements
         this.setupMutationObserver();
-        
+
         // Add event listeners for interactive elements
         this.setupEventListeners();
-        
+
         this.log('Timer manager initialization complete');
     }
-    
+
     /**
      * Set up Livewire-specific event listeners
      */
@@ -438,21 +438,21 @@ export class TimerManager {
             this.log('Livewire initialized event detected');
             this.start();
         });
-        
+
         // Handle Livewire updates
         document.addEventListener('livewire:update', () => {
             this.log('Livewire update event detected');
             // Small delay to ensure DOM is updated
             setTimeout(() => this.start(), 100);
         });
-        
+
         // Handle navigation start
         document.addEventListener('livewire:navigating', () => {
             this.log('Navigation started, cleaning up');
             this.stop();
             this.initialized = false; // Reset initialization state
         });
-        
+
         // Handle navigation complete
         document.addEventListener('livewire:navigated', () => {
             this.log('Navigation completed, reinitializing');
@@ -462,43 +462,43 @@ export class TimerManager {
                 this.initialize();
             }, 200);
         });
-        
+
         // Handle page load
         document.addEventListener('livewire:load', () => {
             this.log('Livewire load event detected');
             this.initialized = false; // Reset to force full initialization
             this.initialize();
         });
-        
+
         // Handle Alpine.js initialization (if used)
         document.addEventListener('alpine:initialized', () => {
             this.log('Alpine initialized event detected');
             setTimeout(() => this.start(), 100);
         });
-        
+
         // Handle timer started event (including restarts)
         document.addEventListener('timerStarted', (event) => {
             this.log('Timer started/restarted event detected', event.detail);
-            
+
             // Force refresh of all timer elements to get the latest start times
             setTimeout(() => {
                 // Clear any cached timer data
                 this.timers.clear();
-                
+
                 // If we have specific timer ID and start time in the event detail
                 if (event.detail && event.detail.timerId) {
                     const timerId = event.detail.timerId;
                     const startTime = event.detail.startTime;
-                    
+
                     // Find the specific timer element that was restarted
                     const timerElement = document.getElementById(`timer-${timerId}`);
-                    
+
                     if (timerElement && startTime) {
                         this.log(`Updating restarted timer ${timerId} with new start time: ${startTime}`);
-                        
+
                         // Update the data-start attribute with the new start time
                         timerElement.dataset.start = startTime;
-                        
+
                         // If we have total duration info in the event, store it for real-time updates
                         if (event.detail.totalDuration) {
                             // Find the total duration element
@@ -509,11 +509,11 @@ export class TimerManager {
                                     // Parse the total duration into seconds
                                     const [hours, minutes, seconds] = event.detail.totalDuration.split(':').map(Number);
                                     const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-                                    
+
                                     // Store the total seconds and last updated time
                                     totalDurationElement.dataset.totalSeconds = totalSeconds;
                                     totalDurationElement.dataset.lastUpdated = Date.now();
-                                    
+
                                     // Detect the current time format
                                     let timeFormat = 'hms'; // Default format
                                     const formatButtons = document.querySelectorAll('button[wire\\:click^="setTimeFormat"]');
@@ -527,23 +527,23 @@ export class TimerManager {
                                             }
                                         }
                                     });
-                                    
+
                                     // Format the total duration according to the current format
                                     const formattedDuration = this.formatTime(totalSeconds, timeFormat);
-                                    totalDurationElement.textContent = `(Today: ${formattedDuration})`;
+                                    totalDurationElement.textContent = `Today: ${formattedDuration}`;
                                 }
                             }
                         }
-                        
+
                         // Update this specific timer
                         this.updateTimer(timerElement);
                     }
                 }
-                
+
                 // Re-query all timer elements to get fresh data
                 const timerElements = document.querySelectorAll('.timer-display');
                 this.log(`Refreshing ${timerElements.length} timer elements after timer start/restart`);
-                
+
                 timerElements.forEach(element => {
                     // Log the start time for debugging
                     this.log(`Timer ${element.id || 'unnamed'} start time: ${element.dataset.start}`);
@@ -551,7 +551,7 @@ export class TimerManager {
                 });
             }, 100);
         });
-        
+
         // Handle timer stopped event
         document.addEventListener('timerStopped', (event) => {
             this.log('Timer stopped event detected', event.detail);
@@ -559,7 +559,7 @@ export class TimerManager {
             setTimeout(() => this.updateAllTimers(), 100);
         });
     }
-    
+
     /**
      * Set up mutation observer to detect DOM changes
      */
@@ -567,38 +567,38 @@ export class TimerManager {
         const observer = new MutationObserver((mutations) => {
             let hasTimerElements = false;
             let hasAttributeChanges = false;
-            
+
             for (const mutation of mutations) {
                 // Check for added timer elements
                 if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
                     hasTimerElements = Array.from(mutation.addedNodes).some(node => {
                         if (node.nodeType === Node.ELEMENT_NODE) {
                             return node.classList?.contains('timer-display') ||
-                                   node.querySelector?.('.timer-display');
+                                node.querySelector?.('.timer-display');
                         }
                         return false;
                     });
-                    
+
                     if (hasTimerElements) break;
                 }
-                
+
                 // Check for attribute changes on timer elements (especially data-start)
                 if (mutation.type === 'attributes' &&
                     mutation.attributeName === 'data-start' &&
                     mutation.target.classList?.contains('timer-display')) {
-                    
+
                     hasAttributeChanges = true;
                     const element = mutation.target;
                     this.log(`Timer element attribute changed: ${element.id || 'unnamed'}`, {
                         attribute: mutation.attributeName,
                         newValue: element.dataset.start
                     });
-                    
+
                     // Update this specific timer immediately
                     this.updateTimer(element);
                 }
             }
-            
+
             if (hasTimerElements) {
                 this.log('New timer elements detected, updating all timers');
                 // Clear any cached timer data
@@ -609,7 +609,7 @@ export class TimerManager {
                 // Individual timers already updated above
             }
         });
-        
+
         observer.observe(document.body, {
             childList: true,
             subtree: true,
@@ -625,14 +625,14 @@ if (typeof window !== 'undefined') {
     if (!window.globalTimerManager) {
         window.globalTimerManager = new TimerManager('global');
     }
-    
+
     // Initialize on DOM content loaded
     window.addEventListener('DOMContentLoaded', () => {
         console.log('DOM content loaded, initializing global timer manager');
         window.globalTimerManager.initialized = false; // Force reinitialization
         window.globalTimerManager.initialize();
     });
-    
+
     // Initialize on Livewire page navigations
     document.addEventListener('livewire:navigated', () => {
         console.log('Page navigation completed, reinitializing global timer manager');
@@ -641,7 +641,7 @@ if (typeof window !== 'undefined') {
             window.globalTimerManager.initialize();
         }, 200);
     });
-    
+
     // Initialize on turbo:load for Turbo Drive (if used)
     document.addEventListener('turbo:load', () => {
         console.log('Turbo load event, reinitializing global timer manager');
