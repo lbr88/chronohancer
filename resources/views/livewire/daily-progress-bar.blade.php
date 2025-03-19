@@ -22,21 +22,23 @@
             
             // Listen for Livewire events
             window.addEventListener('dailyProgressUpdated', (event) => {
-                this.totalMinutes = event.detail.totalMinutes;
-                this.percentage = event.detail.percentage;
-                this.remainingTime = event.detail.remainingTime;
+                console.log('dailyProgressUpdated event received:', event.detail);
                 
-                // Update active timers
-                const newActiveTimers = event.detail.activeTimers;
+                this.totalMinutes = event.detail.totalMinutes || 0;
+                this.percentage = event.detail.percentage || 0;
+                this.remainingTime = event.detail.remainingTime || '0m';
+                
+                // Make sure activeTimers is an array, even if it's undefined in the event
+                const activeTimers = Array.isArray(event.detail.activeTimers) ? event.detail.activeTimers : [];
                 
                 // Reset start times for new timers
-                newActiveTimers.forEach(timer => {
+                activeTimers.forEach(timer => {
                     if (!this.startTimes[timer.id]) {
                         this.startTimes[timer.id] = new Date(timer.start_time);
                     }
                 });
                 
-                this.activeTimers = newActiveTimers;
+                this.activeTimers = activeTimers;
                 
                 // Start or stop timer updates based on whether we have active timers
                 if (this.activeTimers.length > 0 && !this.updateInterval) {
