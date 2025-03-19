@@ -59,6 +59,14 @@ class TimerDescription extends Model
             throw new \InvalidArgumentException('Timer ID and description are required');
         }
 
+        // Log the attributes for debugging
+        \Illuminate\Support\Facades\Log::debug('TimerDescription::findOrCreateForTimer', [
+            'timer_id' => $attributes['timer_id'],
+            'description' => $attributes['description'],
+            'user_id' => $attributes['user_id'],
+            'workspace_id' => $attributes['workspace_id'],
+        ]);
+
         // Find an existing timer description
         $existingDescription = self::where('timer_id', $attributes['timer_id'])
             ->where('description', $attributes['description'])
@@ -66,8 +74,35 @@ class TimerDescription extends Model
             ->where('workspace_id', $attributes['workspace_id'])
             ->first();
 
-        // Return existing or create new one
-        return $existingDescription ?? self::create($attributes);
+        if ($existingDescription) {
+            \Illuminate\Support\Facades\Log::debug('Found existing timer description', [
+                'id' => $existingDescription->id,
+                'description' => $existingDescription->description,
+            ]);
+
+            return $existingDescription;
+        }
+
+        // Create a new timer description
+        try {
+            $newDescription = self::create($attributes);
+
+            // Verify the description was saved correctly
+            $newDescription->refresh();
+            \Illuminate\Support\Facades\Log::debug('Created new timer description', [
+                'id' => $newDescription->id,
+                'description' => $newDescription->description,
+                'saved_description_length' => strlen($newDescription->description),
+            ]);
+
+            return $newDescription;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error creating timer description', [
+                'error' => $e->getMessage(),
+                'description' => $attributes['description'],
+            ]);
+            throw $e;
+        }
     }
 
     /**

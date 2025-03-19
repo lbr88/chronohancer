@@ -20,7 +20,14 @@ return new class extends Migration
             // Add a unique constraint for the combination of timer_id and description
             // This ensures that a timer cannot have duplicate descriptions
             // We also include user_id and workspace_id to ensure the constraint is properly scoped
-            $table->unique(['timer_id', 'description', 'user_id', 'workspace_id'], 'unique_timer_description');
+            // For PostgreSQL, we need to use a different approach for text fields
+            if (DB::connection()->getDriverName() === 'pgsql') {
+                // For PostgreSQL, create a unique index with a hash function instead
+                DB::statement('CREATE UNIQUE INDEX unique_timer_description ON timer_descriptions (timer_id, user_id, workspace_id, md5(description))');
+            } else {
+                // For other databases, use the standard unique constraint
+                $table->unique(['timer_id', 'description', 'user_id', 'workspace_id'], 'unique_timer_description');
+            }
         });
     }
 
@@ -88,7 +95,11 @@ return new class extends Migration
     {
         Schema::table('timer_descriptions', function (Blueprint $table) {
             // Drop the unique constraint if we need to rollback
-            $table->dropUnique('unique_timer_description');
+            if (DB::connection()->getDriverName() === 'pgsql') {
+                DB::statement('DROP INDEX IF EXISTS unique_timer_description');
+            } else {
+                $table->dropUnique('unique_timer_description');
+            }
         });
     }
 };

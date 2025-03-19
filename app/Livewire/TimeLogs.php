@@ -408,9 +408,35 @@ class TimeLogs extends Component
      */
     public function handleDescriptionSelected($data)
     {
-        if (isset($data['id'])) {
+        \Illuminate\Support\Facades\Log::debug('TimeLogs::handleDescriptionSelected', [
+            'data' => $data,
+        ]);
+
+        // Always clear the description ID if the description was manually changed
+        if (isset($data['manuallyChanged']) && $data['manuallyChanged']) {
+            $this->timerDescriptionId = null;
+            $this->description = $data['description'] ?? '';
+            \Illuminate\Support\Facades\Log::debug('Description manually changed', [
+                'description' => $this->description,
+            ]);
+        }
+        // Handle selection from dropdown
+        elseif (isset($data['id'])) {
             $this->timerDescriptionId = $data['id'];
             $this->description = $data['description'];
+            \Illuminate\Support\Facades\Log::debug('Selected existing description', [
+                'id' => $this->timerDescriptionId,
+                'description' => $this->description,
+            ]);
+        }
+        // Handle case where there's a description but no ID
+        elseif (isset($data['description'])) {
+            // If there's a description but no ID, still capture the description text
+            $this->description = $data['description'];
+            $this->timerDescriptionId = null;
+            \Illuminate\Support\Facades\Log::debug('No description ID but captured description text', [
+                'description' => $this->description,
+            ]);
         }
     }
 
@@ -446,15 +472,55 @@ class TimeLogs extends Component
             $timer_id = $timer->id;
         }
 
+        // Handle timer description if provided
+        $timerDescriptionId = $this->timerDescriptionId;
+
+        if (! empty($this->description) && ! $timerDescriptionId) {
+            \Illuminate\Support\Facades\Log::debug('Creating new timer description for time log creation', [
+                'description' => $this->description,
+                'timer_id' => $timer_id,
+            ]);
+
+            try {
+                // Use findOrCreateForTimer to prevent duplicates
+                $timerDescription = \App\Models\TimerDescription::findOrCreateForTimer([
+                    'description' => $this->description,
+                    'timer_id' => $timer_id,
+                    'user_id' => Auth::id(),
+                    'workspace_id' => app('current.workspace')->id,
+                ]);
+
+                $timerDescriptionId = $timerDescription->id;
+                \Illuminate\Support\Facades\Log::debug('Created/found timer description', [
+                    'id' => $timerDescription->id,
+                    'description' => $timerDescription->description,
+                ]);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Error creating timer description', [
+                    'error' => $e->getMessage(),
+                    'description' => $this->description,
+                ]);
+                session()->flash('error', 'Error creating timer description: '.$e->getMessage());
+            }
+        }
+
         $timeLog = TimeLog::create([
             'timer_id' => $timer_id,
-            'timer_description_id' => $this->timerDescriptionId,
+            'timer_description_id' => $timerDescriptionId,
             'user_id' => Auth::id(),
             'description' => $this->description, // Keep for backward compatibility
             'start_time' => $start_time,
             'end_time' => $end_time,
             'duration_minutes' => $durationMinutes,
             'workspace_id' => app('current.workspace')->id,
+        ]);
+
+        // Verify the creation was successful
+        \Illuminate\Support\Facades\Log::debug('Created time log', [
+            'id' => $timeLog->id,
+            'timer_description_id' => $timeLog->timer_description_id,
+            'description' => $timeLog->description,
+            'timer_description' => $timeLog->timerDescription ? $timeLog->timerDescription->description : null,
         ]);
 
         if (! empty($this->selectedTags)) {
@@ -637,14 +703,55 @@ class TimeLogs extends Component
             $timer_id = $timer->id;
         }
 
+        // Handle timer description if provided
+        $timerDescriptionId = $this->timerDescriptionId;
+
+        if (! empty($this->description) && ! $timerDescriptionId) {
+            \Illuminate\Support\Facades\Log::debug('Creating new timer description for time log update', [
+                'description' => $this->description,
+                'timer_id' => $timer_id,
+            ]);
+
+            try {
+                // Use findOrCreateForTimer to prevent duplicates
+                $timerDescription = \App\Models\TimerDescription::findOrCreateForTimer([
+                    'description' => $this->description,
+                    'timer_id' => $timer_id,
+                    'user_id' => Auth::id(),
+                    'workspace_id' => app('current.workspace')->id,
+                ]);
+
+                $timerDescriptionId = $timerDescription->id;
+                \Illuminate\Support\Facades\Log::debug('Created/found timer description', [
+                    'id' => $timerDescription->id,
+                    'description' => $timerDescription->description,
+                ]);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Error creating timer description', [
+                    'error' => $e->getMessage(),
+                    'description' => $this->description,
+                ]);
+                session()->flash('error', 'Error creating timer description: '.$e->getMessage());
+            }
+        }
+
         $timeLog->update([
             'timer_id' => $timer_id,
-            'timer_description_id' => $this->timerDescriptionId,
+            'timer_description_id' => $timerDescriptionId,
             'description' => $this->description, // Keep for backward compatibility
             'start_time' => $start_time,
             'end_time' => $end_time,
             'duration_minutes' => $durationMinutes,
             'workspace_id' => app('current.workspace')->id,
+        ]);
+
+        // Verify the update was successful
+        $timeLog->refresh();
+        \Illuminate\Support\Facades\Log::debug('Updated time log', [
+            'id' => $timeLog->id,
+            'timer_description_id' => $timeLog->timer_description_id,
+            'description' => $timeLog->description,
+            'timer_description' => $timeLog->timerDescription ? $timeLog->timerDescription->description : null,
         ]);
 
         $timeLog->tags()->sync($this->selectedTags);
@@ -1388,9 +1495,35 @@ class TimeLogs extends Component
      */
     public function handleQuickTimeDescriptionSelected($data)
     {
-        if (isset($data['id'])) {
+        \Illuminate\Support\Facades\Log::debug('TimeLogs::handleQuickTimeDescriptionSelected', [
+            'data' => $data,
+        ]);
+
+        // Always clear the description ID if the description was manually changed
+        if (isset($data['manuallyChanged']) && $data['manuallyChanged']) {
+            $this->quickTimeTimerDescriptionId = null;
+            $this->quickTimeDescription = $data['description'] ?? '';
+            \Illuminate\Support\Facades\Log::debug('Quick time description manually changed', [
+                'description' => $this->quickTimeDescription,
+            ]);
+        }
+        // Handle selection from dropdown
+        elseif (isset($data['id'])) {
             $this->quickTimeTimerDescriptionId = $data['id'];
             $this->quickTimeDescription = $data['description'];
+            \Illuminate\Support\Facades\Log::debug('Selected existing quick time description', [
+                'id' => $this->quickTimeTimerDescriptionId,
+                'description' => $this->quickTimeDescription,
+            ]);
+        }
+        // Handle case where there's a description but no ID
+        elseif (isset($data['description'])) {
+            // If there's a description but no ID, still capture the description text
+            $this->quickTimeDescription = $data['description'];
+            $this->quickTimeTimerDescriptionId = null;
+            \Illuminate\Support\Facades\Log::debug('No quick time description ID but captured description text', [
+                'description' => $this->quickTimeDescription,
+            ]);
         }
     }
 
@@ -1504,9 +1637,41 @@ class TimeLogs extends Component
         // Get the Microsoft event ID from the session if it exists
         $microsoftEventId = session('microsoft_event_id');
 
+        // Handle timer description if provided
+        $timerDescriptionId = $this->quickTimeTimerDescriptionId;
+
+        if (! empty($this->quickTimeDescription) && ! $timerDescriptionId) {
+            \Illuminate\Support\Facades\Log::debug('Creating new timer description for quick time log', [
+                'description' => $this->quickTimeDescription,
+                'timer_id' => $timer_id,
+            ]);
+
+            try {
+                // Use findOrCreateForTimer to prevent duplicates
+                $timerDescription = \App\Models\TimerDescription::findOrCreateForTimer([
+                    'description' => $this->quickTimeDescription,
+                    'timer_id' => $timer_id,
+                    'user_id' => Auth::id(),
+                    'workspace_id' => app('current.workspace')->id,
+                ]);
+
+                $timerDescriptionId = $timerDescription->id;
+                \Illuminate\Support\Facades\Log::debug('Created/found timer description', [
+                    'id' => $timerDescription->id,
+                    'description' => $timerDescription->description,
+                ]);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Error creating timer description', [
+                    'error' => $e->getMessage(),
+                    'description' => $this->quickTimeDescription,
+                ]);
+                session()->flash('error', 'Error creating timer description: '.$e->getMessage());
+            }
+        }
+
         $timeLog = TimeLog::create([
             'timer_id' => $timer_id,
-            'timer_description_id' => $this->quickTimeTimerDescriptionId,
+            'timer_description_id' => $timerDescriptionId,
             'user_id' => Auth::id(),
             'description' => $this->quickTimeDescription, // Keep for backward compatibility
             'start_time' => $start_time,
@@ -1514,6 +1679,14 @@ class TimeLogs extends Component
             'duration_minutes' => $this->quickTimeDuration,
             'workspace_id' => app('current.workspace')->id,
             'microsoft_event_id' => $microsoftEventId,
+        ]);
+
+        // Verify the creation was successful
+        \Illuminate\Support\Facades\Log::debug('Created quick time log', [
+            'id' => $timeLog->id,
+            'timer_description_id' => $timeLog->timer_description_id,
+            'description' => $timeLog->description,
+            'timer_description' => $timeLog->timerDescription ? $timeLog->timerDescription->description : null,
         ]);
 
         // Clear the Microsoft event ID from the session
