@@ -74,7 +74,7 @@ class TimeLog extends Model
 
     public function timer(): BelongsTo
     {
-        return $this->belongsTo(Timer::class);
+        return $this->belongsTo(Timer::class)->withTrashed();
     }
 
     /**

@@ -55,7 +55,7 @@ class Project extends Model
     public function timeLogs()
     {
         return TimeLog::whereHas('timer', function ($query) {
-            $query->where('project_id', $this->id);
+            $query->where('project_id', $this->id)->withTrashed();
         });
     }
 
