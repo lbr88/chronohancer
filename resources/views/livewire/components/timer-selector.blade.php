@@ -4,6 +4,7 @@
       type="text"
       wire:model.live="search"
       wire:click="toggleDropdown"
+      x-on:blur="setTimeout(() => { $wire.closeDropdown() }, 200)"
       placeholder="Select or create a timer"
       class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2">
     <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">

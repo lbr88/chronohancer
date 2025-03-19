@@ -150,6 +150,14 @@ class UnifiedTimerSelector extends Component
         $this->isSearchFocused = false;
     }
 
+    /**
+     * Clear existing timers to hide dropdown
+     */
+    public function clearExistingTimers()
+    {
+        $this->existingTimers = [];
+    }
+
     public function useExistingTimer($timerId)
     {
         $timer = Timer::with(['tags', 'project', 'descriptions'])->findOrFail($timerId);

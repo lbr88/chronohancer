@@ -781,6 +781,15 @@ class Timers extends Component
         if (isset($data['id'])) {
             $this->timerDescriptionId = $data['id'];
             $this->description = $data['description'];
+
+            // Also update the restart timer description ID if restart modal is open
+            if ($this->showRestartTimerModal) {
+                $this->restartTimerDescriptionId = $data['id'];
+            }
+        } elseif (isset($data['description']) && $this->showRestartTimerModal) {
+            // If no ID but there is a description and we're in the restart modal,
+            // we need to make sure the description is stored for the upcoming timer
+            $this->restartTimerDescriptionId = null;
         }
     }
 
@@ -1285,9 +1294,25 @@ class Timers extends Component
         $description = null;
 
         if ($timerDescriptionId) {
+            // Use existing timer description
             $timerDescription = TimerDescription::find($timerDescriptionId);
             if ($timerDescription) {
                 $description = $timerDescription->description;
+            }
+        } else {
+            // Get the description text from the component
+            // Try to find the timer-description-selector component
+            $descriptionSelector = $this->getFormWireModelValue('timer-description-selector');
+            if ($descriptionSelector && ! empty($descriptionSelector['description'])) {
+                // Create a new timer description
+                $description = $descriptionSelector['description'];
+                $timerDescription = TimerDescription::create([
+                    'description' => $description,
+                    'timer_id' => $timer->id,
+                    'user_id' => Auth::id(),
+                    'workspace_id' => app('current.workspace')->id,
+                ]);
+                $timerDescriptionId = $timerDescription->id;
             }
         }
 

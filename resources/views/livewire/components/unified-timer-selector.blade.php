@@ -1,4 +1,16 @@
-<div>
+<div
+    x-data="{
+        init() {
+            Livewire.on('dispatchCallback', (data) => {
+                setTimeout(() => {
+                    if (data.callback) {
+                        $wire.call(data.callback);
+                    }
+                }, data.delay || 0);
+            });
+        }
+    }"
+>
   <!-- Timer Name -->
   <div class="mb-4">
     <label for="timer_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Timer Name</label>
@@ -19,6 +31,7 @@
             wire:model.live="search"
             wire:focus="focusSearch"
             wire:blur="blurSearch"
+            x-on:blur="setTimeout(() => { $wire.clearExistingTimers() }, 200)"
             placeholder="Search existing timers..."
             class="block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2 text-sm">
           <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">

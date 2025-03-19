@@ -3,6 +3,7 @@
         <textarea
             wire:model.live="description"
             wire:click="toggleDropdown"
+            x-on:blur="setTimeout(() => { $wire.closeDropdown() }, 200)"
             placeholder="{{ $timerId ? 'Select or create a description' : 'Enter a description or select from recent' }}"
             class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2"
             rows="2"></textarea>

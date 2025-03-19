@@ -156,6 +156,8 @@ class TimerDescriptionSelector extends Component
     public function closeDropdown()
     {
         $this->showDropdown = false;
+        $this->descriptions = collect([]);
+        $this->createNewDescription = false;
     }
 
     public function render()

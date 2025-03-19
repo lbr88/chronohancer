@@ -153,6 +153,8 @@ class TimerSelector extends Component
     public function closeDropdown()
     {
         $this->showDropdown = false;
+        $this->createNewTimer = false;
+        $this->search = '';
     }
 
     public function render()
