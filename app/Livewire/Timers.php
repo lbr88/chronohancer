@@ -847,7 +847,19 @@ class Timers extends Component
     {
         $this->log('Handling description selection: '.json_encode($data));
 
-        if (isset($data['id'])) {
+        // Always clear the description ID if the description was manually changed
+        if (isset($data['manuallyChanged']) && $data['manuallyChanged']) {
+            $this->timerDescriptionId = null;
+            $this->description = $data['description'] ?? '';
+
+            // Also update the restart timer description ID if restart modal is open
+            if ($this->showRestartTimerModal) {
+                $this->restartTimerDescriptionId = null;
+                $this->log('Description manually changed, cleared restartTimerDescriptionId');
+            }
+        }
+        // Handle selection from dropdown
+        elseif (isset($data['id'])) {
             $this->timerDescriptionId = $data['id'];
             $this->description = $data['description'];
 
@@ -856,7 +868,9 @@ class Timers extends Component
                 $this->restartTimerDescriptionId = $data['id'];
                 $this->log("Updated restartTimerDescriptionId to {$data['id']}");
             }
-        } elseif (isset($data['description'])) {
+        }
+        // Handle case where there's a description but no ID
+        elseif (isset($data['description'])) {
             // If there's a description but no ID, still capture the description text
             $this->description = $data['description'];
 
@@ -1370,30 +1384,54 @@ class Timers extends Component
         $this->log("Restarting timer ID: {$this->restartTimerId}, Description ID: ".($this->restartTimerDescriptionId ?? 'none'));
 
         // Get the description from the selector
-        $timerDescriptionId = $this->restartTimerDescriptionId;
+        $timerDescriptionId = null;
         $description = null;
 
-        // If we have a description ID, fetch the description
-        if ($timerDescriptionId) {
-            $timerDescription = TimerDescription::find($timerDescriptionId);
+        // If we have a description text entered
+        if (! empty($this->description)) {
+            $description = $this->description;
+
+            // Check if the description matches the existing description ID
+            if ($this->restartTimerDescriptionId) {
+                $existingDescription = TimerDescription::find($this->restartTimerDescriptionId);
+                if ($existingDescription && $existingDescription->description === $description) {
+                    // Use existing description ID if the text matches
+                    $timerDescriptionId = $this->restartTimerDescriptionId;
+                    $this->log("Using existing description ID {$timerDescriptionId}: {$description}");
+                } else {
+                    // Create new description if text doesn't match existing description
+                    $this->log("Creating new description for timer restart: {$description}");
+
+                    $timerDescription = TimerDescription::create([
+                        'description' => $description,
+                        'timer_id' => $timer->id,
+                        'user_id' => Auth::id(),
+                        'workspace_id' => app('current.workspace')->id,
+                    ]);
+                    $timerDescriptionId = $timerDescription->id;
+                    $this->log("Created new timer description with ID: {$timerDescriptionId}");
+                }
+            } else {
+                // No existing description ID but we have description text, create a new timer description
+                $this->log("Creating new description for timer restart: {$description}");
+
+                $timerDescription = TimerDescription::create([
+                    'description' => $description,
+                    'timer_id' => $timer->id,
+                    'user_id' => Auth::id(),
+                    'workspace_id' => app('current.workspace')->id,
+                ]);
+                $timerDescriptionId = $timerDescription->id;
+                $this->log("Created new timer description with ID: {$timerDescriptionId}");
+            }
+        } elseif ($this->restartTimerDescriptionId) {
+            // No description text but we have a description ID, use it
+            $timerDescription = TimerDescription::find($this->restartTimerDescriptionId);
             if ($timerDescription) {
+                $timerDescriptionId = $this->restartTimerDescriptionId;
                 $description = $timerDescription->description;
                 $this->log("Using existing description ID {$timerDescriptionId}: {$description}");
             }
-        } elseif (! empty($this->description)) {
-            // If no timer description ID but we have description text, create a new timer description
-            $description = $this->description;
-
-            $this->log("Creating new description for timer restart: {$description}");
-
-            $timerDescription = TimerDescription::create([
-                'description' => $description,
-                'timer_id' => $timer->id,
-                'user_id' => Auth::id(),
-                'workspace_id' => app('current.workspace')->id,
-            ]);
-            $timerDescriptionId = $timerDescription->id;
-            $this->log("Created new timer description with ID: {$timerDescriptionId}");
         }
 
         // We've already handled the timer description ID and description text above

@@ -80,6 +80,27 @@ class TimerDescriptionSelector extends Component
         // Check if we need to show "Create new description" option
         $this->createNewDescription = ! empty($this->description) &&
             ! collect($this->descriptions)->where('description', $this->description)->count();
+
+        // If the description has changed, clear the timer description ID and notify the parent component
+        if (! empty($this->description) && $this->timerDescriptionId) {
+            $timerDescription = TimerDescription::find($this->timerDescriptionId);
+            if (! $timerDescription || $timerDescription->description !== $this->description) {
+                // Description has been manually changed, clear the ID
+                $this->timerDescriptionId = null;
+
+                // Determine which event to dispatch based on the key
+                $eventName = str_contains($this->getId(), 'quick-time')
+                    ? 'quick-time-description-selected'
+                    : 'description-selected';
+
+                // Notify the parent component that the description has changed
+                $this->dispatch($eventName, [
+                    'id' => null,
+                    'description' => $this->description,
+                    'manuallyChanged' => true,
+                ]);
+            }
+        }
     }
 
     public function selectDescription($id, $description)
