@@ -21,6 +21,41 @@
                 'description' => $editingTimerDescription,
                 'projectName' => $editingTimerProjectName
                 ], key('edit-timer-unified-selector'))
+
+                <script>
+                    document.addEventListener('livewire:initialized', () => {
+                        // Auto-update description when form is submitted
+                        document.querySelector('form').addEventListener('submit', (e) => {
+                            // Prevent the default form submission
+                            e.preventDefault();
+
+                            // Get the unified timer selector component
+                            const unifiedSelector = Livewire.getByName('components.unified-timer-selector');
+
+                            if (unifiedSelector && unifiedSelector.description) {
+                                // Force an update of the description
+                                unifiedSelector.$wire.dispatch('unified-timer-selected', {
+                                    timerId: unifiedSelector.timerId,
+                                    timerName: unifiedSelector.timerName,
+                                    timerDescriptionId: unifiedSelector.timerDescriptionId,
+                                    description: unifiedSelector.description,
+                                    projectId: unifiedSelector.projectId,
+                                    projectName: unifiedSelector.projectName,
+                                    jiraKey: unifiedSelector.jiraKey
+                                });
+
+                                // Give a small delay to ensure the update is processed
+                                setTimeout(() => {
+                                    // Then save the edited timer
+                                    Livewire.find('{{ $_instance->getId() }}').saveEditedTimer();
+                                }, 100);
+                            } else {
+                                // If no description or selector found, just save the timer normally
+                                Livewire.find('{{ $_instance->getId() }}').saveEditedTimer();
+                            }
+                        });
+                    });
+                </script>
             </div>
 
             <!-- Tags -->

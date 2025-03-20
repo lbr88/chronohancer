@@ -23,6 +23,41 @@
                 ], key('new-timer-unified-selector'))
             </div>
 
+            <script>
+                document.addEventListener('livewire:initialized', () => {
+                    // Auto-create description when form is submitted
+                    document.querySelector('form').addEventListener('submit', (e) => {
+                        // Prevent the default form submission
+                        e.preventDefault();
+
+                        // Get the unified timer selector component
+                        const unifiedSelector = Livewire.getByName('components.unified-timer-selector');
+
+                        if (unifiedSelector && unifiedSelector.description) {
+                            // Force an update of the description
+                            unifiedSelector.$wire.dispatch('unified-timer-selected', {
+                                timerId: unifiedSelector.timerId,
+                                timerName: unifiedSelector.timerName,
+                                timerDescriptionId: unifiedSelector.timerDescriptionId,
+                                description: unifiedSelector.description,
+                                projectId: unifiedSelector.projectId,
+                                projectName: unifiedSelector.projectName,
+                                jiraKey: unifiedSelector.jiraKey
+                            });
+
+                            // Give a small delay to ensure the update is processed
+                            setTimeout(() => {
+                                // Then start the timer
+                                Livewire.find('{{ $_instance->getId() }}').startTimer();
+                            }, 100);
+                        } else {
+                            // If no description or selector found, just start the timer normally
+                            Livewire.find('{{ $_instance->getId() }}').startTimer();
+                        }
+                    });
+                });
+            </script>
+
             <!-- Jira Issues Search Component -->
             @livewire('components.jira-search', [], key('new-timer-jira-search'))
 

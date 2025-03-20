@@ -12,28 +12,43 @@
       <div>
         <label for="timer_description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
         @livewire('components.timer-description-selector', [
-          'timerId' => $restartTimerId,
-          'timerDescriptionId' => $restartTimerDescriptionId
+        'timerId' => $restartTimerId,
+        'timerDescriptionId' => $restartTimerDescriptionId
         ], key('restart-timer-description-selector'))
-        
+
         <script>
           document.addEventListener('livewire:initialized', () => {
             document.addEventListener('description-selected', (event) => {
               // Handle timer description selection events
               if (event.detail && event.detail.description) {
                 // Update the parent component's description
-                @this.dispatch('description-selected', event.detail);
+                Livewire.find('{{ $_instance->getId() }}').dispatch('description-selected', event.detail);
               }
             });
-            
+
             // Auto-create description when form is submitted
-            document.querySelector('form').addEventListener('submit', () => {
+            document.querySelector('form').addEventListener('submit', (e) => {
+              // Get the parent component
+              const parentComponent = Livewire.find('{{ $_instance->getId() }}');
+
               // If there's text in the description field but no description ID is set,
               // create it automatically
-              if (@this.description && !@this.restartTimerDescriptionId) {
+              if (parentComponent.description && !parentComponent.restartTimerDescriptionId) {
+                e.preventDefault(); // Prevent form submission temporarily
+
                 const selector = Livewire.find('restart-timer-description-selector');
                 if (selector) {
+                  // Create the description
                   selector.createDescription();
+
+                  // Give a small delay to ensure the description is created
+                  setTimeout(() => {
+                    // Then submit the form
+                    parentComponent.confirmRestartTimer();
+                  }, 100);
+                } else {
+                  // If selector not found, continue with form submission
+                  parentComponent.confirmRestartTimer();
                 }
               }
             });
