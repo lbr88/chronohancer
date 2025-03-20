@@ -81,19 +81,15 @@
                                         @endif
 
                                         @php
-                                            $timerDescription = null;
-                                            // First try to get description from latest time log
-                                            if ($timer->latestTimeLog && $timer->latestTimeLog->timer_description_id && $timer->latestTimeLog->timerDescription) {
-                                                $timerDescription = $timer->latestTimeLog->timerDescription->description;
-                                            }
-                                            // If not found, try to get from latest description
-                                            elseif ($timer->latestDescription) {
-                                                $timerDescription = $timer->latestDescription->description;
-                                            }
-                                            // Finally, fall back to timer description field
-                                            elseif ($timer->description) {
-                                                $timerDescription = $timer->description;
-                                            }
+                                        $timerDescription = null;
+                                        // Get description from latest time log or timer
+                                        if ($timer->latestTimeLog && $timer->latestTimeLog->description) {
+                                        $timerDescription = $timer->latestTimeLog->description;
+                                        }
+                                        // Fall back to timer description field
+                                        elseif ($timer->description) {
+                                        $timerDescription = $timer->description;
+                                        }
                                         @endphp
                                         @if($timerDescription)
                                         <div class="mt-1 text-xs text-gray-600 dark:text-gray-300">
@@ -221,19 +217,15 @@
                                             @endif
 
                                             @php
-                                                $timerDescription = null;
-                                                // First try to get description from latest time log
-                                                if ($timer->latestTimeLog && $timer->latestTimeLog->timer_description_id && $timer->latestTimeLog->timerDescription) {
-                                                    $timerDescription = $timer->latestTimeLog->timerDescription->description;
-                                                }
-                                                // If not found, try to get from latest description
-                                                elseif ($timer->latestDescription) {
-                                                    $timerDescription = $timer->latestDescription->description;
-                                                }
-                                                // Finally, fall back to timer description field
-                                                elseif ($timer->description) {
-                                                    $timerDescription = $timer->description;
-                                                }
+                                            $timerDescription = null;
+                                            // Get description from latest time log or timer
+                                            if ($timer->latestTimeLog && $timer->latestTimeLog->description) {
+                                            $timerDescription = $timer->latestTimeLog->description;
+                                            }
+                                            // Fall back to timer description field
+                                            elseif ($timer->description) {
+                                            $timerDescription = $timer->description;
+                                            }
                                             @endphp
                                             @if($timerDescription)
                                             <div class="mt-1 text-xs text-gray-600 dark:text-gray-300">
@@ -357,9 +349,7 @@
                                                 </x-jira-issue-tooltip>
                                                 @endif
                                             </div>
-                                            @if($timer->latestDescription)
-                                            <div class="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs">{{ $timer->latestDescription->description }}</div>
-                                            @elseif($timer->description)
+                                            @if($timer->description)
                                             <div class="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs">{{ $timer->description }}</div>
                                             @endif
                                         </div>

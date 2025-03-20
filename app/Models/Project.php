@@ -18,6 +18,22 @@ class Project extends Model
     protected $dates = ['deleted_at'];
 
     /**
+     * Set the name attribute and trim whitespace.
+     */
+    public function setNameAttribute($value): void
+    {
+        $this->attributes['name'] = trim($value);
+    }
+
+    /**
+     * Set the description attribute and trim whitespace.
+     */
+    public function setDescriptionAttribute($value): void
+    {
+        $this->attributes['description'] = $value ? trim($value) : null;
+    }
+
+    /**
      * The "booted" method of the model.
      */
     protected static function booted()

@@ -3,8 +3,8 @@
 namespace App\Livewire\Components;
 
 use App\Models\Project;
+use App\Models\TimeLog;
 use App\Models\Timer;
-use App\Models\TimerDescription;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
@@ -13,8 +13,6 @@ class UnifiedTimerSelector extends Component
     public $timerId = null;
 
     public $timerName = '';
-
-    public $timerDescriptionId = null;
 
     public $description = '';
 
@@ -38,10 +36,9 @@ class UnifiedTimerSelector extends Component
         'jira-issue-selected' => 'handleJiraIssueSelected',
     ];
 
-    public function mount($timerId = null, $timerDescriptionId = null, $projectId = null, $timerName = null, $description = null, $projectName = null, $showProjectSelector = true)
+    public function mount($timerId = null, $description = null, $projectId = null, $timerName = null, $projectName = null, $showProjectSelector = true)
     {
         $this->timerId = $timerId;
-        $this->timerDescriptionId = $timerDescriptionId;
         $this->projectId = $projectId;
         $this->showProjectSelector = $showProjectSelector;
 
@@ -72,14 +69,18 @@ class UnifiedTimerSelector extends Component
                     $this->projectId = $timer->project_id;
                     $this->projectName = $timer->project ? $timer->project->name : '';
                 }
-            }
-        }
 
-        // Load description data if a description ID is provided and no description was passed
-        if ($this->timerDescriptionId && ! $description) {
-            $timerDescription = TimerDescription::find($this->timerDescriptionId);
-            if ($timerDescription) {
-                $this->description = $timerDescription->description;
+                // Get the latest description from time logs
+                $latestTimeLog = TimeLog::where('timer_id', $this->timerId)
+                    ->where('user_id', Auth::id())
+                    ->where('workspace_id', app('current.workspace')->id)
+                    ->whereNotNull('description')
+                    ->latest()
+                    ->first();
+
+                if ($latestTimeLog) {
+                    $this->description = $latestTimeLog->description;
+                }
             }
         }
 
@@ -160,19 +161,23 @@ class UnifiedTimerSelector extends Component
 
     public function useExistingTimer($timerId)
     {
-        $timer = Timer::with(['tags', 'project', 'descriptions'])->findOrFail($timerId);
+        $timer = Timer::with(['tags', 'project'])->findOrFail($timerId);
         $this->timerId = $timer->id;
         $this->timerName = $timer->name;
         $this->jiraKey = $timer->jira_key;
 
-        // Get the latest description if available
-        $latestDescription = $timer->latestDescription;
-        if ($latestDescription) {
-            $this->description = $latestDescription->description;
-            $this->timerDescriptionId = $latestDescription->id;
+        // Get the latest description from time logs
+        $latestTimeLog = TimeLog::where('timer_id', $timerId)
+            ->where('user_id', Auth::id())
+            ->where('workspace_id', app('current.workspace')->id)
+            ->whereNotNull('description')
+            ->latest()
+            ->first();
+
+        if ($latestTimeLog) {
+            $this->description = $latestTimeLog->description;
         } else {
             $this->description = '';
-            $this->timerDescriptionId = null;
         }
 
         // Set project data
@@ -226,8 +231,7 @@ class UnifiedTimerSelector extends Component
 
     public function handleDescriptionSelected($data)
     {
-        if (isset($data['id'])) {
-            $this->timerDescriptionId = $data['id'];
+        if (isset($data['description'])) {
             $this->description = $data['description'];
 
             // Dispatch event to parent component
@@ -240,7 +244,6 @@ class UnifiedTimerSelector extends Component
         $data = [
             'timerId' => $this->timerId,
             'timerName' => $this->timerName,
-            'timerDescriptionId' => $this->timerDescriptionId,
             'description' => $this->description,
             'projectId' => $this->projectId,
             'projectName' => $this->projectName,

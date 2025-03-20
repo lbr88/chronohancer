@@ -19,7 +19,7 @@
         @foreach($descriptions as $desc)
         <div
             wire:key="description-{{ $desc->id }}"
-            wire:click="selectDescription({{ $desc->id }}, '{{ addslashes($desc->description) }}')"
+            wire:click="selectDescription('{{ $desc->id }}', '{{ addslashes($desc->description) }}')"
             class="px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 cursor-pointer">
             <div class="font-medium text-gray-900 dark:text-white">
                 {{ \Illuminate\Support\Str::limit($desc->description, 100) }}
@@ -45,5 +45,5 @@
     </div>
     @endif
 
-    <input type="hidden" name="timer_description_id" wire:model="timerDescriptionId">
+    <!-- Removed hidden input for timer_description_id -->
 </div>

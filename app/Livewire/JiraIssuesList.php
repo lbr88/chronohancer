@@ -6,7 +6,6 @@ use App\Models\Project;
 use App\Models\Tag;
 use App\Models\TimeLog;
 use App\Models\Timer as TimerModel;
-use App\Models\TimerDescription;
 use App\Services\JiraService;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
@@ -46,8 +45,6 @@ class JiraIssuesList extends Component
     public string $timerAction = 'create'; // 'create' or 'start'
 
     public ?int $projectId = null;
-
-    public ?int $timerDescriptionId = null;
 
     public ?string $description = '';
 
@@ -218,7 +215,6 @@ class JiraIssuesList extends Component
 
         // Reset project and description
         $this->projectId = null;
-        $this->timerDescriptionId = null;
         $this->description = '';
 
         // If we're starting an existing timer, get the default project
@@ -243,7 +239,6 @@ class JiraIssuesList extends Component
         $this->issueSummary = '';
         $this->issueLabels = [];
         $this->projectId = null;
-        $this->timerDescriptionId = null;
         $this->description = '';
     }
 
@@ -262,10 +257,7 @@ class JiraIssuesList extends Component
      */
     public function handleDescriptionSelected($data): void
     {
-        if (isset($data['id'])) {
-            $this->timerDescriptionId = $data['id'];
-            $this->description = $data['description'];
-        } elseif (isset($data['description'])) {
+        if (isset($data['description'])) {
             $this->description = $data['description'];
         }
     }
@@ -319,23 +311,12 @@ class JiraIssuesList extends Component
                 'is_running' => true,
             ]);
 
-            // Create a timer description if provided
-            if (! empty($this->description)) {
-                $timerDescription = TimerDescription::create([
-                    'description' => $this->description,
-                    'timer_id' => $timer->id,
-                    'user_id' => auth()->id(),
-                    'workspace_id' => $workspace->id,
-                ]);
-            }
-
-            // Create time log
+            // Create time log with description
             $timeLog = TimeLog::create([
                 'timer_id' => $timer->id,
-                'timer_description_id' => $timerDescription->id ?? null,
                 'user_id' => auth()->id(),
                 'start_time' => now(),
-                'description' => $this->description ?: null, // Keep for backward compatibility
+                'description' => $this->description ?: null,
                 'workspace_id' => $workspace->id,
             ]);
 
@@ -424,29 +405,12 @@ class JiraIssuesList extends Component
                 $timer->save();
             }
 
-            // Create a timer description if provided
-            $timerDescriptionId = null;
-            if (! empty($this->description)) {
-                if ($this->timerDescriptionId) {
-                    $timerDescriptionId = $this->timerDescriptionId;
-                } else {
-                    $timerDescription = TimerDescription::create([
-                        'description' => $this->description,
-                        'timer_id' => $timer->id,
-                        'user_id' => auth()->id(),
-                        'workspace_id' => $workspace->id,
-                    ]);
-                    $timerDescriptionId = $timerDescription->id;
-                }
-            }
-
-            // Create a new time log
+            // Create a new time log with description
             $timeLog = TimeLog::create([
                 'timer_id' => $timer->id,
-                'timer_description_id' => $timerDescriptionId,
                 'user_id' => auth()->id(),
                 'start_time' => now(),
-                'description' => $this->description ?: null, // Keep for backward compatibility
+                'description' => $this->description ?: null,
                 'workspace_id' => $workspace->id,
             ]);
 

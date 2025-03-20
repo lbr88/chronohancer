@@ -56,27 +56,31 @@ class Timer extends Model
     }
 
     /**
-     * Get all descriptions for this timer.
-     */
-    public function descriptions(): HasMany
-    {
-        return $this->hasMany(TimerDescription::class);
-    }
-
-    /**
-     * Get the latest description for this timer.
-     */
-    public function latestDescription(): HasOne
-    {
-        return $this->hasOne(TimerDescription::class)->latestOfMany();
-    }
-
-    /**
-     * Get the description attribute from the latest description.
+     * Get the description attribute from the latest time log.
      */
     public function getDescriptionAttribute(): ?string
     {
-        return $this->latestDescription?->description;
+        // Get the latest time log for this timer
+        $latestTimeLog = $this->timeLogs()->latest()->first();
+
+        // Return the description from the time log if available
+        return $latestTimeLog?->description;
+    }
+
+    /**
+     * Set the name attribute and trim whitespace.
+     */
+    public function setNameAttribute($value): void
+    {
+        $this->attributes['name'] = trim($value);
+    }
+
+    /**
+     * Set the jira_key attribute and trim whitespace.
+     */
+    public function setJiraKeyAttribute($value): void
+    {
+        $this->attributes['jira_key'] = $value ? trim($value) : null;
     }
 
     public function getJiraKeyAttribute(): ?string

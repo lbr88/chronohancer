@@ -72,7 +72,6 @@
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Timer Selection</label>
                 @livewire('components.unified-timer-selector', [
                 'timerId' => $quickTimeTimerId,
-                'timerDescriptionId' => $quickTimeTimerDescriptionId,
                 'projectId' => $quickTimeProjectId,
                 'showProjectSelector' => false
                 ], key('quick-time-unified-selector'))

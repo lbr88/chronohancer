@@ -18,7 +18,6 @@
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Timer Selection</label>
         @livewire('components.unified-timer-selector', [
         'timerId' => $timer_id,
-        'timerDescriptionId' => $timerDescriptionId,
         'projectId' => $project_id
         ], key('manual-time-log-unified-selector'))
         @error('project_id') <span class="text-red-500 dark:text-red-400 text-xs">{{ $message }}</span> @enderror

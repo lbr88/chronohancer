@@ -2,16 +2,14 @@
 
 namespace App\Livewire\Components;
 
+use App\Models\TimeLog;
 use App\Models\Timer;
-use App\Models\TimerDescription;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
 class TimerDescriptionSelector extends Component
 {
     public $timerId;
-
-    public $timerDescriptionId;
 
     public $description = '';
 
@@ -26,16 +24,12 @@ class TimerDescriptionSelector extends Component
         'timer-selected' => 'handleTimerSelected',
     ];
 
-    public function mount($timerId = null, $timerDescriptionId = null)
+    public function mount($timerId = null, $description = null)
     {
         $this->timerId = $timerId;
-        $this->timerDescriptionId = $timerDescriptionId;
 
-        if ($this->timerDescriptionId) {
-            $timerDescription = TimerDescription::find($this->timerDescriptionId);
-            if ($timerDescription) {
-                $this->description = $timerDescription->description;
-            }
+        if ($description) {
+            $this->description = $description;
         }
 
         // If we have a timer ID, load descriptions for that timer
@@ -48,7 +42,6 @@ class TimerDescriptionSelector extends Component
     {
         if (isset($data['id'])) {
             $this->timerId = $data['id'];
-            $this->timerDescriptionId = null;
             $this->description = '';
             $this->loadDescriptions();
         }
@@ -56,9 +49,12 @@ class TimerDescriptionSelector extends Component
 
     public function loadDescriptions($query = '')
     {
-        $descriptionsQuery = TimerDescription::with('timer')
+        $descriptionsQuery = TimeLog::select('description')
             ->where('user_id', Auth::id())
-            ->where('workspace_id', app('current.workspace')->id);
+            ->where('workspace_id', app('current.workspace')->id)
+            ->whereNotNull('description')
+            ->where('description', '!=', '')
+            ->distinct();
 
         // If we have a timer ID, only load descriptions for that timer
         if ($this->timerId) {
@@ -69,7 +65,42 @@ class TimerDescriptionSelector extends Component
             $descriptionsQuery->where('description', 'like', '%'.$query.'%');
         }
 
-        $this->descriptions = $descriptionsQuery->orderBy('created_at', 'desc')->limit(10)->get();
+        // Get distinct descriptions with their timer information
+        $descriptions = $descriptionsQuery->orderBy('description')->get();
+
+        // Convert to a format similar to what we had before
+        $this->descriptions = $descriptions->map(function ($item) {
+            // Get the timer for this description
+            $timer = null;
+            if ($this->timerId) {
+                $timer = Timer::find($this->timerId);
+            } else {
+                // Get the most recent timer that used this description
+                $timeLog = TimeLog::where('description', $item->description)
+                    ->where('user_id', Auth::id())
+                    ->where('workspace_id', app('current.workspace')->id)
+                    ->latest()
+                    ->first();
+
+                if ($timeLog && $timeLog->timer_id) {
+                    $timer = Timer::find($timeLog->timer_id);
+                }
+            }
+
+            // Get the most recent time log with this description
+            $timeLog = TimeLog::where('description', $item->description)
+                ->where('user_id', Auth::id())
+                ->where('workspace_id', app('current.workspace')->id)
+                ->latest()
+                ->first();
+
+            return (object) [
+                'id' => $timeLog ? $timeLog->id : null,
+                'description' => $item->description,
+                'timer' => $timer,
+                'created_at' => $timeLog ? $timeLog->created_at : now(),
+            ];
+        })->take(10);
     }
 
     public function updatedDescription()
@@ -81,31 +112,19 @@ class TimerDescriptionSelector extends Component
         $this->createNewDescription = ! empty($this->description) &&
             ! collect($this->descriptions)->where('description', $this->description)->count();
 
-        // If the description has changed, clear the timer description ID and notify the parent component
-        if (! empty($this->description) && $this->timerDescriptionId) {
-            $timerDescription = TimerDescription::find($this->timerDescriptionId);
-            if (! $timerDescription || $timerDescription->description !== $this->description) {
-                // Description has been manually changed, clear the ID
-                $this->timerDescriptionId = null;
+        // Notify the parent component that the description has changed
+        $eventName = str_contains($this->getId(), 'quick-time')
+            ? 'quick-time-description-selected'
+            : 'description-selected';
 
-                // Determine which event to dispatch based on the key
-                $eventName = str_contains($this->getId(), 'quick-time')
-                    ? 'quick-time-description-selected'
-                    : 'description-selected';
-
-                // Notify the parent component that the description has changed
-                $this->dispatch($eventName, [
-                    'id' => null,
-                    'description' => $this->description,
-                    'manuallyChanged' => true,
-                ]);
-            }
-        }
+        $this->dispatch($eventName, [
+            'description' => $this->description,
+            'manuallyChanged' => true,
+        ]);
     }
 
     public function selectDescription($id, $description)
     {
-        $this->timerDescriptionId = $id;
         $this->description = $description;
         $this->showDropdown = false;
 
@@ -115,7 +134,6 @@ class TimerDescriptionSelector extends Component
             : 'description-selected';
 
         $this->dispatch($eventName, [
-            'id' => $this->timerDescriptionId,
             'description' => $this->description,
         ]);
     }
@@ -131,39 +149,11 @@ class TimerDescriptionSelector extends Component
             ? 'quick-time-description-selected'
             : 'description-selected';
 
-        // If no timer is selected, we'll just store the description text without creating a record
-        if (! $this->timerId) {
-            $this->dispatch($eventName, [
-                'id' => null,
-                'description' => $this->description,
-            ]);
-            $this->showDropdown = false;
-
-            return;
-        }
-
-        // Use the new findOrCreateForTimer method from our model to handle uniqueness
-        $timerDescription = TimerDescription::findOrCreateForTimer([
+        $this->dispatch($eventName, [
             'description' => $this->description,
-            'timer_id' => $this->timerId,
-            'user_id' => Auth::id(),
-            'workspace_id' => app('current.workspace')->id,
         ]);
 
-        // Get component key to determine if this is for restart timer modal
-        $componentKey = $this->getId();
-
-        // Special handling for restart timer modal to ensure description is captured correctly
-        if (str_contains($componentKey, 'restart-timer')) {
-            $this->dispatch('description-selected', [
-                'id' => $timerDescription->id,
-                'description' => $timerDescription->description,
-                'isRestart' => true,
-            ]);
-            $this->showDropdown = false;
-        } else {
-            $this->selectDescription($timerDescription->id, $timerDescription->description);
-        }
+        $this->showDropdown = false;
     }
 
     public function toggleDropdown()

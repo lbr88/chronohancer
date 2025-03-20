@@ -15,7 +15,7 @@
             <div class="ch-form-group">
                 @livewire('components.unified-timer-selector', [
                 'timerId' => $editingTimerId,
-                'timerDescriptionId' => $editingTimerDescriptionId,
+                'description' => $editingTimerDescription,
                 'projectId' => null,
                 'timerName' => $editingTimerName,
                 'description' => $editingTimerDescription,
@@ -37,7 +37,6 @@
                                 unifiedSelector.$wire.dispatch('unified-timer-selected', {
                                     timerId: unifiedSelector.timerId,
                                     timerName: unifiedSelector.timerName,
-                                    timerDescriptionId: unifiedSelector.timerDescriptionId,
                                     description: unifiedSelector.description,
                                     projectId: unifiedSelector.projectId,
                                     projectName: unifiedSelector.projectName,

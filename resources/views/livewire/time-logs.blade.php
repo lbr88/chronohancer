@@ -401,7 +401,7 @@ use App\Models\TimeLog;
                                         <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">(No logs)</span>
                                         @endif
                                     </div>
-                                    
+
                                     <!-- List of descriptions -->
                                     @if(isset($timer['descriptions']) && count($timer['descriptions']) > 0)
                                     <div class="mt-1 ml-4">
@@ -409,13 +409,13 @@ use App\Models\TimeLog;
                                         <div class="text-xs text-gray-600 dark:text-gray-300 mb-1">
                                             {{ $descItem['description'] }}
                                             @if(isset($descItem['count']) && $descItem['count'] > 1)
-                                                <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">({{ $descItem['count'] }} logs, {{ $this->formatDuration($descItem['total_duration']) }})</span>
+                                            <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">({{ $descItem['count'] }} logs, {{ $this->formatDuration($descItem['total_duration']) }})</span>
                                             @endif
                                         </div>
                                         @endforeach
                                     </div>
                                     @endif
-                                    
+
                                     @if(count($timer['tags']) > 0)
                                     <div class="flex flex-wrap gap-1 mt-2">
                                         @foreach($timer['tags'] as $tag)
@@ -444,42 +444,34 @@ use App\Models\TimeLog;
                                         $timelogCount = 0;
                                         $logId = $timer['dailyLogIds'][$day['date']] ?? null;
                                         if ($logId) {
-                                            $description = $timer['description'] ?? '';
-                                            $timerDescriptionId = $timer['timerDescriptionId'] ?? null;
-                                            
-                                            $query = TimeLog::where('user_id', auth()->id())
-                                                ->where('workspace_id', app('current.workspace')->id)
-                                                ->whereHas('timer', function($q) use ($project) {
-                                                    $q->where('project_id', $project['id']);
-                                                })
-                                                ->where(function($q) use ($timer) {
-                                                    if ($timer['id']) {
-                                                        $q->where('timer_id', $timer['id']);
-                                                    } else {
-                                                        $q->whereNull('timer_id');
-                                                    }
-                                                })
-                                                ->whereDate('start_time', $day['date']);
-                                            
-                                            // Match the same criteria used for grouping in the PHP code (timer_id AND timer_description_id)
-                                            // Always prioritize timer_description_id for grouping
-                                            if ($timerDescriptionId) {
-                                                $query->where('timer_description_id', $timerDescriptionId);
-                                            } else {
-                                                // Only use description as fallback for legacy data
-                                                $query->whereNull('timer_description_id');
-                                                
-                                                if (!empty($description)) {
-                                                    $query->where('description', $description);
-                                                } else {
-                                                    $query->where(function($q) {
-                                                        $q->whereNull('description')
-                                                          ->orWhere('description', '');
-                                                    });
-                                                }
-                                            }
-                                            
-                                            $timelogCount = $query->count();
+                                        $description = $timer['description'] ?? '';
+                                        $description = $timer['description'] ?? '';
+
+                                        $query = TimeLog::where('user_id', auth()->id())
+                                        ->where('workspace_id', app('current.workspace')->id)
+                                        ->whereHas('timer', function($q) use ($project) {
+                                        $q->where('project_id', $project['id']);
+                                        })
+                                        ->where(function($q) use ($timer) {
+                                        if ($timer['id']) {
+                                        $q->where('timer_id', $timer['id']);
+                                        } else {
+                                        $q->whereNull('timer_id');
+                                        }
+                                        })
+                                        ->whereDate('start_time', $day['date']);
+
+                                        // Match by description
+                                        if (!empty($description)) {
+                                        $query->where('description', $description);
+                                        } else {
+                                        $query->where(function($q) {
+                                        $q->whereNull('description')
+                                        ->orWhere('description', '');
+                                        });
+                                        }
+
+                                        $timelogCount = $query->count();
                                         }
                                         @endphp
                                         @if($timelogCount > 1)
@@ -491,7 +483,7 @@ use App\Models\TimeLog;
                                     <div class="absolute z-10 hidden group-hover:block bg-gray-800 dark:bg-black text-white text-xs rounded p-2 mt-1 min-w-[150px] max-w-[300px] whitespace-normal">
                                         <div class="font-medium mb-1">Descriptions:</div>
                                         @foreach(explode(', ', $timer['dailyDescriptions'][$day['date']]) as $desc)
-                                            <div class="pl-2">• {{ $desc }}</div>
+                                        <div class="pl-2">• {{ $desc }}</div>
                                         @endforeach
                                     </div>
                                     @endif

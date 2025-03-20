@@ -13,6 +13,14 @@ class Tag extends Model
 
     protected $fillable = ['name', 'color', 'user_id', 'workspace_id'];
 
+    /**
+     * Set the name attribute and trim whitespace.
+     */
+    public function setNameAttribute($value): void
+    {
+        $this->attributes['name'] = trim($value);
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -41,6 +49,9 @@ class Tag extends Model
     // Static method to find or create a tag by name for a user in a workspace
     public static function findOrCreateForUser(string $name, int $userId, ?int $workspaceId = null, ?string $color = null): self
     {
+        // Trim the name to ensure consistent matching
+        $name = trim($name);
+
         // If no workspace ID is provided, get the user's default workspace
         if (! $workspaceId) {
             $workspace = Workspace::findOrCreateDefault($userId);

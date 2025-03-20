@@ -6,7 +6,6 @@ use App\Models\Project;
 use App\Models\Tag;
 use App\Models\TimeLog;
 use App\Models\Timer;
-use App\Models\TimerDescription;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -22,11 +21,7 @@ class Timers extends Component
 
     public $description;
 
-    public $timerDescriptionId;
-
     public $tag_input = '';
-
-    public $editingTimerDescriptionId;
 
     public $search = '';
 
@@ -51,8 +46,6 @@ class Timers extends Component
     public $restartTimerId = null;
 
     public $restartTimerName = null;
-
-    public $restartTimerDescriptionId = null;
 
     public $timerStartTime = null;
 
@@ -197,12 +190,10 @@ class Timers extends Component
      */
     public function closeNewTimerModal()
     {
-        $this->reset(['name', 'description', 'timerDescriptionId', 'project_name', 'project_id', 'tag_input', 'search', 'jiraKey']);
+        $this->reset(['name', 'description', 'project_name', 'project_id', 'tag_input', 'search', 'jiraKey']);
         $this->suggestions = ['projects' => [], 'tags' => []];
         $this->showNewTimerModal = false;
     }
-
-    // Search functionality is now handled by the UnifiedTimerSelector component
 
     /**
      * Handle project selection from the project selector component
@@ -296,8 +287,6 @@ class Timers extends Component
         $this->suggestions['tags'] = [];
     }
 
-    // This method is no longer needed as timer selection is handled by the UnifiedTimerSelector component
-
     public function startTimer()
     {
         try {
@@ -310,7 +299,6 @@ class Timers extends Component
                 'project_name' => $this->project_name,
                 'project_id' => $this->project_id,
                 'description' => $this->description,
-                'timerDescriptionId' => $this->timerDescriptionId,
                 'tag_input' => $this->tag_input,
             ]));
 
@@ -350,35 +338,6 @@ class Timers extends Component
                 'jira_key' => $this->jiraKey ?: null,
             ]);
 
-            // Create a timer description if provided
-            $timerDescriptionId = null;
-            if (! empty($this->description)) {
-                $this->log("Creating timer description: '{$this->description}'");
-
-                try {
-                    // Use findOrCreateForTimer to prevent duplicates
-                    $timerDescription = TimerDescription::findOrCreateForTimer([
-                        'description' => $this->description,
-                        'timer_id' => $timer->id,
-                        'user_id' => Auth::id(),
-                        'workspace_id' => app('current.workspace')->id,
-                    ]);
-
-                    $timerDescriptionId = $timerDescription->id;
-                    $this->log("Created/found timer description with ID: {$timerDescription->id}");
-
-                    // Verify the description was saved correctly
-                    $this->log("Saved description: '{$timerDescription->description}'");
-                } catch (\Exception $e) {
-                    $this->log('Error creating timer description: '.$e->getMessage());
-                    $this->showNotification('Error creating timer description: '.$e->getMessage(), 'error');
-                }
-            } elseif ($this->timerDescriptionId) {
-                // Use existing timer description
-                $timerDescriptionId = $this->timerDescriptionId;
-                $this->log("Using existing timer description ID: {$timerDescriptionId}");
-            }
-
             // Process tags
             if ($this->tag_input) {
                 $tagNames = collect(explode(',', $this->tag_input))
@@ -401,13 +360,12 @@ class Timers extends Component
             // Use the stored start time if available, otherwise use current time
             $startTime = $this->timerStartTime ?: now();
 
-            // Create time log
+            // Create time log with description
             $timeLog = TimeLog::create([
                 'timer_id' => $timer->id,
-                'timer_description_id' => $timerDescriptionId,
                 'user_id' => Auth::id(),
                 'start_time' => $startTime,
-                'description' => $this->description ?: null, // Keep for backward compatibility
+                'description' => $this->description ?: null,
                 'workspace_id' => app('current.workspace')->id,
             ]);
 
@@ -483,9 +441,6 @@ class Timers extends Component
         $this->dispatch('timerStopped', ['timerId' => $timerId]);
     }
 
-    /**
-     * Stop a timer and open the edit modal
-     */
     /**
      * Parse a human-readable duration string into minutes
      *
@@ -578,13 +533,17 @@ class Timers extends Component
         $this->editingTimerId = $timer->id;
         $this->editingTimerName = $timer->name;
 
-        // Get the latest description if available
-        if ($timer->latestDescription) {
-            $this->editingTimerDescription = $timer->latestDescription->description;
-            $this->editingTimerDescriptionId = $timer->latestDescription->id;
+        // Get the latest description from time logs
+        $latestTimeLogWithDescription = $timer->timeLogs()
+            ->whereNotNull('description')
+            ->where('description', '!=', '')
+            ->latest()
+            ->first();
+
+        if ($latestTimeLogWithDescription) {
+            $this->editingTimerDescription = $latestTimeLogWithDescription->description;
         } else {
             $this->editingTimerDescription = '';
-            $this->editingTimerDescriptionId = null;
         }
 
         $this->editingTimerProjectName = $timer->project ? $timer->project->name : '';
@@ -653,48 +612,6 @@ class Timers extends Component
             return;
         }
 
-        // Create or update timer description
-        if (! empty($this->editingTimerDescription)) {
-            $this->log("Processing timer description: '{$this->editingTimerDescription}', ID: ".($this->editingTimerDescriptionId ?? 'null'));
-
-            if ($this->editingTimerDescriptionId) {
-                // Update existing description
-                $timerDescription = TimerDescription::find($this->editingTimerDescriptionId);
-                if ($timerDescription) {
-                    $this->log("Updating existing timer description ID {$this->editingTimerDescriptionId}");
-                    $timerDescription->update([
-                        'description' => $this->editingTimerDescription,
-                    ]);
-
-                    // Verify the update was successful
-                    $timerDescription->refresh();
-                    $this->log("Updated description: '{$timerDescription->description}'");
-                }
-            } else {
-                // Create new description
-                $this->log("Creating new timer description: '{$this->editingTimerDescription}'");
-
-                try {
-                    // Use findOrCreateForTimer to prevent duplicates
-                    $timerDescription = TimerDescription::findOrCreateForTimer([
-                        'description' => $this->editingTimerDescription,
-                        'timer_id' => $timer->id,
-                        'user_id' => Auth::id(),
-                        'workspace_id' => app('current.workspace')->id,
-                    ]);
-
-                    $this->editingTimerDescriptionId = $timerDescription->id;
-                    $this->log("Created/found timer description with ID: {$timerDescription->id}");
-
-                    // Verify the description was saved correctly
-                    $this->log("Saved description: '{$timerDescription->description}'");
-                } catch (\Exception $e) {
-                    $this->log('Error creating timer description: '.$e->getMessage());
-                    $this->showNotification('Error creating timer description: '.$e->getMessage(), 'error');
-                }
-            }
-        }
-
         // Process tags
         if ($this->editingTimerTagInput) {
             $tagNames = collect(explode(',', $this->editingTimerTagInput))
@@ -738,8 +655,7 @@ class Timers extends Component
                     $timeLog->update([
                         'end_time' => $endTime,
                         'duration_minutes' => (int) $totalMinutes, // Cast to integer to avoid decimal values
-                        'timer_description_id' => $this->editingTimerDescriptionId,
-                        'description' => $this->editingTimerDescription ?: null, // Keep for backward compatibility
+                        'description' => $this->editingTimerDescription ?: null,
                         'workspace_id' => app('current.workspace')->id,
                     ]);
 
@@ -752,13 +668,12 @@ class Timers extends Component
                 }
             }
         }
-        // Update the latest time log's project_id if the timer is running
+        // Update the latest time log's description if the timer is running
         elseif ($wasRunning) {
             $latestLog = $timer->timeLogs()->latest()->first();
             if ($latestLog && ! $latestLog->end_time) {
                 $latestLog->update([
-                    'timer_description_id' => $this->editingTimerDescriptionId,
-                    'description' => $this->editingTimerDescription ?: null, // Keep for backward compatibility
+                    'description' => $this->editingTimerDescription ?: null,
                     'workspace_id' => app('current.workspace')->id,
                 ]);
             }
@@ -779,7 +694,6 @@ class Timers extends Component
         $this->editingTimerId = null;
         $this->editingTimerName = null;
         $this->editingTimerDescription = null;
-        $this->editingTimerDescriptionId = null;
         $this->editingTimerProjectName = null;
         $this->editingTimerTagInput = null;
         $this->editingTimeLogId = null;
@@ -881,58 +795,13 @@ class Timers extends Component
     {
         $this->log('Handling description selection: '.json_encode($data));
 
-        // Always clear the description ID if the description was manually changed
-        if (isset($data['manuallyChanged']) && $data['manuallyChanged']) {
-            $this->timerDescriptionId = null;
-            $this->description = $data['description'] ?? '';
-
-            // Also update editing timer description if edit modal is open
-            if ($this->showEditTimerModal) {
-                $this->editingTimerDescriptionId = null;
-                $this->editingTimerDescription = $data['description'] ?? '';
-                $this->log('Description manually changed, updated editingTimerDescription');
-            }
-
-            // Also update the restart timer description ID if restart modal is open
-            if ($this->showRestartTimerModal) {
-                $this->restartTimerDescriptionId = null;
-                $this->log('Description manually changed, cleared restartTimerDescriptionId');
-            }
-        }
-        // Handle selection from dropdown
-        elseif (isset($data['id'])) {
-            $this->timerDescriptionId = $data['id'];
+        if (isset($data['description'])) {
             $this->description = $data['description'];
 
             // Also update editing timer description if edit modal is open
             if ($this->showEditTimerModal) {
-                $this->editingTimerDescriptionId = $data['id'];
                 $this->editingTimerDescription = $data['description'];
                 $this->log("Updated editingTimerDescription to {$data['description']}");
-            }
-
-            // Also update the restart timer description ID if restart modal is open
-            if ($this->showRestartTimerModal) {
-                $this->restartTimerDescriptionId = $data['id'];
-                $this->log("Updated restartTimerDescriptionId to {$data['id']}");
-            }
-        }
-        // Handle case where there's a description but no ID
-        elseif (isset($data['description'])) {
-            // If there's a description but no ID, still capture the description text
-            $this->description = $data['description'];
-
-            // Also update editing timer description if edit modal is open
-            if ($this->showEditTimerModal) {
-                $this->editingTimerDescriptionId = null;
-                $this->editingTimerDescription = $data['description'];
-                $this->log("No description ID but captured description text for editing: {$data['description']}");
-            }
-
-            // Also update the restart description if restart modal is open
-            if ($this->showRestartTimerModal) {
-                $this->restartTimerDescriptionId = null;
-                $this->log("No description ID but captured description text for restart: {$data['description']}");
             }
         }
     }
@@ -976,8 +845,7 @@ class Timers extends Component
         }
 
         // Set description data
-        if (isset($data['timerDescriptionId'])) {
-            $this->timerDescriptionId = $data['timerDescriptionId'];
+        if (isset($data['description'])) {
             $this->description = $data['description'] ?? '';
         }
 
@@ -1322,19 +1190,23 @@ class Timers extends Component
      */
     public function editTimer($timerId)
     {
-        $timer = Timer::with(['tags', 'project', 'latestDescription'])->findOrFail($timerId);
+        $timer = Timer::with(['tags', 'project'])->findOrFail($timerId);
 
         // Set up editing properties
         $this->editingTimerId = $timer->id;
         $this->editingTimerName = $timer->name;
 
-        // Get the latest description if available
-        if ($timer->latestDescription) {
-            $this->editingTimerDescription = $timer->latestDescription->description;
-            $this->editingTimerDescriptionId = $timer->latestDescription->id;
+        // Get the latest description from time logs
+        $latestTimeLogWithDescription = $timer->timeLogs()
+            ->whereNotNull('description')
+            ->where('description', '!=', '')
+            ->latest()
+            ->first();
+
+        if ($latestTimeLogWithDescription) {
+            $this->editingTimerDescription = $latestTimeLogWithDescription->description;
         } else {
             $this->editingTimerDescription = '';
-            $this->editingTimerDescriptionId = null;
         }
 
         $this->editingTimerProjectName = $timer->project ? $timer->project->name : '';
@@ -1349,19 +1221,23 @@ class Timers extends Component
      */
     public function editRunningTimer($timerId)
     {
-        $timer = Timer::with(['tags', 'project', 'latestDescription'])->findOrFail($timerId);
+        $timer = Timer::with(['tags', 'project'])->findOrFail($timerId);
 
         // Set up editing properties
         $this->editingTimerId = $timer->id;
         $this->editingTimerName = $timer->name;
 
-        // Get the latest description if available
-        if ($timer->latestDescription) {
-            $this->editingTimerDescription = $timer->latestDescription->description;
-            $this->editingTimerDescriptionId = $timer->latestDescription->id;
+        // Get the latest description from time logs
+        $latestTimeLogWithDescription = $timer->timeLogs()
+            ->whereNotNull('description')
+            ->where('description', '!=', '')
+            ->latest()
+            ->first();
+
+        if ($latestTimeLogWithDescription) {
+            $this->editingTimerDescription = $latestTimeLogWithDescription->description;
         } else {
             $this->editingTimerDescription = '';
-            $this->editingTimerDescriptionId = null;
         }
 
         $this->editingTimerProjectName = $timer->project ? $timer->project->name : '';
@@ -1376,22 +1252,26 @@ class Timers extends Component
      */
     public function restartTimer($timerId)
     {
-        $timer = Timer::with(['latestDescription'])->findOrFail($timerId);
+        $timer = Timer::findOrFail($timerId);
 
         // Set up restart properties
         $this->restartTimerId = $timer->id;
         $this->restartTimerName = $timer->name;
 
-        // Get the latest description if available
-        if ($timer->latestDescription) {
-            $this->restartTimerDescriptionId = $timer->latestDescription->id;
+        // Get the latest description from time logs
+        $latestTimeLogWithDescription = $timer->timeLogs()
+            ->whereNotNull('description')
+            ->where('description', '!=', '')
+            ->latest()
+            ->first();
+
+        if ($latestTimeLogWithDescription) {
+            $this->description = $latestTimeLogWithDescription->description;
         } else {
-            $this->restartTimerDescriptionId = null;
+            $this->description = '';
         }
 
         // Show the restart modal
-        // Set description to empty by default
-        $this->description = '';
         $this->showRestartTimerModal = true;
     }
 
@@ -1403,7 +1283,7 @@ class Timers extends Component
         $this->showRestartTimerModal = false;
         $this->restartTimerId = null;
         $this->restartTimerName = null;
-        $this->restartTimerDescriptionId = null;
+        $this->description = '';
     }
 
     /**
@@ -1435,71 +1315,12 @@ class Timers extends Component
             $timer->save();
         }
 
-        // Add logging to help diagnose timer restart issues
-        $this->log("Restarting timer ID: {$this->restartTimerId}, Description ID: ".($this->restartTimerDescriptionId ?? 'none'));
-
-        // Get the description from the selector
-        $timerDescriptionId = null;
-        $description = null;
-
-        // If we have a description text entered
-        if (! empty($this->description)) {
-            $description = $this->description;
-
-            // Check if the description matches the existing description ID
-            if ($this->restartTimerDescriptionId) {
-                $existingDescription = TimerDescription::find($this->restartTimerDescriptionId);
-                if ($existingDescription && $existingDescription->description === $description) {
-                    // Use existing description ID if the text matches
-                    $timerDescriptionId = $this->restartTimerDescriptionId;
-                    $this->log("Using existing description ID {$timerDescriptionId}: {$description}");
-                } else {
-                    // Create new description if text doesn't match existing description
-                    $this->log("Creating new description for timer restart: {$description}");
-
-                    $timerDescription = TimerDescription::create([
-                        'description' => $description,
-                        'timer_id' => $timer->id,
-                        'user_id' => Auth::id(),
-                        'workspace_id' => app('current.workspace')->id,
-                    ]);
-                    $timerDescriptionId = $timerDescription->id;
-                    $this->log("Created new timer description with ID: {$timerDescriptionId}");
-                }
-            } else {
-                // No existing description ID but we have description text, create a new timer description
-                $this->log("Creating new description for timer restart: {$description}");
-
-                $timerDescription = TimerDescription::create([
-                    'description' => $description,
-                    'timer_id' => $timer->id,
-                    'user_id' => Auth::id(),
-                    'workspace_id' => app('current.workspace')->id,
-                ]);
-                $timerDescriptionId = $timerDescription->id;
-                $this->log("Created new timer description with ID: {$timerDescriptionId}");
-            }
-        } elseif ($this->restartTimerDescriptionId) {
-            // No description text but we have a description ID, use it
-            $timerDescription = TimerDescription::find($this->restartTimerDescriptionId);
-            if ($timerDescription) {
-                $timerDescriptionId = $this->restartTimerDescriptionId;
-                $description = $timerDescription->description;
-                $this->log("Using existing description ID {$timerDescriptionId}: {$description}");
-            }
-        }
-
-        // We've already handled the timer description ID and description text above
-        // Additional logging for debugging
-        $this->log("Final values for time log creation - Description ID: {$timerDescriptionId}, Description text: ".($description ?? 'none'));
-
-        // Create a new time log with current time
+        // Create a new time log with current time and description
         $timeLog = TimeLog::create([
             'timer_id' => $timer->id,
-            'timer_description_id' => $timerDescriptionId,
             'user_id' => Auth::id(),
             'start_time' => now(),
-            'description' => $description, // Keep for backward compatibility
+            'description' => $this->description ?: null,
             'workspace_id' => app('current.workspace')->id,
         ]);
 
@@ -1670,7 +1491,7 @@ class Timers extends Component
         });
 
         // Get all timers for the user
-        $allTimers = Timer::with(['project', 'tags', 'latestTimeLog', 'latestTimeLog.timerDescription', 'latestDescription'])
+        $allTimers = Timer::with(['project', 'tags', 'latestTimeLog'])
             ->where('user_id', Auth::id())
             ->where('workspace_id', app('current.workspace')->id)
             ->orderBy('updated_at', 'desc')

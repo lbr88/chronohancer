@@ -29,7 +29,7 @@ class TimerDescription extends Model
         $uniqueRule = Rule::unique('timer_descriptions')
             ->where(function ($query) {
                 // Scope by current user and workspace
-                return $query->where('user_id', auth()->id())
+                return $query->where('user_id', \Illuminate\Support\Facades\Auth::id())
                     ->where('workspace_id', app('current.workspace')->id);
             });
 
@@ -59,12 +59,16 @@ class TimerDescription extends Model
             throw new \InvalidArgumentException('Timer ID and description are required');
         }
 
+        // Trim the description to ensure consistent matching
+        $attributes['description'] = trim($attributes['description']);
+
         // Log the attributes for debugging
         \Illuminate\Support\Facades\Log::debug('TimerDescription::findOrCreateForTimer', [
             'timer_id' => $attributes['timer_id'],
             'description' => $attributes['description'],
             'user_id' => $attributes['user_id'],
             'workspace_id' => $attributes['workspace_id'],
+            'description_length' => strlen($attributes['description']),
         ]);
 
         // Find an existing timer description
@@ -96,6 +100,27 @@ class TimerDescription extends Model
             ]);
 
             return $newDescription;
+        } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+            // If we hit a unique constraint violation, it means another request created the same description
+            // between our check and our insert. Try to find it again.
+            \Illuminate\Support\Facades\Log::warning('Unique constraint violation, trying to find existing description', [
+                'error' => $e->getMessage(),
+                'description' => $attributes['description'],
+            ]);
+
+            // Try to find the existing description again
+            $existingDescription = self::where('timer_id', $attributes['timer_id'])
+                ->where('description', $attributes['description'])
+                ->where('user_id', $attributes['user_id'])
+                ->where('workspace_id', $attributes['workspace_id'])
+                ->first();
+
+            if ($existingDescription) {
+                return $existingDescription;
+            }
+
+            // If we still can't find it, something else is wrong
+            throw $e;
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Error creating timer description', [
                 'error' => $e->getMessage(),

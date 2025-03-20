@@ -12,8 +12,7 @@
       <div>
         <label for="timer_description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
         @livewire('components.timer-description-selector', [
-        'timerId' => $restartTimerId,
-        'timerDescriptionId' => $restartTimerDescriptionId
+        'timerId' => $restartTimerId
         ], key('restart-timer-description-selector'))
 
         <script>
@@ -31,9 +30,8 @@
               // Get the parent component
               const parentComponent = Livewire.find('{{ $_instance->getId() }}');
 
-              // If there's text in the description field but no description ID is set,
-              // create it automatically
-              if (parentComponent.description && !parentComponent.restartTimerDescriptionId) {
+              // If there's text in the description field, create it automatically
+              if (parentComponent.description) {
                 e.preventDefault(); // Prevent form submission temporarily
 
                 const selector = Livewire.find('restart-timer-description-selector');

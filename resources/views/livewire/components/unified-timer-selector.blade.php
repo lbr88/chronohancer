@@ -1,5 +1,5 @@
 <div
-    x-data="{
+  x-data="{
         init() {
             Livewire.on('dispatchCallback', (data) => {
                 setTimeout(() => {
@@ -9,8 +9,7 @@
                 }, data.delay || 0);
             });
         }
-    }"
->
+    }">
   <!-- Timer Name -->
   <div class="mb-4">
     <label for="timer_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Timer Name</label>
@@ -87,6 +86,6 @@
   <!-- Description -->
   <div class="mb-4">
     <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
-    @livewire('components.timer-description-selector', ['timerId' => $timerId, 'timerDescriptionId' => $timerDescriptionId], key('unified-timer-description-selector-' . uniqid()))
+    @livewire('components.timer-description-selector', ['timerId' => $timerId, 'description' => $description], key('unified-timer-description-selector-' . uniqid()))
   </div>
 </div>

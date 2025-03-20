@@ -41,7 +41,7 @@ class TimerController extends Controller
         // Create the timer
         $timer = Timer::create([
             'name' => $validated['name'],
-            'description' => $validated['description'] ?? null,
+            'description' => $validated['description'] ?? null, // Description is now stored directly in time logs
             'project_id' => $validated['project_id'],
             'is_running' => true,
         ]);
@@ -127,7 +127,7 @@ class TimerController extends Controller
 
         $timer->update([
             'name' => $validated['name'],
-            'description' => $validated['description'] ?? null,
+            'description' => $validated['description'] ?? null, // Description is now stored directly in time logs
             'project_id' => $validated['project_id'],
         ]);
 

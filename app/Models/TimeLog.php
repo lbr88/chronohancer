@@ -16,7 +16,6 @@ class TimeLog extends Model
 
     protected $fillable = [
         'timer_id',
-        'timer_description_id',
         'user_id',
         'workspace_id',
         'description',
@@ -76,19 +75,11 @@ class TimeLog extends Model
     }
 
     /**
-     * Get the timer description associated with this time log.
-     */
-    public function timerDescription(): BelongsTo
-    {
-        return $this->belongsTo(TimerDescription::class);
-    }
-
-    /**
-     * Get the description attribute from the timer description or the local description.
+     * Get the description text attribute.
      */
     public function getDescriptionTextAttribute(): ?string
     {
-        return $this->timerDescription?->description ?? $this->description;
+        return $this->description;
     }
 
     public function user(): BelongsTo
