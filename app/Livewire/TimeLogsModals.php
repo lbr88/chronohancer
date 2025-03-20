@@ -79,6 +79,8 @@ class TimeLogsModals extends Component
         'quick-time-description-selected' => 'handleQuickTimeDescriptionSelected',
         'unified-timer-selected' => 'handleUnifiedTimerSelected',
         'createTimeLogFromEvent' => 'handleCreateTimeLogFromEvent',
+        'confirm-delete' => 'confirmDelete',
+        'view-tempo-worklog-details' => 'viewTempoWorklogDetails',
     ];
 
     protected $rules = [
@@ -572,9 +574,15 @@ class TimeLogsModals extends Component
     /**
      * Confirm deleting a time log
      */
-    public function confirmDelete($timeLogId)
+    public function confirmDelete($timeLogId = null)
     {
-        $this->confirmingDelete = $timeLogId;
+        // If called from an event, the parameter will be an array with timeLogId
+        if (is_array($timeLogId) && isset($timeLogId['timeLogId'])) {
+            $this->confirmingDelete = $timeLogId['timeLogId'];
+        } else {
+            // If called directly with an ID parameter
+            $this->confirmingDelete = $timeLogId;
+        }
     }
 
     /**
