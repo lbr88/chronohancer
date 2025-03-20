@@ -269,7 +269,7 @@
                             <div>
                                 <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
                                 <div class="mt-1">
-                                    <livewire:components.timer-description-selector :timer-id="null" :timer-description-id="$timerDescriptionId" wire:key="timer-description-selector-{{ now() }}" />
+                                    <livewire:components.timer-description-selector :timer-id="null" :description="$description" wire:key="timer-description-selector-{{ now() }}" />
                                 </div>
                             </div>
                         </div>
