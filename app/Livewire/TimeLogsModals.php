@@ -64,6 +64,9 @@ class TimeLogsModals extends Component
 
     public $selectedTempoWorklogId = null;
 
+    // Return to dashboard flag
+    public $returnToDashboard = false;
+
     protected $listeners = [
         'open-quick-time-modal' => 'openQuickTimeModal',
         'open-manual-time-log-modal' => 'openManualTimeLogModal',
@@ -363,7 +366,7 @@ class TimeLogsModals extends Component
     {
         $timeLog = TimeLog::findOrFail($timeLogId);
         $this->editingTimeLog = $timeLogId;
-        $this->project_id = $timeLog->timer?->project_id;
+        // We don't set project_id anymore since it's read-only and determined by the timer
         $this->timer_id = $timeLog->timer_id;
         $this->description = $timeLog->description;
         $this->selected_date = $timeLog->start_time->format('Y-m-d');
@@ -504,8 +507,9 @@ class TimeLogsModals extends Component
         $start_time = Carbon::parse($this->selected_date)->startOfDay();
         $end_time = $start_time->copy()->addMinutes($durationMinutes);
 
-        // Use the existing timer - don't allow changing to a different timer that might
-        // be associated with a different project
+        // Always use the existing timer - don't allow changing to a different timer
+        // This ensures the project association remains the same when editing a time log
+        // If the user wants to change both timer and project, they should create a new time log
         $timer_id = $timeLog->timer_id;
 
         // If there's no timer_id (which should be rare), we need to create one
@@ -643,7 +647,10 @@ class TimeLogsModals extends Component
             $this->quickTimeProjectId = $data['id'];
             $this->loadProjectTimers($data['id']);
         } else {
-            $this->project_id = $data['id'];
+            // Only update project_id if we're not editing an existing time log
+            if (! $this->editingTimeLog) {
+                $this->project_id = $data['id'];
+            }
         }
     }
 
@@ -719,17 +726,20 @@ class TimeLogsModals extends Component
         }
         // For manual time log modal or regular edit form
         else {
-            // Set timer data
-            if (isset($data['timerId'])) {
-                $this->timer_id = $data['timerId'];
+            // Only update timer and project if we're not editing an existing time log
+            if (! $this->editingTimeLog) {
+                // Set timer data
+                if (isset($data['timerId'])) {
+                    $this->timer_id = $data['timerId'];
+                }
+
+                // Set project data
+                if (isset($data['projectId'])) {
+                    $this->project_id = $data['projectId'];
+                }
             }
 
-            // Set project data
-            if (isset($data['projectId'])) {
-                $this->project_id = $data['projectId'];
-            }
-
-            // Set description data
+            // Set description data (always allowed)
             if (isset($data['description'])) {
                 $this->description = $data['description'] ?? '';
             }

@@ -110,56 +110,5 @@
   </div>
   @endif
 
-  <!-- Edit Form Modal -->
-  @if($editingTimeLog)
-  <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-zinc-900 rounded-lg p-6 max-w-md w-full mx-4">
-      <h2 class="text-xl font-semibold mb-4 dark:text-white">Edit Time Log</h2>
-      <form wire:submit.prevent="updateTimeLog" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Timer Selection</label>
-          @livewire('components.unified-timer-selector', [
-          'timerId' => $timer_id,
-          'projectId' => $project_id
-          ], key('edit-time-log-unified-selector'))
-          @error('project_id') <span class="text-red-500 dark:text-red-400 text-xs">{{ $message }}</span> @enderror
-        </div>
-        <div>
-          <label for="selected_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
-          <input type="date" wire:model.live="selected_date" id="selected_date" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2">
-          @error('selected_date') <span class="text-red-500 dark:text-red-400 text-xs">{{ $message }}</span> @enderror
-        </div>
-        <div>
-          @livewire('components.time-input', [
-          'value' => $duration_minutes,
-          'name' => 'duration_minutes',
-          'inputId' => 'duration_minutes',
-          'label' => 'Duration',
-          'showPresets' => true,
-          'showIncrementButtons' => true,
-          'helpText' => 'Enter duration in minutes, HH:MM, or format like "3h5m"',
-          ], key('edit-time-log-duration-input'))
-          @error('duration_minutes') <span class="text-red-500 dark:text-red-400 text-xs">{{ $message }}</span> @enderror
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tags</label>
-          @livewire('components.tag-selector', ['selectedTags' => $selectedTags], key('edit-time-log-tag-selector'))
-        </div>
-        <div class="flex justify-between">
-          <button type="button" wire:click="cancelEdit" class="px-4 py-2 border dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 dark:text-gray-300">
-            Cancel
-          </button>
-          <div class="flex space-x-2">
-            <button type="button" wire:click="confirmDelete({{ $editingTimeLog }})" class="px-4 py-2 border border-red-300 text-red-700 dark:border-red-700 dark:text-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20">
-              Delete
-            </button>
-            <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-              Update Time Log
-            </button>
-          </div>
-        </div>
-      </form>
-    </div>
-  </div>
-  @endif
+  <!-- Edit Form Modal is included from edit-form-modal.blade.php -->
 </div>

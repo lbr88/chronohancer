@@ -4,19 +4,37 @@
         <h2 class="text-xl font-semibold mb-4 dark:text-white">Edit Time Log</h2>
         <form wire:submit.prevent="updateTimeLog" class="space-y-4">
             <div>
+                <label for="edit_timer_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Timer</label>
+                <div class="mt-1 p-2 border rounded-md border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800 text-gray-800 dark:text-gray-300">
+                    @php
+                    $timerName = "No Timer";
+                    if ($editingTimeLog) {
+                    $timeLog = \App\Models\TimeLog::find($editingTimeLog);
+                    if ($timeLog && $timeLog->timer) {
+                    $timerName = $timeLog->timer->name;
+                    }
+                    }
+                    @endphp
+                    {{ $timerName }}
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Timer cannot be changed when editing a time log. To change both timer and project, create a new time log instead.
+                    </div>
+                </div>
+            </div>
+            <div>
                 <label for="edit_project_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Project</label>
                 <div class="mt-1 p-2 border rounded-md border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800 text-gray-800 dark:text-gray-300">
                     @php
-                        $projectName = "No Project";
-                        if ($editingTimeLog) {
-                            $timeLog = \App\Models\TimeLog::find($editingTimeLog);
-                            if ($timeLog && $timeLog->timer && $timeLog->timer->project) {
-                                $projectName = $timeLog->timer->project->name;
-                            } else {
-                                $defaultProject = \App\Models\Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
-                                $projectName = $defaultProject->name;
-                            }
-                        }
+                    $projectName = "No Project";
+                    if ($editingTimeLog) {
+                    $timeLog = \App\Models\TimeLog::find($editingTimeLog);
+                    if ($timeLog && $timeLog->timer && $timeLog->timer->project) {
+                    $projectName = $timeLog->timer->project->name;
+                    } else {
+                    $defaultProject = \App\Models\Project::findOrCreateDefault(auth()->id(), app('current.workspace')->id);
+                    $projectName = $defaultProject->name;
+                    }
+                    }
                     @endphp
                     {{ $projectName }}
                     <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">

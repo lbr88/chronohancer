@@ -654,7 +654,7 @@ class Timers extends Component
                     // Update the time log with the new duration and end time
                     $timeLog->update([
                         'end_time' => $endTime,
-                        'duration_minutes' => (int) $totalMinutes, // Cast to integer to avoid decimal values
+                        'duration_minutes' => intval($totalMinutes), // Explicit conversion to avoid warning
                         'description' => $this->editingTimerDescription ?: null,
                         'workspace_id' => app('current.workspace')->id,
                     ]);
@@ -719,7 +719,7 @@ class Timers extends Component
             if ($durationMinutes > 0) {
                 // Update the existing log with end time
                 $latestLog->end_time = $endTime;
-                $latestLog->duration_minutes = (int) $durationMinutes; // Cast to integer to avoid decimal values
+                $latestLog->duration_minutes = intval($durationMinutes); // Explicit conversion to avoid warning
                 $latestLog->save();
 
                 // Dispatch event to update the daily progress bar
@@ -909,7 +909,7 @@ class Timers extends Component
             // Only save the time log if duration is greater than 0 minutes
             if ($durationMinutes > 0) {
                 $latestLog->end_time = $now;
-                $latestLog->duration_minutes = (int) $durationMinutes; // Cast to integer to avoid decimal values
+                $latestLog->duration_minutes = intval($durationMinutes); // Explicit conversion to avoid warning
                 $latestLog->save();
 
                 // Dispatch event to update the daily progress bar
