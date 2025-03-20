@@ -41,7 +41,7 @@
         </div>
 
         @if(count($existingTimers) > 0)
-        <div class="mt-1 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm max-h-60 overflow-y-auto">
+        <div class="absolute mt-1 w-full bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm max-h-60 overflow-y-auto z-[60]">
           <ul class="divide-y divide-gray-200 dark:divide-gray-700">
             @foreach($existingTimers as $timer)
             <li wire:click="useExistingTimer({{ $timer['id'] }})" class="p-3 hover:bg-gray-50 dark:hover:bg-zinc-700 cursor-pointer">

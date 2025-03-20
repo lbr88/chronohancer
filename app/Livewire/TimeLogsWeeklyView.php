@@ -36,7 +36,7 @@ class TimeLogsWeeklyView extends Component
     /**
      * Find and edit a time log for a specific date, project, and timer
      */
-    public function findAndEditTimeLog($date, $projectId, $timerId = null, $description = null)
+    public function findAndEditTimeLog($date, $projectId = null, $timerId = null, $description = null)
     {
         $this->dispatch('find-and-edit-time-log', [
             'date' => $date,

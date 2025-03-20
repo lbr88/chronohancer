@@ -6,7 +6,7 @@
       Edit Time Log
       @else
       Create Manual Time Log
-      @if($selected_date && $selected_date != now()->format('Y-m-d'))
+      @if($selected_date && is_string($selected_date) && $selected_date != now()->format('Y-m-d'))
       <span class="text-sm font-normal text-indigo-600 dark:text-indigo-400">
         for {{ Carbon\Carbon::parse($selected_date)->format('M d, Y') }}
       </span>
@@ -17,17 +17,15 @@
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Timer Selection</label>
         @livewire('components.unified-timer-selector', [
-        'timerId' => $timer_id,
-        'projectId' => $project_id
+        'timerId' => $timer_id
         ], key('manual-time-log-unified-selector'))
-        @error('project_id') <span class="text-red-500 dark:text-red-400 text-xs">{{ $message }}</span> @enderror
       </div>
       <div>
         <label for="selected_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
         <input type="date" wire:model.live="selected_date" id="selected_date" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-zinc-800 dark:text-white shadow-sm px-3 py-2">
         @error('selected_date') <span class="text-red-500 dark:text-red-400 text-xs">{{ $message }}</span> @enderror
 
-        @if($selected_date)
+        @if($selected_date && is_string($selected_date))
         @php
         $remainingMinutes = $this->getRemainingTimeForDate($selected_date);
         @endphp

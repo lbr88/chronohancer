@@ -14,7 +14,7 @@
   </div>
 
   @if($showDropdown)
-  <div class="absolute z-10 mt-1 w-full bg-white dark:bg-zinc-800 shadow-lg rounded-md py-1 max-h-60 overflow-auto">
+  <div class="absolute z-[60] mt-1 w-full bg-white dark:bg-zinc-800 shadow-lg rounded-md py-1 max-h-60 overflow-auto">
     @if($projects->isEmpty())
     <div class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
       No projects found

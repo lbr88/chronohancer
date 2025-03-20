@@ -34,8 +34,6 @@ class TimeLogsModals extends Component
     // Manual Time Log Modal
     public $showManualTimeLogModal = false;
 
-    public $project_id;
-
     public $timer_id;
 
     public $description;
@@ -84,7 +82,6 @@ class TimeLogsModals extends Component
     ];
 
     protected $rules = [
-        'project_id' => 'nullable|exists:projects,id',
         'description' => 'nullable',
         'duration_minutes' => 'required',
         'selected_date' => 'required|date',
@@ -285,7 +282,7 @@ class TimeLogsModals extends Component
     public function openManualTimeLogModal($date = null)
     {
         $this->selected_date = $date ?? now()->format('Y-m-d');
-        $this->reset(['project_id', 'timer_id', 'description', 'duration_minutes', 'selectedTags']);
+        $this->reset(['timer_id', 'description', 'duration_minutes', 'selectedTags']);
         $this->showManualTimeLogModal = true;
     }
 
@@ -311,12 +308,9 @@ class TimeLogsModals extends Component
         $start_time = Carbon::parse($this->selected_date)->startOfDay();
         $end_time = $start_time->copy()->addMinutes($durationMinutes);
 
-        // Always use the selected project_id if it exists, otherwise use default project
-        $project_id = $this->project_id;
-        if ($project_id === null) {
-            $defaultProject = Project::findOrCreateDefault(Auth::id(), app('current.workspace')->id);
-            $project_id = $defaultProject->id;
-        }
+        // Get default project
+        $defaultProject = Project::findOrCreateDefault(Auth::id(), app('current.workspace')->id);
+        $project_id = $defaultProject->id;
 
         // Create a timer if one doesn't exist
         $timer_id = $this->timer_id;
@@ -355,7 +349,7 @@ class TimeLogsModals extends Component
         // Dispatch event to update the daily progress bar
         $this->dispatch('timeLogSaved');
 
-        $this->reset(['project_id', 'timer_id', 'description', 'duration_minutes', 'selectedTags']);
+        $this->reset(['timer_id', 'description', 'duration_minutes', 'selectedTags']);
         $this->selected_date = now()->format('Y-m-d'); // Reset to today
         $this->closeManualTimeLogModal();
         session()->flash('message', 'Time log created successfully.');
@@ -392,8 +386,11 @@ class TimeLogsModals extends Component
     /**
      * Find and edit a time log for a specific date, project, and timer
      */
-    public function findAndEditTimeLog($date, $projectId, $timerId = null, $description = null)
+    public function findAndEditTimeLog($date = null, $projectId = null, $timerId = null, $description = null)
     {
+        // Default values if parameters are not provided
+        $date = $date ?? now()->format('Y-m-d');
+
         // Find time logs for the specific date, project and timer
         $query = TimeLog::where('user_id', Auth::id())
             ->where('workspace_id', app('current.workspace')->id)
@@ -440,7 +437,6 @@ class TimeLogsModals extends Component
         } else {
             // If no log exists, set up for creating a new one
             $this->openManualTimeLogModal($date);
-            $this->project_id = $projectId === 'null' ? null : $projectId;
 
             // If a description was provided, set it for the new time log
             if ($description) {
@@ -480,7 +476,6 @@ class TimeLogsModals extends Component
     {
         $this->reset([
             'editingTimeLog',
-            'project_id',
             'timer_id',
             'description',
             'duration_minutes',
@@ -556,7 +551,6 @@ class TimeLogsModals extends Component
 
         $this->reset([
             'editingTimeLog',
-            'project_id',
             'timer_id',
             'description',
             'duration_minutes',
@@ -654,11 +648,6 @@ class TimeLogsModals extends Component
         if ($this->showQuickTimeModal) {
             $this->quickTimeProjectId = $data['id'];
             $this->loadProjectTimers($data['id']);
-        } else {
-            // Only update project_id if we're not editing an existing time log
-            if (! $this->editingTimeLog) {
-                $this->project_id = $data['id'];
-            }
         }
     }
 
@@ -734,16 +723,11 @@ class TimeLogsModals extends Component
         }
         // For manual time log modal or regular edit form
         else {
-            // Only update timer and project if we're not editing an existing time log
+            // Only update timer if we're not editing an existing time log
             if (! $this->editingTimeLog) {
                 // Set timer data
                 if (isset($data['timerId'])) {
                     $this->timer_id = $data['timerId'];
-                }
-
-                // Set project data
-                if (isset($data['projectId'])) {
-                    $this->project_id = $data['projectId'];
                 }
             }
 

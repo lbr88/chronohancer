@@ -15,7 +15,7 @@
     </div>
 
     @if($showDropdown && !$descriptions->isEmpty())
-    <div class="absolute z-10 mt-1 w-full bg-white dark:bg-zinc-800 shadow-lg rounded-md py-1 max-h-60 overflow-auto">
+    <div class="absolute z-[60] mt-1 w-full bg-white dark:bg-zinc-800 shadow-lg rounded-md py-1 max-h-60 overflow-auto">
         @foreach($descriptions as $desc)
         <div
             wire:key="description-{{ $desc->id }}"
